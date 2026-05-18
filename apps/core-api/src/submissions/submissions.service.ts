@@ -114,6 +114,7 @@ export class SubmissionsService {
       where: { id: submissionId },
       select: {
         id: true,
+        problemId: true,
         status: true,
         score: true,
         error: true,
@@ -153,20 +154,31 @@ export class SubmissionsService {
       }
     }
 
-    // Sanitize caseResults for student
-    if (!isAuthorized && submission.caseResults) {
+    // Process caseResults and dynamically map isHidden from the database to bypass worker lag
+    if (submission.caseResults) {
       try {
         const resultsObj = JSON.parse(JSON.stringify(submission.caseResults));
         if (resultsObj.testCases && Array.isArray(resultsObj.testCases)) {
+          const problemTestCases = await this.prisma.testCase.findMany({
+            where: { problemId: submission.problemId },
+            select: { id: true, isHidden: true },
+          });
+          const hiddenMap = new Map(problemTestCases.map(tc => [tc.id, tc.isHidden]));
+
           resultsObj.testCases = resultsObj.testCases.map((tc: any) => {
-            if (tc.isHidden) {
+            const isHidden = hiddenMap.get(tc.testCaseId) ?? tc.isHidden ?? false;
+            if (isHidden) {
               return {
                 ...tc,
-                output: '[Hidden Test Case]',
-                error: tc.error ? '[Hidden Test Case]' : null,
+                isHidden: true,
+                output: isAuthorized ? tc.output : '[Hidden Test Case]',
+                error: isAuthorized ? tc.error : (tc.error ? '[Hidden Test Case]' : null),
               };
             }
-            return tc;
+            return {
+              ...tc,
+              isHidden: false,
+            };
           });
         }
         submission.caseResults = resultsObj;

@@ -45,6 +45,7 @@ export class BullMqEventsService implements OnModuleInit, OnModuleDestroy {
         where: { id: jobId },
         select: {
           userId: true,
+          problemId: true,
           status: true,
           score: true,
           runtimeMs: true,
@@ -65,15 +66,26 @@ export class BullMqEventsService implements OnModuleInit, OnModuleDestroy {
         try {
           const resultsObj = JSON.parse(JSON.stringify(submission.caseResults));
           if (resultsObj.testCases && Array.isArray(resultsObj.testCases)) {
+            const problemTestCases = await this.prisma.testCase.findMany({
+              where: { problemId: submission.problemId },
+              select: { id: true, isHidden: true },
+            });
+            const hiddenMap = new Map(problemTestCases.map(tc => [tc.id, tc.isHidden]));
+
             resultsObj.testCases = resultsObj.testCases.map((tc: any) => {
-              if (tc.isHidden) {
+              const isHidden = hiddenMap.get(tc.testCaseId) ?? tc.isHidden ?? false;
+              if (isHidden) {
                 return {
                   ...tc,
+                  isHidden: true,
                   output: '[Hidden Test Case]',
                   error: tc.error ? '[Hidden Test Case]' : null,
                 };
               }
-              return tc;
+              return {
+                ...tc,
+                isHidden: false,
+              };
             });
           }
           sanitizedCaseResults = resultsObj;
@@ -113,6 +125,7 @@ export class BullMqEventsService implements OnModuleInit, OnModuleDestroy {
         where: { id: jobId },
         select: {
           userId: true,
+          problemId: true,
           status: true,
           error: true,
           contestId: true,
@@ -130,15 +143,26 @@ export class BullMqEventsService implements OnModuleInit, OnModuleDestroy {
         try {
           const resultsObj = JSON.parse(JSON.stringify(submission.caseResults));
           if (resultsObj.testCases && Array.isArray(resultsObj.testCases)) {
+            const problemTestCases = await this.prisma.testCase.findMany({
+              where: { problemId: submission.problemId },
+              select: { id: true, isHidden: true },
+            });
+            const hiddenMap = new Map(problemTestCases.map(tc => [tc.id, tc.isHidden]));
+
             resultsObj.testCases = resultsObj.testCases.map((tc: any) => {
-              if (tc.isHidden) {
+              const isHidden = hiddenMap.get(tc.testCaseId) ?? tc.isHidden ?? false;
+              if (isHidden) {
                 return {
                   ...tc,
+                  isHidden: true,
                   output: '[Hidden Test Case]',
                   error: tc.error ? '[Hidden Test Case]' : null,
                 };
               }
-              return tc;
+              return {
+                ...tc,
+                isHidden: false,
+              };
             });
           }
           sanitizedCaseResults = resultsObj;
