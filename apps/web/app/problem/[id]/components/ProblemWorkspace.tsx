@@ -44,9 +44,10 @@ export type SubmissionResult = {
 
 interface ProblemWorkspaceProps {
   problem: Problem;
+  contestId?: string;
 }
 
-export default function ProblemWorkspace({ problem }: ProblemWorkspaceProps) {
+export default function ProblemWorkspace({ problem, contestId }: ProblemWorkspaceProps) {
   const user = useAuthStore((state) => state.user);
   const [code, setCode] = useState('');
   const [isRunning, setIsRunning] = useState(false);
@@ -181,6 +182,7 @@ export default function ProblemWorkspace({ problem }: ProblemWorkspaceProps) {
       await submissionsApi.create({
         userId: user.id,
         problemId: problem.id,
+        contestId: (contestId || null) as string | undefined,
         mode: problem.mode,
         language: optionLang,
         sourceCodeObjectKey: presign.objectKey,

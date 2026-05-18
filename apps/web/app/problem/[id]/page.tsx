@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import ProblemWorkspace from './components/ProblemWorkspace';
 import { Problem, problemsApi } from '@/services/problem.apis';
@@ -8,7 +8,10 @@ import { Loader2 } from 'lucide-react';
 
 export default function ProblemPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const id = params?.id as string;
+  const contestId = searchParams.get('contestId') || undefined;
+  
   const [problem, setProblem] = useState<Problem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,5 +65,5 @@ export default function ProblemPage() {
     );
   }
 
-  return <ProblemWorkspace problem={problem} />;
+  return <ProblemWorkspace problem={problem} contestId={contestId} />;
 }
