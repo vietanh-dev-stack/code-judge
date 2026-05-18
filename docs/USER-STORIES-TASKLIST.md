@@ -1,8 +1,10 @@
 # Task list — User stories & schema RFP (`code-judge`)
 
-Tài liệu bám **user story RFP** (quản trị tổ chức & user, lớp học, đề + AI + visibility, contest, judge, luyện tập, báo cáo & gian lận, realtime) và **schema Prisma hiện tại**: `apps/core-api/prisma/schema.prisma` (chi tiết field/comment) và `apps/core-api/prisma/schema.md` (DBML + tra cứu).
+Tài liệu bám **user story RFP** (user & tài khoản, lớp học, đề + AI + visibility, contest, judge, luyện tập, báo cáo & gian lận, realtime) và **schema Prisma hiện tại**: `apps/core-api/prisma/schema.prisma` (chi tiết field/comment) và `apps/core-api/prisma/schema.md` (DBML + tra cứu).
 
 **Thời gian**: ước lượng làm việc thuần (1 dev full-time ~8h/ngày), giả định team đã nắm stack (NestJS, Next.js, Prisma 7, BullMQ, Redis, Docker).
+
+**Phạm vi (cập nhật):** **Không** triển khai **Organization / đa tenant** (không API `Organization`, không policy đề theo org / `ORG_INTERNAL`). Task **O-1, O-2, O-4** đã **loại** khỏi backlog; khoá user → **U-0** (ADMIN). Chi tiết checklist: `FEATURE-IMPLEMENTATION-TASKLIST.md` (Phần F).
 
 **Cách đọc**
 
@@ -17,7 +19,7 @@ Tài liệu bám **user story RFP** (quản trị tổ chức & user, lớp họ
 
 | EPIC / Story (RFP) | Nội dung | Model / enum chính trong DB |
 |--------------------|----------|-----------------------------|
-| EPIC 1 — Story 1 | Org Admin: GV, import, khoá tài khoản, đề ORG_INTERNAL | `Organization`, `OrganizationMembership`, `OrgRole`, `User.isActive`, `Problem.visibility`, `Problem.organizationId` |
+| EPIC 1 — Story 1 | ~~Org Admin…~~ **(đã bỏ phạm vi)** — chỉ giữ ý tưởng: khoá user, visibility đề | `User.isActive`, `Problem.visibility` (**không** `Organization` / membership) |
 | EPIC 1 — Story 2 | Đăng ký Email/Google, duyệt Instructor, hồ sơ, chứng chỉ | `User`, `OAuthAccount`, `InstructorVerificationStatus`, `Certificate` |
 | EPIC 2 — Story 3–4 | Lớp: mã join, mời email, SV join, bài sắp tới | `ClassRoom`, `ClassEnrollment`, `ClassInvite`, `ClassAssignment` |
 | EPIC 3 — Story 5–6 | AI sinh test, golden solution, visibility đề | `AiGenerationJob`, `GoldenSolution`, `TestCase`, `Problem.maxTestCases`, `ProblemVisibility` |
@@ -62,7 +64,7 @@ Tài liệu bám **user story RFP** (quản trị tổ chức & user, lớp họ
 | Sprint | ID | Ghi chú |
 |:------:|----|--------|
 | **1** | G0-1 … G0-5 | Redis/BullMQ, health, **migrate + seed** theo schema mới, JWT REST + socket, CI. |
-| **1** | O-3 | API policy **`ProblemVisibility`**: list đề `PUBLIC`; chặn lộ `PRIVATE`/`ORG_INTERNAL` sai scope. |
+| **1** | O-3 | API policy **`ProblemVisibility`**: list đề public đúng `isPublished`/`visibility`; không lộ `PRIVATE`; `CONTEST_ONLY` khỏi practice (**không** logic org / ORG_INTERNAL) |
 | **1** | C-1 | Ràng buộc số `TestCase` ≤ `Problem.maxTestCases` (API/worker). |
 | **1** | F-0 | Chuẩn hoá **JSON `caseResults`** + ghi `testsPassed`/`testsTotal` từ worker (thay cho bảng riêng). |
 | **1** | H-1 … H-4 | Docker judge + so output + cập nhật `Submission` + `caseResults`. |
@@ -74,18 +76,18 @@ Tài liệu bám **user story RFP** (quản trị tổ chức & user, lớp họ
 
 ---
 
-### Sprint 2 — *Tổ chức, lớp, contest, realtime*
+### Sprint 2 — *Lớp, contest, realtime*
 
 | | |
 |--|--|
-| **Sprint Goal** | **Org + membership** tối thiểu; **ClassRoom** (`classCode`, invite); **Contest** (slug, thời gian, `passwordHash`, `ContestParticipant`); SV join & nộp trong cửa sổ; socket JWT/progress. |
+| **Sprint Goal** | **ClassRoom** (`classCode`, invite); **Contest** (slug, thời gian, `passwordHash`, `ContestParticipant`); SV join & nộp trong cửa sổ; socket JWT/progress; **ADMIN** khoá user (`isActive`) nếu làm U-0. |
 | **User story chính** | EPIC 1 (1–2) MVP, EPIC 2 (3–4), EPIC 4 (7–8), EPIC 8 (14). |
 
 **Sprint Backlog (ưu tiên)**
 
 | Sprint | ID | Ghi chú |
 |:------:|----|--------|
-| **2** | O-1, O-2 | CRUD `Organization`, `OrganizationMembership`; invite GV; **`User.isActive`**; list đề `ORG_INTERNAL` đúng org. |
+| **2** | U-0 | API **`User.isActive`** (ADMIN khoá/mở tài khoản; **không** ORG_ADMIN / org) | BE | G0-4 | 6–10h |
 | **2** | U-1, U-2 | Đăng ký email/password; **OAuth Google** (`OAuthAccount`); **`InstructorVerificationStatus`**. |
 | **2** | A-1 → A-4 | `ClassRoom`, `ClassEnrollment`, `ClassInvite`; join `classCode`; email invite. |
 | **2** | A-5, A-6 | FE quản lý lớp + danh sách SV. |
@@ -98,7 +100,7 @@ Tài liệu bám **user story RFP** (quản trị tổ chức & user, lớp họ
 | **2–3** | B-7 | QA timezone. |
 | **2–3** | A-7 | E2E lớp + contest. |
 
-**Increment demo**: Org có GV; lớp có mã join; contest có mật khẩu; SV nộp trong giờ; sau `endAt` bị chặn; feedback test theo policy.
+**Increment demo**: Lớp có mã join; contest có mật khẩu; SV nộp trong giờ; sau `endAt` bị chặn; feedback test theo policy; (tuỳ chọn) admin khoá user qua U-0.
 
 ---
 
@@ -134,7 +136,7 @@ Tài liệu bám **user story RFP** (quản trị tổ chức & user, lớp họ
 | Sprint | Trọng tâm | Một câu goal |
 |--------|-----------|----------------|
 | **1** | Platform + judge + practice | Schema RFP, chấm thật, `caseResults`, list/submit `PUBLIC`. |
-| **2** | Org, lớp, contest, realtime | Membership, `ClassRoom`, `Contest` + participant, policy feedback, socket. |
+| **2** | Lớp, contest, realtime | `ClassRoom`, `Contest` + participant, policy feedback, socket. |
 | **3** | AI, báo cáo, export, plagiarism | `AiGenerationJob`, golden, dashboard, `ReportExport`, similarity. |
 
 ### Tra cứu nhanh: ID task → Sprint
@@ -142,7 +144,7 @@ Tài liệu bám **user story RFP** (quản trị tổ chức & user, lớp họ
 | Sprint | Task ID |
 |:------:|---------|
 | **1** | G0-1 … G0-5, O-3, C-1, F-0, F-3, G-1, G-2, H-1 … H-4, I-1 |
-| **2** | O-1, O-2, U-1, U-2, A-1 … A-6, E-1 … E-3, B-1 … B-6, B-8, F-2, F-4, F-5, J-1, J-2 |
+| **2** | U-0, U-1, U-2, A-1 … A-6, E-1 … E-3, B-1 … B-6, B-8, F-2, F-4, F-5, J-1, J-2 |
 | **3** | C-2 … C-6, U-3, D-1 … D-5, G-3, H-5, I-2, I-3, J-3 |
 | **2–3** | A-7, B-7 |
 
@@ -154,31 +156,31 @@ Tài liệu bám **user story RFP** (quản trị tổ chức & user, lớp họ
 |----|:------:|------|-------|-----------|-----------|
 | G0-1 | **1** | Chuẩn hoá Redis/BullMQ (`maxRetriesPerRequest: null`, QueueEvents, shutdown) | BE | — | 4–8h |
 | G0-2 | **1** | Health API (`/health`: DB, Redis) + tài liệu local | BE | — | 4–6h |
-| G0-3 | **1** | Prisma: áp migration **`rfp_full_schema`**, seed (`User`, `Organization` mẫu, `Problem` `PUBLIC`, `TestCase`) | BE | — | 8–16h |
+| G0-3 | **1** | Prisma: áp migration **`rfp_full_schema`**, seed (`User`, `Problem` `PUBLIC`, `TestCase`, `Tag` — **không** seed Organization) | BE | — | 8–16h |
 | G0-4 | **1** | Auth: `POST /submissions` lấy user từ JWT; Socket handshake JWT (bỏ `userId` query thô) | BE | G0-3 | 8–16h |
 | G0-5 | **1** | CI: lint + build `core-api`, `worker`, `web` | DevOps | — | 4–8h |
 
 ---
 
-## Epic O — EPIC 1 Story 1: Quản trị tổ chức & phạm vi đề
+## Epic O — Policy `ProblemVisibility` *(không Organization)*
 
-**Mục tiêu**: Org Admin quản GV (email/import), khoá tài khoản; đề **`ORG_INTERNAL`** theo `organizationId`.
+**Mục tiêu**: List/detail practice đúng `ProblemVisibility` + `isPublished`; không lộ đề private; **không** đa tenant.
 
 | ID | Sprint | Task | Owner | Phụ thuộc | Ước lượng |
 |----|:------:|------|-------|-----------|-----------|
-| O-1 | **2** | API CRUD `Organization` + `OrganizationMembership` (`OrgRole`); import CSV email (MVP: batch API) | BE | G0-3 | 16–24h |
-| O-2 | **2** | API khoá/mở **`User.isActive`**; policy chỉ `ORG_ADMIN` / `ADMIN` | BE | O-1, G0-4 | 8–12h |
-| O-3 | **1** | Query list `Problem` theo **`ProblemVisibility`** + membership org (không lộ private) | BE | G0-3 | 12–16h |
-| O-4 | **2** | FE: màn Org Admin — danh sách GV, lớp/contest trong org (read) | FE | O-1 | 16–24h |
+| O-3 | **1** | Query list/detail `Problem` theo **`ProblemVisibility`** (PUBLIC / PRIVATE / CONTEST_ONLY, v.v.); filter practice; **không** membership org | BE | G0-3 | 12–16h |
+
+*Đã loại khỏi roadmap:* ~~O-1~~ (CRUD Organization), ~~O-2~~ (→ **U-0** trong Epic U), ~~O-4~~ (FE Org Admin).
 
 ---
 
 ## Epic U — EPIC 1 Story 2: Đăng ký & hồ sơ
 
-**Mục tiêu**: Email/password + Google; duyệt Instructor; chứng chỉ hiển thị.
+**Mục tiêu**: Email/password + Google; duyệt Instructor; chứng chỉ hiển thị; **ADMIN** khoá/mở user (**không** org).
 
 | ID | Sprint | Task | Owner | Phụ thuộc | Ước lượng |
 |----|:------:|------|-------|-----------|-----------|
+| U-0 | **2** | API PATCH **`User.isActive`** (chỉ **ADMIN**; khoá/mở đăng nhập) | BE | G0-4 | 6–10h |
 | U-1 | **2** | Đăng ký email + hash password; đồng bộ **`InstructorVerificationStatus`** | BE | G0-3 | 12–16h |
 | U-2 | **2** | OAuth **`OAuthAccount`** (Google); liên kết / tách tài khoản | BE | U-1 | 16–24h |
 | U-3 | **3** | Phát hành **`Certificate`** (sau contest/lớp); API list theo `userId` | BE | B-*, Contest end | 8–12h |
@@ -192,7 +194,7 @@ Tài liệu bám **user story RFP** (quản trị tổ chức & user, lớp họ
 
 | ID | Sprint | Task | Owner | Phụ thuộc | Ước lượng |
 |----|:------:|------|-------|-----------|-----------|
-| A-1 | **2** | API CRUD `ClassRoom` (`organizationId?`, `ownerId`, `academicYear`) | BE | G0-4 | 12–16h |
+| A-1 | **2** | API CRUD `ClassRoom` (`ownerId`, `academicYear`, `classCode` unique) | BE | G0-4 | 12–16h |
 | A-2 | **2** | `ClassEnrollment` + trạng thái `ClassEnrollmentStatus`; join bằng `classCode` | BE | A-1 | 12–16h |
 | A-3 | **2** | `ClassInvite` token + `expiresAt` / `usedAt`; gửi email (MVP: log link) | BE | A-1 | 8–12h |
 | A-4 | **2** | GV gỡ SV (`REMOVED`) | BE | A-2 | 4–6h |
@@ -221,7 +223,7 @@ Tài liệu bám **user story RFP** (quản trị tổ chức & user, lớp họ
 
 ## Epic C — EPIC 3 Story 5–6: AI + golden + visibility
 
-**Mục tiêu**: `AiGenerationJob`, `GoldenSolution`, `TestCase`; **`ProblemVisibility`** (Private / Org / Public / Contest-only); **`maxTestCases`**.
+**Mục tiêu**: `AiGenerationJob`, `GoldenSolution`, `TestCase`; **`ProblemVisibility`** (Private / Public / Contest-only, v.v.); **`maxTestCases`**.
 
 | ID | Sprint | Task | Owner | Phụ thuộc | Ước lượng |
 |----|:------:|------|-------|-----------|-----------|
@@ -231,7 +233,7 @@ Tài liệu bám **user story RFP** (quản trị tổ chức & user, lớp họ
 | C-4 | **3** | API chuyển job `SUCCEEDED` → tạo/cập nhật `TestCase`; publish `Problem` | BE | C-3 | 12–16h |
 | C-5 | **3** | Chạy **`GoldenSolution`** với input → điền `expectedOutput`; FE duyệt từng test | BE + FE | C-4 | 24–32h |
 | C-6 | **3** | Rate limit, size file, quota AI | BE | C-2 | 8–12h |
-| C-7 | **2** | API đặt **`Problem.visibility`** + **`organizationId`** (rule ORG_INTERNAL) | BE | O-* | 8–12h |
+| C-7 | **2** | API đặt **`Problem.visibility`** theo enum (PUBLIC / PRIVATE / CONTEST_ONLY, …); **không** rule `organizationId` / org | BE | G0-3 | 6–10h |
 
 ---
 
@@ -328,7 +330,7 @@ Tài liệu bám **user story RFP** (quản trị tổ chức & user, lớp họ
 ## Lộ trình gợi ý
 
 1. **MVP chấm + luyện**: G0 → O-3 → F-0 → H → G → I → J (phần practice).  
-2. **MVP trường + thi**: O → A → B → E → F (contest) → B-8.  
+2. **MVP trường + thi**: U-0 → A → B → E → F (contest) → B-8.  
 3. **AI đề**: C sau khi `Problem`/`TestCase` ổn.  
 4. **Báo cáo & export**: D sau khi có dữ liệu contest.
 
@@ -339,8 +341,8 @@ Tài liệu bám **user story RFP** (quản trị tổ chức & user, lớp họ
 | Epic | Khoảng (ngày người) |
 |------|---------------------|
 | G0 | ~1,5–3,5 |
-| O | ~6–9 |
-| U | ~8–12 |
+| O | ~1,5–2 |
+| U | ~9–13 |
 | A | ~10–15 |
 | B | ~12–18 |
 | C | ~15–24 |

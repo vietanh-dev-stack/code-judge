@@ -4,6 +4,8 @@ Checklist theo **thứ tự nên làm** (base → cấu hình → schema → API
 
 **Kiểm tra codebase lần cuối:** 2026-05-12 (so khớp `apps/core-api`, `apps/worker`, `apps/web`).
 
+**Phạm vi sản phẩm (cập nhật):** **Không** triển khai **Organization / đa tenant** (không API `Organization`, `OrganizationMembership`, import org, hay policy đề `ORG_INTERNAL` theo org). Các mục lịch sử Phần F được ghi là *ngoài phạm vi*; trường nullable trên Prisma (nếu có) không có luồng nghiệp vụ.
+
 ---
 
 ## Phần A — Nền tảng dự án (Project base)
@@ -35,10 +37,10 @@ Checklist theo **thứ tự nên làm** (base → cấu hình → schema → API
 
 | # | Việc | Trạng thái | Ghi chú |
 |---|------|------------|---------|
-| C.1 | Hoàn thiện `schema.prisma` (Org, User, Class, Problem, Contest, Submission, …) | Đã | Theo RFP; role thực tế chủ yếu `ADMIN` / `CLIENT` (khác tài liệu INSTRUCTOR/STUDENT) |
+| C.1 | Hoàn thiện `schema.prisma` (User, Class, Problem, Contest, Submission, …) | Đã | Theo RFP; role thực tế chủ yếu `ADMIN` / `CLIENT` (khác tài liệu INSTRUCTOR/STUDENT); **không** làm module Organization |
 | C.2 | Sinh migration + `migrate deploy` trên DB sạch | Đã | `prisma/migrations/` |
 | C.3 | `prisma generate` trong pipeline / sau pull | Đã | Bước CI |
-| C.4 | Seed tối thiểu: admin/instructor/student, org mẫu, problem `PUBLIC` + `TestCase` | Một phần | Có `prisma/seed.ts`: user + `ClassRoom` + `ClassEnrollment`; **chưa** seed `Problem`/`TestCase` hay org |
+| C.4 | Seed tối thiểu: admin/instructor/student, problem `PUBLIC` + `TestCase`, tag mẫu | Một phần | Có `prisma/seed.ts`: user + lớp + enrollment + **Tag**; **chưa** seed `Problem`/`TestCase` |
 | C.5 | Tài liệu DBML / giải thích trường | Đã | `prisma/schema.md` |
 
 ---
@@ -63,7 +65,7 @@ Checklist theo **thứ tự nên làm** (base → cấu hình → schema → API
 | E.2 | JWT access token; `JwtStrategy` + `JwtAuthGuard` global | Đã | Có thêm refresh cookie + `POST /auth/refresh` |
 | E.3 | `@Public()` cho route không cần token | Đã | |
 | E.4 | `@Roles()` + `RolesGuard` (Role: ADMIN, INSTRUCTOR, STUDENT) | Một phần | Có `@Roles('ADMIN')`…; schema dùng `CLIENT` thay vì INSTRUCTOR/STUDENT |
-| E.5 | `GET /auth/me` trả user đầy đủ (kèm org membership nếu cần) | Một phần | Có `GET /auth/me` và `GET /users/me`; **chưa** org membership (chưa module org) |
+| E.5 | `GET /auth/me` trả user đầy đủ | Một phần | Có `GET /auth/me` và `GET /users/me`; **không** mở rộng membership tổ chức (ngoài phạm vi Organization) |
 | E.6 | `User.isActive` — chặn login khi false | Đã | `AuthService.login` |
 | E.7 | `InstructorVerificationStatus` — flow duyệt GV | Chưa | |
 | E.8 | OAuth Google — model `OAuthAccount`, callback | Đã | `AuthService` + route Google trong README |
@@ -71,14 +73,13 @@ Checklist theo **thứ tự nên làm** (base → cấu hình → schema → API
 
 ---
 
-## Phần F — Organization & membership (đa tenant)
+## Phần F — ~~Organization & membership~~ *(ngoài phạm vi — đã bỏ)*
+
+> **Quyết định:** Không làm đa tenant / `Organization` / `OrganizationMembership` / import email theo org / policy đề theo org. Không lên task F.1–F.4.
 
 | # | Việc | Trạng thái | Ghi chú |
 |---|------|------------|---------|
-| F.1 | CRUD `Organization` (ADMIN hoặc ORG_ADMIN) | Chưa | Không có module HTTP |
-| F.2 | Mời user vào org — `OrganizationMembership` + `OrgRole` | Chưa | |
-| F.3 | API import danh sách email (batch) | Chưa | |
-| F.4 | Policy list `Problem` với `ORG_INTERNAL` + `organizationId` | Chưa | List public lọc `visibility` cơ bản, chưa gắn org |
+| F.* | *(đã gỡ khỏi roadmap)* | — | Nếu cần **khoá tài khoản** (`User.isActive`), làm qua luồng **ADMIN** (không cần ORG_ADMIN). |
 
 ---
 
@@ -86,7 +87,7 @@ Checklist theo **thứ tự nên làm** (base → cấu hình → schema → API
 
 | # | Việc | Trạng thái | Ghi chú |
 |---|------|------------|---------|
-| G.1 | CRUD `ClassRoom` (`classCode` unique, `ownerId`, `organizationId?`) | Đã | API `classrooms`; `organizationId` tuỳ schema |
+| G.1 | CRUD `ClassRoom` (`classCode` unique, `ownerId`) | Đã | API `classrooms`; không yêu cầu nghiệp vụ gắn tổ chức |
 | G.2 | `ClassEnrollment`: join bằng `classCode`, trạng thái PENDING/ACTIVE/REMOVED | Một phần | Join tạo `ACTIVE` trực tiếp; chưa flow PENDING/duyệt |
 | G.3 | `ClassInvite`: tạo token, hết hạn, đánh dấu `usedAt` | Đã | Module `invites` |
 | G.4 | GV gỡ học viên khỏi lớp | Chưa | Chưa thấy endpoint enrollment remove / REMOVED |
@@ -99,10 +100,10 @@ Checklist theo **thứ tự nên làm** (base → cấu hình → schema → API
 
 | # | Việc | Trạng thái | Ghi chú |
 |---|------|------------|---------|
-| H.1 | CRUD Problem (slug, visibility, org, limits, mode) | Một phần | CRUD qua `ProblemsModule`; **chỉ `@Roles('ADMIN')`**, chưa INSTRUCTOR như spec |
-| H.2 | Gắn `Tag` / `ProblemTag` | Chưa | Không có API tag riêng |
+| H.1 | CRUD Problem (slug, visibility, limits, mode) | Một phần | CRUD qua `ProblemsModule`; **chỉ `@Roles('ADMIN')`**, chưa INSTRUCTOR như spec |
+| H.2 | Gắn `Tag` / `ProblemTag` | Một phần | `TagsModule` + `tagIds` trên create/update + filter list; chưa CRUD Tag đầy đủ cho role non-admin nếu spec cần |
 | H.3 | CRUD `TestCase` (order, hidden, weight); validate ≤ `maxTestCases` | Một phần | Nhúng trong create/update `Problem` + AI module; không CRUD test case độc lập |
-| H.4 | API list/filter practice: chỉ `PUBLIC` (+ quyền org cho INTERNAL) | Một phần | `findAll`: published + `visibility` không `PRIVATE`; chưa ORG_INTERNAL theo membership |
+| H.4 | API list/filter practice: `PUBLIC` + published (+ tag / difficulty / mode) | Một phần | `findAll`: published + `visibility` không `PRIVATE` + filter `tagSlug`/`tagId`; **không** có đa tenant / ORG_INTERNAL |
 | H.5 | Ẩn input/output test `isHidden` với thí sinh | Chưa | `GET /problems/:id` public trả **toàn bộ** `testCases` kèm input/output |
 
 ---
@@ -200,7 +201,7 @@ Checklist theo **thứ tự nên làm** (base → cấu hình → schema → API
 2. **D → E** — khung Nest + auth ổn định.  
 3. **I + J** — nộp bài + worker chấm (MVP “có ý nghĩa”).  
 4. **H + N (practice)** — đề + UI luyện.  
-5. **F → G** — org + lớp.  
+5. **G** — lớp (không org).  
 6. **K** — contest.  
 7. **L, M** — AI, báo cáo, export, plagiarism.  
 8. **O** — polish vận hành.
@@ -247,12 +248,12 @@ Checklist theo **thứ tự nên làm** (base → cấu hình → schema → API
 |-----|--------|----------------------|
 | **Core API — HTTP** | CORS, cookie parser, `ValidationPipe`, envelope, Swagger | **Chưa** `/health` |
 | **Core API — Auth** | Register/login bcrypt, `isActive`, refresh cookie, Google OAuth, JWT global + `@Public()` | Profile: `GET /users/me`; role thực tế `ADMIN`/`CLIENT` |
-| **Core API — Modules** | `Users`, `Problems` (ADMIN CRUD + public list/detail), `Contests` (ADMIN CRUD + public list/detail), `Classrooms` + `Invites`, `Storage`, `AiTestcase`, `Mail` | **Chưa** Organization API; contest **chưa** participant/enforcement |
+| **Core API — Modules** | `Users`, `Problems`, `Tags`, `Contests`, `Classrooms` + `Invites`, `Storage`, `AiTestcase`, `Mail` | **Không** làm Organization; contest **chưa** participant/enforcement |
 | **Core API — Queue** | BullMQ + `BullMqEventsService` → Socket | **Chưa** retry/priority trên `add` |
 | **Core API — Submissions** | `POST/GET /submissions`, enqueue | Vẫn **`@Public()`**, `userId` body + **upsert** user/problem demo |
 | **Core API — Realtime** | `SubmissionGateway`, rooms, events | Handshake **chưa** bắt buộc JWT (query `userId`) |
 | **Worker** | Đọc submission + test cases; Lambda judge hoặc **stub** | Stub khi không có Lambda; **chưa** override `ContestProblem` limits; **chưa** job priority |
-| **Prisma** | Schema + migrations | **Seed**: user + lớp; **không** problem/test trong seed |
+| **Prisma** | Schema + migrations | **Seed**: user + lớp + tag; **không** problem/test trong seed |
 | **Web** | `api-client` (Bearer + refresh), login/register, dashboard lớp/contest/admin, practice UI | Socket/ submit cần khớp I.6 + E.9 |
 
 **Ưu tiên nợ kỹ thuật (ngắn gọn):** khóa `POST /submissions` + bỏ upsert; ẩn test hidden ở API public; Socket JWT; seed thêm problem + test; `/health`; API contest participant + enforcement + policy feedback; BullMQ retry/priority.
@@ -343,7 +344,7 @@ Checklist theo **thứ tự nên làm** (base → cấu hình → schema → API
 - **Ưu tiên**: **Medium**
 - **Owner**: D2 / D3 · **Checklist**: E.9, N.6
 
-**Không làm trong S1**: OAuth (E.8), Org đầy đủ (F), Class, Contest, AI, export file, plagiarism, certificate. **Không** lên task riêng cho: Swagger, envelope, BullMQ wiring, JwtAuthGuard global (đã có).
+**Không làm trong S1**: OAuth (E.8), **Organization** (đã bỏ phạm vi), Class, Contest, AI, export file, plagiarism, certificate. **Không** lên task riêng cho: Swagger, envelope, BullMQ wiring, JwtAuthGuard global (đã có).
 
 ---
 
@@ -362,15 +363,15 @@ Checklist theo **thứ tự nên làm** (base → cấu hình → schema → API
 - **Owner**: D1 · **Checklist**: H.1
 
 #### S2-2 — GET list/filter Problem cho practice (PUBLIC + published)
-- **Trạng thái (2026-05-12):** **Một phần** — có list published + search/paging; chưa filter ORG_INTERNAL theo membership; detail public vẫn lộ test ẩn (xem H.5).
-- **Việc làm**: Endpoint list phân trang, filter `difficulty`, `visibility=PUBLIC`, `isPublished=true`; optional search `title`/`slug`; response **không** chứa test hidden; ẩn đề ORG_INTERNAL cho đến khi có membership (có thể trả 403 hoặc filter — ghi rõ trong handler).
+- **Trạng thái (2026-05-12):** **Một phần** — có list published + search/paging + filter tag; detail public vẫn lộ test ẩn (xem H.5).
+- **Việc làm**: Endpoint list phân trang, filter `difficulty`/`mode`/`tagSlug`; `isPublished=true`; optional search `title`/`slug`; response list/detail **không** chứa test hidden cho viewer không quyền (redact H.5).
 - **Tiêu chí xong**: FE có thể gọi một API thay vì hardcode `problemId`.
 - **Ưu tiên**: **High**
 - **Owner**: D1 · **Checklist**: H.4
 
 #### S2-3 — Tag + `ProblemTag` + filter theo tag
-- **Trạng thái (2026-05-12):** **Chưa**
-- **Việc làm**: CRUD Tag (hoặc seed tag cố định); API gắn/gỡ tag khỏi problem; mở rộng list problem `?tagIds=` hoặc `?tagSlugs=`.
+- **Trạng thái (2026-05-14):** **Một phần** — đã có `GET/POST /tags`, `tagIds` trên problem, `tagId`/`tagSlug` trên list + FE filter.
+- **Việc làm** *(còn lại)*: Hoàn thiện CRUD/tag theo role nếu cần; đồng bộ tài liệu/README.
 - **Tiêu chí xong**: Lọc đề theo ít nhất một tag trên UI.
 - **Ưu tiên**: **Medium**
 - **Owner**: D1 · **Checklist**: H.2, H.4
@@ -384,7 +385,7 @@ Checklist theo **thứ tự nên làm** (base → cấu hình → schema → API
 
 #### S2-5 — ClassRoom CRUD + `classCode`
 - **Trạng thái (2026-05-12):** **Đã làm** (API `classrooms`)
-- **Việc làm**: Module `ClassRoom`: tạo lớp (owner = instructor đang login), sinh `classCode` unique (format rõ ràng), update tên/mô tả, archive nếu có field; optional `organizationId` nullable.
+- **Việc làm**: Module `ClassRoom`: tạo lớp (owner = instructor đang login), sinh `classCode` unique (format rõ ràng), update tên/mô tả, archive nếu có field (**không** yêu cầu gắn tổ chức).
 - **Tiêu chí xong**: GV có API tạo lớp và đọc chi tiết lớp của mình.
 - **Ưu tiên**: **High**
 - **Owner**: D1 · **Checklist**: G.1
@@ -446,7 +447,7 @@ Checklist theo **thứ tự nên làm** (base → cấu hình → schema → API
 - **Ưu tiên**: **Medium**
 - **Owner**: D4 · **Checklist**: O.4
 
-**Không làm trong S2**: OAuth, AI sinh test (L), `ReportExport`, plagiarism, certificate, Organization đầy đủ (chỉ dùng `organizationId` nullable nếu cần). **Đã làm ở S1**: Socket JWT — không lặp task trừ khi còn nợ kỹ thuật.
+**Không làm trong S2**: OAuth, AI sinh test (L), `ReportExport`, plagiarism, certificate, **Organization** (đã bỏ phạm vi). **Đã làm ở S1**: Socket JWT — không lặp task trừ khi còn nợ kỹ thuật.
 
 ---
 
@@ -546,7 +547,7 @@ Checklist theo **thứ tự nên làm** (base → cấu hình → schema → API
 | B3 | **Achievement / chứng chỉ** | `Certificate`, phát hành sau contest/lớp |
 | B4 | **Export báo cáo file** | `ReportExport` XLSX/PDF |
 | B5 | **AI sinh test + Golden** đầy đủ | Phần L |
-| B6 | **Organization** đầy đủ (import GV, ORG_INTERNAL policy) | Phần F |
+| ~~B6~~ | ~~**Organization**~~ | **Đã bỏ** — không nằm trong phạm vi sản phẩm |
 | B7 | **InstructorVerification** workflow + admin duyệt | E.7 |
 
 ---

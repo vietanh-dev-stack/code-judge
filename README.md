@@ -98,6 +98,9 @@ Mọi endpoint HTTP trả về (hoặc lỗi) cùng một **envelope**:
 - Mở: `http://localhost:3001`
 - Nhập `userId/problemId/mode`, bấm `Submit` và xem realtime logs.
 
+## Triển khai lên VPS
+- Hướng dẫn chi tiết (SSH, copy `.env`, Docker, PM2, Nginx): [docs/DEPLOY-VPS.md](docs/DEPLOY-VPS.md).
+
 ## Tài liệu cấu hình & utils
 - Xem: [docs/CAU-HINH-VA-UTILS.md](docs/CAU-HINH-VA-UTILS.md) (ESLint/Prettier, `common/`, `lib/`, cách import).
 - Phần **JWT / envelope JSON** ở trên bổ sung cho Core API; có thể đọc kèm comment trong `apps/core-api/src/auth/` và `apps/core-api/src/common/`.

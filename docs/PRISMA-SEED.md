@@ -26,7 +26,7 @@ Cấu hình seed nằm trong [`apps/core-api/prisma.config.ts`](../apps/core-api
 
 ## Hành vi
 
-- **Idempotent theo bộ seed**: trước khi tạo, script **xoá** các bản ghi gắn `seed-*` (users, org, problems, contest, lớp, testcases, golden, job AI, export, …) rồi tạo lại.
+- **Idempotent theo bộ seed**: trước khi tạo, script **xoá** các bản ghi gắn `seed-*` (users, lớp, enrollment, …) rồi tạo lại. **Không** seed Organization (ngoài phạm vi sản phẩm).
 - **Mật khẩu** mặc định cho mọi user seed (bcrypt): `Secret12!`
 
 ## Tài khoản
@@ -41,7 +41,7 @@ Cấu hình seed nằm trong [`apps/core-api/prisma.config.ts`](../apps/core-api
 
 | Mô tả | Id |
 |-------|-----|
-| Organization | `seed-org-demo` (slug `demo-school-seed`) |
+| *(Không seed `Organization` — đã bỏ chức năng đa tenant.)* | — |
 | Problem ALGO | `seed-problem-algo` (slug `two-sum-seed`) |
 | Problem PROJECT | `seed-problem-project` (slug `hello-cli-seed`) |
 | Contest | `seed-contest-winter` (slug `winter-seed-2026`) |
