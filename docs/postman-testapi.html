@@ -1,0 +1,311 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>postman testapi — code-judge docs</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #58a6ff;
+      --accent-dim: #388bfd66;
+      --ok: #3fb950;
+      --partial: #d29922;
+      --missing: #f85149;
+      --border: #30363d;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --sidebar-w: 280px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      min-height: 100vh;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative !important; height: auto !important; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 1.25rem 1rem;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+    }
+    .sidebar h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin: 0 0 0.75rem;
+    }
+    .sidebar nav a {
+      display: block;
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .sidebar nav a:hover { background: var(--surface2); color: var(--text); text-decoration: none; }
+    .sidebar nav a.active { background: var(--surface2); color: var(--accent); font-weight: 600; }
+    
+    main {
+      max-width: 920px;
+      padding: 2rem 2.5rem 4rem;
+    }
+    header.doc-header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    header.doc-header h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      line-height: 1.3;
+    }
+    section {
+      margin-bottom: 2.5rem;
+      scroll-margin-top: 1rem;
+    }
+    h1, h2, h3, h4, h5, h6 { color: var(--text); }
+    h2 {
+      font-size: 1.35rem;
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.75rem; }
+    p { margin: 0 0 1rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--surface2); font-weight: 600; }
+    tr:nth-child(even) td { background: #1a233280; }
+    pre, code {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    code {
+        background: var(--surface2);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+    }
+    pre code {
+        background: transparent;
+        padding: 0;
+    }
+    blockquote {
+      border-left: 4px solid var(--border);
+      padding-left: 1rem;
+      margin: 1rem 0;
+      color: var(--muted);
+    }
+</style>
+</head>
+<body>
+  <div class="layout">
+    <div class="sidebar"><h2>Documentation</h2><nav><a href="AI-TESTCASE-GENERATION.html">AI TESTCASE GENERATION</a><a href="AWS-LAMBDA-INTEGRATION.html">AWS LAMBDA INTEGRATION</a><a href="BUILD-LEVEL-PLAN.html">BUILD LEVEL PLAN</a><a href="CAU-HINH-VA-UTILS.html">CAU HINH VA UTILS</a><a href="DEPLOY-VPS.html">DEPLOY VPS</a><a href="FEATURE-IMPLEMENTATION-TASKLIST.html">FEATURE IMPLEMENTATION TASKLIST</a><a href="JUDGE0-WINDOWS-WSL.html">JUDGE0 WINDOWS WSL</a><a href="LAMBDA-CONFIG.html">LAMBDA CONFIG</a><a href="MINIO.html">MINIO</a><a href="postman-testapi.html" class="active">postman testapi</a><a href="PRISMA-SEED.html">PRISMA SEED</a><a href="USER-STORIES-TASKLIST.html">USER STORIES TASKLIST</a></nav></div>
+    <main>
+      <header class="doc-header">
+        <h1>postman testapi</h1>
+      </header>
+      <div class="content">
+        <h1>Hướng dẫn test API với Postman (code-judge Core API)</h1>
+<p>Tài liệu này mô tả cách import request từ file curl, cấu hình môi trường, và luồng test MinIO + JWT phù hợp với project hiện tại.</p>
+<h2>1) Chuẩn bị</h2>
+<ul>
+<li>Chạy infrastructure: <code>docker compose up -d</code> tại root repo (Postgres, Redis, MinIO).</li>
+<li>Chạy API: <code>npm run dev -w @code-judge/core-api</code> (mặc định <code>http://localhost:3000</code>).</li>
+<li>Đảm bảo file env: copy <code>apps/core-api/.env.example</code> → <code>apps/core-api/.env</code> và set tối thiểu <code>JWT_SECRET</code>, <code>DATABASE_URL</code>, <code>REDIS_URL</code>, các biến <code>MINIO_*</code> nếu test storage.</li>
+<li><strong>Dữ liệu seed</strong> (user/problem/contest cố định, khớp biến Postman): <code>npm run prisma:seed -w @code-judge/core-api</code>. Chi tiết: <a href="PRISMA-SEED.md">PRISMA-SEED.md</a>.</li>
+</ul>
+<h2>2) Import vào Postman</h2>
+<h3>Cách A — Collection JSON (khuyến nghị, đủ endpoint + biến + test script)</h3>
+<ol>
+<li>Mở Postman → <strong>Import</strong> → <strong>Upload Files</strong>.</li>
+<li>Chọn file <a href="../apps/core-api/postman/Code-Judge-Core-API.postman_collection.json"><code>apps/core-api/postman/Code-Judge-Core-API.postman_collection.json</code></a>.</li>
+<li>Chọn collection vừa import → tab <strong>Variables</strong>: chỉnh <code>baseUrl</code>, <code>testEmail</code> / <code>testPassword</code> nếu cần.</li>
+<li>Chạy theo thứ tự: <strong>Auth → Login</strong> (hoặc Register) → các request Users / Storage / Submissions.</li>
+</ol>
+<h3>Cách B — Import từng cURL</h3>
+<ol>
+<li>Mở Postman → <strong>Import</strong> → <strong>Raw text</strong>.</li>
+<li>Mở file <a href="../apps/core-api/postman/import.txt"><code>apps/core-api/postman/import.txt</code></a>, <strong>copy một khối</strong> <code>curl ...</code> (không copy dòng <code>#</code>).</li>
+<li>Dán → <strong>Continue</strong> → <strong>Import</strong>.</li>
+</ol>
+<p>Lưu ý:</p>
+<ul>
+<li>Import curl: một số phiên bản Postman chỉ nhận một <code>curl</code> mỗi lần.</li>
+<li>Sau khi import, đổi <code>baseUrl</code> / cổng nếu API không chạy trên <code>http://localhost:3000</code>.</li>
+</ul>
+<h2>3) Biến môi trường trong Postman (khuyến nghị)</h2>
+<p>Tạo <strong>Environment</strong> (ví dụ <code>code-judge local</code>) với các biến:</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Initial value</th>
+<th>Mô tả</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>baseUrl</code></td>
+<td><code>http://localhost:3000</code></td>
+<td>Base Core API</td>
+</tr>
+<tr>
+<td><code>accessToken</code></td>
+<td><em>(để trống, set sau login)</em></td>
+<td>JWT Bearer</td>
+</tr>
+<tr>
+<td><code>objectKey</code></td>
+<td><em>(tuỳ bước presign)</em></td>
+<td>Key object trên MinIO</td>
+</tr>
+<tr>
+<td><code>uploadUrl</code></td>
+<td><em>(tuỳ bước presign)</em></td>
+<td>URL PUT từ MinIO</td>
+</tr>
+</tbody></table>
+<p>Trong từng request, thay URL cố định bằng <code>{{baseUrl}}/auth/login</code>, v.v.<br>Header Authorization: <code>Bearer {{accessToken}}</code>.</p>
+<h2>4) Response envelope</h2>
+<p>Mọi response HTTP thành công/lỗi đều bọc dạng:</p>
+<pre><code class="language-json">{
+  &quot;code&quot;: 200,
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;OK&quot;,
+  &quot;result&quot;: { }
+}
+</code></pre>
+<p>Khi test trong Postman, dữ liệu nghiệp vụ nằm trong <strong><code>result</code></strong> (ví dụ <code>result.accessToken</code>, <code>result.uploadUrl</code>, <code>result.objectKey</code>).</p>
+<h2>5) Luồng test gợi ý</h2>
+<h3>5.1 Auth cơ bản</h3>
+<ol>
+<li><strong>Register</strong> — import request <code>01</code> từ <code>import.txt</code> (hoặc tạo tay <code>POST {{baseUrl}}/auth/register</code>).</li>
+<li><strong>Login</strong> — request <code>02</code>; trong <strong>Tests</strong> tab có thể thêm script lưu token:</li>
+</ol>
+<pre><code class="language-javascript">const body = pm.response.json();
+if (body.result &amp;&amp; body.result.accessToken) {
+  pm.environment.set(&#39;accessToken&#39;, body.result.accessToken);
+}
+</code></pre>
+<ol start="3">
+<li>Gọi <strong>GET</strong> <code>{{baseUrl}}/users/me</code> với header <code>Authorization: Bearer {{accessToken}}</code>.</li>
+</ol>
+<h3>5.2 MinIO: presign → PUT file → verify</h3>
+<ol>
+<li><strong>Presign upload</strong> — <code>POST {{baseUrl}}/storage/presign/upload</code> (request <code>06</code> hoặc <code>07</code>).</li>
+<li>Copy <code>result.uploadUrl</code> và <code>result.objectKey</code> vào biến môi trường hoặc dùng trực tiếp.</li>
+<li><strong>PUT</strong> lên <code>uploadUrl</code> (request <code>08</code>): body là nội dung file; <code>Content-Type</code> nên khớp loại file (ví dụ <code>text/plain</code>, <code>image/png</code>).</li>
+<li>Kiểm tra trên MinIO Console: <code>http://localhost:9001</code>, bucket <code>codejudge</code>, đúng <code>objectKey</code>.</li>
+<li><strong>Presign download</strong> — <code>GET {{baseUrl}}/storage/presign/download?objectKey=&lt;encode&gt;</code> (request <code>09</code>); mở <code>result.downloadUrl</code> trong trình duyệt hoặc GET bằng Postman.</li>
+</ol>
+<h3>5.3 Avatar (JWT + MinIO)</h3>
+<ol>
+<li>Login → có <code>accessToken</code>.</li>
+<li><code>POST {{baseUrl}}/users/me/avatar/upload-url</code> với body <code>{ &quot;extension&quot;: &quot;png&quot; }</code>.</li>
+<li>PUT file ảnh lên <code>result.uploadUrl</code>.</li>
+<li><code>POST {{baseUrl}}/users/me/avatar/confirm</code> với <code>{ &quot;objectKey&quot;: &quot;&lt;result.objectKey&gt;&quot; }</code>.</li>
+<li><code>GET {{baseUrl}}/users/me</code> — kiểm tra <code>imageObjectKey</code> và <code>image</code>.</li>
+</ol>
+<h3>5.4 Submission (demo public)</h3>
+<p><code>POST {{baseUrl}}/submissions</code> — request <code>05</code>.<br>Nếu <code>sourceCode</code> rất lớn (&gt;8KB), backend có thể externalize sang MinIO; có thể truyền thêm <code>sourceCodeObjectKey</code> nếu đã upload trước.</p>
+<h2>6) Refresh token và cookie</h2>
+<p><code>POST /auth/refresh</code> đọc refresh token từ <strong>cookie</strong> <code>refreshToken</code>.</p>
+<p>Trong Postman:</p>
+<ul>
+<li>Sau <strong>login/register</strong>, xem tab <strong>Cookies</strong> hoặc header <code>Set-Cookie</code> để lấy giá trị.</li>
+<li>Bật lưu cookie theo domain (Settings → tùy phiên bản) hoặc gửi thủ công:<br><code>Cookie: refreshToken=&lt;giá trị&gt;</code> như request <code>12</code> trong <code>import.txt</code>.</li>
+</ul>
+<h2>7) Swagger</h2>
+<p>Khi không tắt Swagger (<code>NODE_ENV</code> không phải production và <code>SWAGGER_ENABLED</code> không bằng <code>0</code>):</p>
+<ul>
+<li>UI: <code>http://localhost:3000/api-docs</code></li>
+<li>JSON: <code>http://localhost:3000/api-docs/json</code> (request <code>14</code> trong <code>import.txt</code>)</li>
+</ul>
+<p>Có thể dùng Swagger UI để “Try it out” song song với Postman.</p>
+<h2>8) Lỗi thường gặp</h2>
+<table>
+<thead>
+<tr>
+<th>Hiện tượng</th>
+<th>Hướng xử lý</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>401 Unauthorized</code> trên <code>/users/*</code></td>
+<td>Thiếu/sai JWT; login lại, cập nhật <code>accessToken</code>.</td>
+</tr>
+<tr>
+<td><code>Connection refused</code></td>
+<td>Core API chưa chạy hoặc sai cổng.</td>
+</tr>
+<tr>
+<td>Presign OK nhưng PUT MinIO lỗi</td>
+<td>Sai URL, URL hết hạn, hoặc MinIO chưa <code>docker compose up</code>.</td>
+</tr>
+<tr>
+<td><code>objectKey</code> trong query bị lỗi</td>
+<td>URL-encode key (Postman thường encode tự động khi nhập param).</td>
+</tr>
+<tr>
+<td>Register trùng email</td>
+<td>Đổi email hoặc dùng user đã có + login.</td>
+</tr>
+</tbody></table>
+<h2>9) Tài liệu liên quan</h2>
+<ul>
+<li><a href="PRISMA-SEED.md">PRISMA-SEED.md</a> — seed dữ liệu mẫu (khớp biến Postman).</li>
+<li><a href="MINIO.md">MINIO.md</a> — MinIO: chạy local, env, taxonomy, luồng storage.</li>
+<li>Collection Postman: <a href="../apps/core-api/postman/Code-Judge-Core-API.postman_collection.json"><code>apps/core-api/postman/Code-Judge-Core-API.postman_collection.json</code></a>.</li>
+<li>File curl: <a href="../apps/core-api/postman/import.txt"><code>apps/core-api/postman/import.txt</code></a>.</li>
+</ul>
+
+
+      </div>
+    </main>
+  </div>
+</body>
+</html>

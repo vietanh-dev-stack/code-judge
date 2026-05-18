@@ -1,0 +1,1305 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>USER STORIES TASKLIST — code-judge docs</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #58a6ff;
+      --accent-dim: #388bfd66;
+      --ok: #3fb950;
+      --partial: #d29922;
+      --missing: #f85149;
+      --border: #30363d;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --sidebar-w: 280px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      min-height: 100vh;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative !important; height: auto !important; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 1.25rem 1rem;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+    }
+    .sidebar h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin: 0 0 0.75rem;
+    }
+    .sidebar nav a {
+      display: block;
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .sidebar nav a:hover { background: var(--surface2); color: var(--text); text-decoration: none; }
+    .sidebar nav a.active { background: var(--surface2); color: var(--accent); font-weight: 600; }
+    
+    main {
+      max-width: 920px;
+      padding: 2rem 2.5rem 4rem;
+    }
+    header.doc-header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    header.doc-header h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      line-height: 1.3;
+    }
+    section {
+      margin-bottom: 2.5rem;
+      scroll-margin-top: 1rem;
+    }
+    h1, h2, h3, h4, h5, h6 { color: var(--text); }
+    h2 {
+      font-size: 1.35rem;
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.75rem; }
+    p { margin: 0 0 1rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--surface2); font-weight: 600; }
+    tr:nth-child(even) td { background: #1a233280; }
+    pre, code {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    code {
+        background: var(--surface2);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+    }
+    pre code {
+        background: transparent;
+        padding: 0;
+    }
+    blockquote {
+      border-left: 4px solid var(--border);
+      padding-left: 1rem;
+      margin: 1rem 0;
+      color: var(--muted);
+    }
+</style>
+</head>
+<body>
+  <div class="layout">
+    <div class="sidebar"><h2>Documentation</h2><nav><a href="AI-TESTCASE-GENERATION.html">AI TESTCASE GENERATION</a><a href="AWS-LAMBDA-INTEGRATION.html">AWS LAMBDA INTEGRATION</a><a href="BUILD-LEVEL-PLAN.html">BUILD LEVEL PLAN</a><a href="CAU-HINH-VA-UTILS.html">CAU HINH VA UTILS</a><a href="DEPLOY-VPS.html">DEPLOY VPS</a><a href="FEATURE-IMPLEMENTATION-TASKLIST.html">FEATURE IMPLEMENTATION TASKLIST</a><a href="JUDGE0-WINDOWS-WSL.html">JUDGE0 WINDOWS WSL</a><a href="LAMBDA-CONFIG.html">LAMBDA CONFIG</a><a href="MINIO.html">MINIO</a><a href="postman-testapi.html">postman testapi</a><a href="PRISMA-SEED.html">PRISMA SEED</a><a href="USER-STORIES-TASKLIST.html" class="active">USER STORIES TASKLIST</a></nav></div>
+    <main>
+      <header class="doc-header">
+        <h1>USER STORIES TASKLIST</h1>
+      </header>
+      <div class="content">
+        <h1>Task list — User stories &amp; schema RFP (<code>code-judge</code>)</h1>
+<p>Tài liệu bám <strong>user story RFP</strong> (user &amp; tài khoản, lớp học, đề + AI + visibility, contest, judge, luyện tập, báo cáo &amp; gian lận, realtime) và <strong>schema Prisma hiện tại</strong>: <code>apps/core-api/prisma/schema.prisma</code> (chi tiết field/comment) và <code>apps/core-api/prisma/schema.md</code> (DBML + tra cứu).</p>
+<p><strong>Thời gian</strong>: ước lượng làm việc thuần (1 dev full-time ~8h/ngày), giả định team đã nắm stack (NestJS, Next.js, Prisma 7, BullMQ, Redis, Docker).</p>
+<p><strong>Phạm vi (cập nhật):</strong> <strong>Không</strong> triển khai <strong>Organization / đa tenant</strong> (không API <code>Organization</code>, không policy đề theo org / <code>ORG_INTERNAL</code>). Task <strong>O-1, O-2, O-4</strong> đã <strong>loại</strong> khỏi backlog; khoá user → <strong>U-0</strong> (ADMIN). Chi tiết checklist: <code>FEATURE-IMPLEMENTATION-TASKLIST.md</code> (Phần F).</p>
+<p><strong>Cách đọc</strong></p>
+<ul>
+<li><strong>Owner gợi ý</strong>: BE, FE, FS, DevOps, ML/AI.</li>
+<li><strong>Sprint</strong>: <strong>1 / 2 / 3</strong> hoặc <strong>2–3</strong> (ưu tiên sprint 2, polish sang 3).</li>
+<li><strong>Phụ thuộc</strong>: task tiên quyết.</li>
+<li><strong>Ước lượng</strong>: giờ (h) hoặc ngày (d).</li>
+</ul>
+<hr>
+<h2>Ánh xạ RFP → model Prisma (tham chiếu nhanh)</h2>
+<table>
+<thead>
+<tr>
+<th>EPIC / Story (RFP)</th>
+<th>Nội dung</th>
+<th>Model / enum chính trong DB</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>EPIC 1 — Story 1</td>
+<td><del>Org Admin…</del> <strong>(đã bỏ phạm vi)</strong> — chỉ giữ ý tưởng: khoá user, visibility đề</td>
+<td><code>User.isActive</code>, <code>Problem.visibility</code> (<strong>không</strong> <code>Organization</code> / membership)</td>
+</tr>
+<tr>
+<td>EPIC 1 — Story 2</td>
+<td>Đăng ký Email/Google, duyệt Instructor, hồ sơ, chứng chỉ</td>
+<td><code>User</code>, <code>OAuthAccount</code>, <code>InstructorVerificationStatus</code>, <code>Certificate</code></td>
+</tr>
+<tr>
+<td>EPIC 2 — Story 3–4</td>
+<td>Lớp: mã join, mời email, SV join, bài sắp tới</td>
+<td><code>ClassRoom</code>, <code>ClassEnrollment</code>, <code>ClassInvite</code>, <code>ClassAssignment</code></td>
+</tr>
+<tr>
+<td>EPIC 3 — Story 5–6</td>
+<td>AI sinh test, golden solution, visibility đề</td>
+<td><code>AiGenerationJob</code>, <code>GoldenSolution</code>, <code>TestCase</code>, <code>Problem.maxTestCases</code>, <code>ProblemVisibility</code></td>
+</tr>
+<tr>
+<td>EPIC 4 — Story 7–8</td>
+<td>Contest: mật khẩu, thời gian, policy feedback, giới hạn nộp</td>
+<td><code>Contest</code>, <code>ContestProblem</code>, <code>ContestParticipant</code>, <code>ContestTestFeedbackPolicy</code>, <code>Submission.contestId</code>, <code>attemptNumber</code>, <code>judgePriority</code></td>
+</tr>
+<tr>
+<td>EPIC 5 — Story 9–10</td>
+<td>Sandbox, queue, priority contest</td>
+<td>Worker + Docker; <code>Submission.judgePriority</code>, <code>Submission.context</code></td>
+</tr>
+<tr>
+<td>EPIC 6 — Story 11</td>
+<td>Luyện tập, filter, leaderboard</td>
+<td><code>Problem</code> + <code>Tag</code> / <code>ProblemTag</code>; bảng tổng hợp hoặc query (chưa có <code>ProblemBestSubmission</code> trong schema — có thể bổ sung sau)</td>
+</tr>
+<tr>
+<td>EPIC 7 — Story 12–13</td>
+<td>Báo cáo contest, export, đạo mã</td>
+<td><code>ReportExport</code>, aggregate từ <code>Submission</code>; <code>CodeSimilarityFinding</code></td>
+</tr>
+<tr>
+<td>EPIC 8 — Story 14</td>
+<td>Realtime chấm bài</td>
+<td>Socket (đã có gateway); có thể bổ sung <code>Notification</code> sau</td>
+</tr>
+</tbody></table>
+<p><strong>Lưu ý schema</strong>: Kết quả từng test lưu tại <strong><code>Submission.caseResults</code> (Json)</strong> + <code>testsPassed</code> / <code>testsTotal</code> — <strong>không</strong> có bảng <code>SubmissionTestResult</code> riêng; task implement cần chuẩn hoá JSON ở worker.</p>
+<hr>
+<h2>Kế hoạch 3 Sprint (Agile Scrum)</h2>
+<table>
+<thead>
+<tr>
+<th>Thành phần</th>
+<th>Gợi ý</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Độ dài sprint</strong></td>
+<td>2 tuần lịch / sprint.</td>
+</tr>
+<tr>
+<td><strong>Ceremonies</strong></td>
+<td>Planning, Daily ~15’, Review, Retrospective.</td>
+</tr>
+<tr>
+<td><strong>Artefacts</strong></td>
+<td>Product Backlog (dưới đây), Sprint Backlog, Increment.</td>
+</tr>
+</tbody></table>
+<p><strong>Capacity tham chiếu</strong>: ~4 dev × 10 ngày × ~6h focus ≈ <strong>240h focus / sprint</strong>.</p>
+<h3>Definition of Done (chung)</h3>
+<ul>
+<li>Merge <code>main</code>, <strong>build + lint</strong> pass.</li>
+<li>API có mô tả (OpenAPI/Swagger đã setup tại <code>/api-docs</code> khi bật).</li>
+<li>Happy path đã thử hoặc test tối thiểu.</li>
+<li>Không commit secret; cập nhật <code>apps/*/ .env.example</code> khi thêm biến.</li>
+</ul>
+<hr>
+<h3>Sprint 1 — <em>Nền tảng: judge thật + luyện tập + schema RFP</em></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Sprint Goal</strong></td>
+<td>Migration <strong><code>20260505120000_rfp_full_schema</code></strong> (hoặc migrate tương đương) + seed; auth/socket an toàn hơn; <strong>sandbox</strong> tối thiểu (1 ngôn ngữ); cập nhật <strong><code>Submission.caseResults</code></strong>; <strong>browse + submit</strong> bài <code>PUBLIC</code>; queue cơ bản + <strong>priority</strong> theo <code>Submission.context</code>.</td>
+</tr>
+<tr>
+<td><strong>User story chính</strong></td>
+<td>EPIC 5 (9–10) MVP, EPIC 6 (11) MVP, EPIC 3 (6) visibility tối thiểu trên API.</td>
+</tr>
+</tbody></table>
+<p><strong>Sprint Backlog (ưu tiên)</strong></p>
+<table>
+<thead>
+<tr>
+<th align="center">Sprint</th>
+<th>ID</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center"><strong>1</strong></td>
+<td>G0-1 … G0-5</td>
+<td>Redis/BullMQ, health, <strong>migrate + seed</strong> theo schema mới, JWT REST + socket, CI.</td>
+</tr>
+<tr>
+<td align="center"><strong>1</strong></td>
+<td>O-3</td>
+<td>API policy <strong><code>ProblemVisibility</code></strong>: list đề public đúng <code>isPublished</code>/<code>visibility</code>; không lộ <code>PRIVATE</code>; <code>CONTEST_ONLY</code> khỏi practice (<strong>không</strong> logic org / ORG_INTERNAL)</td>
+</tr>
+<tr>
+<td align="center"><strong>1</strong></td>
+<td>C-1</td>
+<td>Ràng buộc số <code>TestCase</code> ≤ <code>Problem.maxTestCases</code> (API/worker).</td>
+</tr>
+<tr>
+<td align="center"><strong>1</strong></td>
+<td>F-0</td>
+<td>Chuẩn hoá <strong>JSON <code>caseResults</code></strong> + ghi <code>testsPassed</code>/<code>testsTotal</code> từ worker (thay cho bảng riêng).</td>
+</tr>
+<tr>
+<td align="center"><strong>1</strong></td>
+<td>H-1 … H-4</td>
+<td>Docker judge + so output + cập nhật <code>Submission</code> + <code>caseResults</code>.</td>
+</tr>
+<tr>
+<td align="center"><strong>1</strong></td>
+<td>I-1</td>
+<td>Retry/backoff; set <strong><code>judgePriority</code></strong> cao hơn khi <code>context = CONTEST</code> (khi đã có luồng contest tối thiểu).</td>
+</tr>
+<tr>
+<td align="center"><strong>1</strong></td>
+<td>G-1, G-2</td>
+<td>API filter problem (tag, <code>Difficulty</code>, <code>mode</code>) + FE list/detail/submit practice.</td>
+</tr>
+<tr>
+<td align="center"><strong>1</strong></td>
+<td>F-3</td>
+<td>API list <code>Submission</code> theo user/problem + đọc chi tiết từ <code>caseResults</code>.</td>
+</tr>
+</tbody></table>
+<p><strong>Increment demo</strong>: Seed user → đăng nhập → mở problem <code>PUBLIC</code> → nộp → worker sandbox → xem AC/WA qua API/UI; DB có đủ cột RFP cho bước sau.</p>
+<hr>
+<h3>Sprint 2 — <em>Lớp, contest, realtime</em></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Sprint Goal</strong></td>
+<td><strong>ClassRoom</strong> (<code>classCode</code>, invite); <strong>Contest</strong> (slug, thời gian, <code>passwordHash</code>, <code>ContestParticipant</code>); SV join &amp; nộp trong cửa sổ; socket JWT/progress; <strong>ADMIN</strong> khoá user (<code>isActive</code>) nếu làm U-0.</td>
+</tr>
+<tr>
+<td><strong>User story chính</strong></td>
+<td>EPIC 1 (1–2) MVP, EPIC 2 (3–4), EPIC 4 (7–8), EPIC 8 (14).</td>
+</tr>
+</tbody></table>
+<p><strong>Sprint Backlog (ưu tiên)</strong></p>
+<table>
+<thead>
+<tr>
+<th align="center">Sprint</th>
+<th>ID</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center"><strong>2</strong></td>
+<td>U-0</td>
+<td>API <strong><code>User.isActive</code></strong> (ADMIN khoá/mở tài khoản; <strong>không</strong> ORG_ADMIN / org)</td>
+</tr>
+<tr>
+<td align="center"><strong>2</strong></td>
+<td>U-1, U-2</td>
+<td>Đăng ký email/password; <strong>OAuth Google</strong> (<code>OAuthAccount</code>); <strong><code>InstructorVerificationStatus</code></strong>.</td>
+</tr>
+<tr>
+<td align="center"><strong>2</strong></td>
+<td>A-1 → A-4</td>
+<td><code>ClassRoom</code>, <code>ClassEnrollment</code>, <code>ClassInvite</code>; join <code>classCode</code>; email invite.</td>
+</tr>
+<tr>
+<td align="center"><strong>2</strong></td>
+<td>A-5, A-6</td>
+<td>FE quản lý lớp + danh sách SV.</td>
+</tr>
+<tr>
+<td align="center"><strong>2</strong></td>
+<td>E-1, E-2, E-3</td>
+<td>Join lớp FE; <strong><code>ClassAssignment</code></strong> + tab bài tập.</td>
+</tr>
+<tr>
+<td align="center"><strong>2</strong></td>
+<td>B-1 → B-4</td>
+<td><code>Contest</code>, <code>ContestProblem</code>, <code>ContestParticipant</code>; enforce <code>startAt</code>/<code>endAt</code>; <strong><code>maxSubmissionsPerProblem</code></strong> + <strong><code>attemptNumber</code></strong>.</td>
+</tr>
+<tr>
+<td align="center"><strong>2</strong></td>
+<td>B-5, B-6</td>
+<td>FE tạo contest; trang join + <strong>password</strong> + countdown.</td>
+</tr>
+<tr>
+<td align="center"><strong>2</strong></td>
+<td>B-8</td>
+<td>Áp dụng <strong><code>Contest.testFeedbackPolicy</code></strong> (SUMMARY vs VERBOSE) khi trả kết quả cho client.</td>
+</tr>
+<tr>
+<td align="center"><strong>2</strong></td>
+<td>F-2, J-1, J-2</td>
+<td>Realtime progress; contract event + FE subscribe an toàn.</td>
+</tr>
+<tr>
+<td align="center"><strong>2</strong></td>
+<td>F-4, F-5</td>
+<td>Submit trong contest; lịch sử + drill-down từ <code>caseResults</code>.</td>
+</tr>
+<tr>
+<td align="center"><strong>2–3</strong></td>
+<td>B-7</td>
+<td>QA timezone.</td>
+</tr>
+<tr>
+<td align="center"><strong>2–3</strong></td>
+<td>A-7</td>
+<td>E2E lớp + contest.</td>
+</tr>
+</tbody></table>
+<p><strong>Increment demo</strong>: Lớp có mã join; contest có mật khẩu; SV nộp trong giờ; sau <code>endAt</code> bị chặn; feedback test theo policy; (tuỳ chọn) admin khoá user qua U-0.</p>
+<hr>
+<h3>Sprint 3 — <em>AI đề, báo cáo, export, plagiarism, hardening</em></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Sprint Goal</strong></td>
+<td><strong><code>AiGenerationJob</code></strong> + <strong><code>GoldenSolution</code></strong> workflow; duyệt/publish test; <strong>dashboard</strong> + <strong><code>ReportExport</code></strong> (XLSX/PDF); <strong><code>CodeSimilarityFinding</code></strong> MVP; leaderboard/giới hạn judge.</td>
+</tr>
+<tr>
+<td><strong>User story chính</strong></td>
+<td>EPIC 3 (5), EPIC 7 (12–13), EPIC 6 (11 leaderboard), bổ sung EPIC 5 polish.</td>
+</tr>
+</tbody></table>
+<p><strong>Sprint Backlog (ưu tiên)</strong></p>
+<table>
+<thead>
+<tr>
+<th align="center">Sprint</th>
+<th>ID</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center"><strong>3</strong></td>
+<td>C-2, C-3, C-4</td>
+<td>Upload đề (storage); pipeline AI → parse test; ghi <strong><code>AiGenerationJob</code></strong>.</td>
+</tr>
+<tr>
+<td align="center"><strong>3</strong></td>
+<td>C-5</td>
+<td>Chạy <strong>golden</strong> sinh <code>expectedOutput</code>; FE duyệt/sửa <code>TestCase</code> trước publish.</td>
+</tr>
+<tr>
+<td align="center"><strong>3</strong></td>
+<td>C-6</td>
+<td>Rate limit / quota / kích thước file.</td>
+</tr>
+<tr>
+<td align="center"><strong>3</strong></td>
+<td>U-3</td>
+<td><strong><code>Certificate</code></strong> phát hành sau contest/lớp (metadata JSON).</td>
+</tr>
+<tr>
+<td align="center"><strong>3</strong></td>
+<td>D-1 → D-4</td>
+<td>Aggregate pass rate, rank (penalty tuỳ rule); <strong><code>ReportExport</code></strong> job + file URL.</td>
+</tr>
+<tr>
+<td align="center"><strong>3</strong></td>
+<td>D-5</td>
+<td><strong><code>CodeSimilarityFinding</code></strong>: job so khớp cặp submission (AST/heuristic).</td>
+</tr>
+<tr>
+<td align="center"><strong>3</strong></td>
+<td>G-3</td>
+<td>Leaderboard (query hoặc bảng phụ — có thể thêm model sau nếu cần).</td>
+</tr>
+<tr>
+<td align="center"><strong>3</strong></td>
+<td>H-5</td>
+<td>Giới hạn size code, dọn container.</td>
+</tr>
+<tr>
+<td align="center"><strong>3</strong></td>
+<td>I-2, I-3</td>
+<td>Metrics queue, scale worker, tài liệu.</td>
+</tr>
+<tr>
+<td align="center"><strong>3</strong></td>
+<td>J-3</td>
+<td>Load test nhẹ realtime.</td>
+</tr>
+<tr>
+<td align="center"><strong>2–3</strong></td>
+<td>B-7, A-7</td>
+<td>Hoàn thiện QA/E2E.</td>
+</tr>
+</tbody></table>
+<p><strong>Increment demo</strong>: Upload đề → AI + golden → GV duyệt test → contest dùng đề; export kết quả; báo cáo % giống mã (MVP).</p>
+<hr>
+<h3>Tổng quan 3 sprint</h3>
+<table>
+<thead>
+<tr>
+<th>Sprint</th>
+<th>Trọng tâm</th>
+<th>Một câu goal</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>1</strong></td>
+<td>Platform + judge + practice</td>
+<td>Schema RFP, chấm thật, <code>caseResults</code>, list/submit <code>PUBLIC</code>.</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>Lớp, contest, realtime</td>
+<td><code>ClassRoom</code>, <code>Contest</code> + participant, policy feedback, socket.</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>AI, báo cáo, export, plagiarism</td>
+<td><code>AiGenerationJob</code>, golden, dashboard, <code>ReportExport</code>, similarity.</td>
+</tr>
+</tbody></table>
+<h3>Tra cứu nhanh: ID task → Sprint</h3>
+<table>
+<thead>
+<tr>
+<th align="center">Sprint</th>
+<th>Task ID</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center"><strong>1</strong></td>
+<td>G0-1 … G0-5, O-3, C-1, F-0, F-3, G-1, G-2, H-1 … H-4, I-1</td>
+</tr>
+<tr>
+<td align="center"><strong>2</strong></td>
+<td>U-0, U-1, U-2, A-1 … A-6, E-1 … E-3, B-1 … B-6, B-8, F-2, F-4, F-5, J-1, J-2</td>
+</tr>
+<tr>
+<td align="center"><strong>3</strong></td>
+<td>C-2 … C-6, U-3, D-1 … D-5, G-3, H-5, I-2, I-3, J-3</td>
+</tr>
+<tr>
+<td align="center"><strong>2–3</strong></td>
+<td>A-7, B-7</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Giai đoạn 0 — Nền tảng kỹ thuật</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th align="center">Sprint</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Phụ thuộc</th>
+<th>Ước lượng</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>G0-1</td>
+<td align="center"><strong>1</strong></td>
+<td>Chuẩn hoá Redis/BullMQ (<code>maxRetriesPerRequest: null</code>, QueueEvents, shutdown)</td>
+<td>BE</td>
+<td>—</td>
+<td>4–8h</td>
+</tr>
+<tr>
+<td>G0-2</td>
+<td align="center"><strong>1</strong></td>
+<td>Health API (<code>/health</code>: DB, Redis) + tài liệu local</td>
+<td>BE</td>
+<td>—</td>
+<td>4–6h</td>
+</tr>
+<tr>
+<td>G0-3</td>
+<td align="center"><strong>1</strong></td>
+<td>Prisma: áp migration <strong><code>rfp_full_schema</code></strong>, seed (<code>User</code>, <code>Problem</code> <code>PUBLIC</code>, <code>TestCase</code>, <code>Tag</code> — <strong>không</strong> seed Organization)</td>
+<td>BE</td>
+<td>—</td>
+<td>8–16h</td>
+</tr>
+<tr>
+<td>G0-4</td>
+<td align="center"><strong>1</strong></td>
+<td>Auth: <code>POST /submissions</code> lấy user từ JWT; Socket handshake JWT (bỏ <code>userId</code> query thô)</td>
+<td>BE</td>
+<td>G0-3</td>
+<td>8–16h</td>
+</tr>
+<tr>
+<td>G0-5</td>
+<td align="center"><strong>1</strong></td>
+<td>CI: lint + build <code>core-api</code>, <code>worker</code>, <code>web</code></td>
+<td>DevOps</td>
+<td>—</td>
+<td>4–8h</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Epic O — Policy <code>ProblemVisibility</code> <em>(không Organization)</em></h2>
+<p><strong>Mục tiêu</strong>: List/detail practice đúng <code>ProblemVisibility</code> + <code>isPublished</code>; không lộ đề private; <strong>không</strong> đa tenant.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th align="center">Sprint</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Phụ thuộc</th>
+<th>Ước lượng</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>O-3</td>
+<td align="center"><strong>1</strong></td>
+<td>Query list/detail <code>Problem</code> theo <strong><code>ProblemVisibility</code></strong> (PUBLIC / PRIVATE / CONTEST_ONLY, v.v.); filter practice; <strong>không</strong> membership org</td>
+<td>BE</td>
+<td>G0-3</td>
+<td>12–16h</td>
+</tr>
+</tbody></table>
+<p><em>Đã loại khỏi roadmap:</em> <del>O-1</del> (CRUD Organization), <del>O-2</del> (→ <strong>U-0</strong> trong Epic U), <del>O-4</del> (FE Org Admin).</p>
+<hr>
+<h2>Epic U — EPIC 1 Story 2: Đăng ký &amp; hồ sơ</h2>
+<p><strong>Mục tiêu</strong>: Email/password + Google; duyệt Instructor; chứng chỉ hiển thị; <strong>ADMIN</strong> khoá/mở user (<strong>không</strong> org).</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th align="center">Sprint</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Phụ thuộc</th>
+<th>Ước lượng</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>U-0</td>
+<td align="center"><strong>2</strong></td>
+<td>API PATCH <strong><code>User.isActive</code></strong> (chỉ <strong>ADMIN</strong>; khoá/mở đăng nhập)</td>
+<td>BE</td>
+<td>G0-4</td>
+<td>6–10h</td>
+</tr>
+<tr>
+<td>U-1</td>
+<td align="center"><strong>2</strong></td>
+<td>Đăng ký email + hash password; đồng bộ <strong><code>InstructorVerificationStatus</code></strong></td>
+<td>BE</td>
+<td>G0-3</td>
+<td>12–16h</td>
+</tr>
+<tr>
+<td>U-2</td>
+<td align="center"><strong>2</strong></td>
+<td>OAuth <strong><code>OAuthAccount</code></strong> (Google); liên kết / tách tài khoản</td>
+<td>BE</td>
+<td>U-1</td>
+<td>16–24h</td>
+</tr>
+<tr>
+<td>U-3</td>
+<td align="center"><strong>3</strong></td>
+<td>Phát hành <strong><code>Certificate</code></strong> (sau contest/lớp); API list theo <code>userId</code></td>
+<td>BE</td>
+<td>B-*, Contest end</td>
+<td>8–12h</td>
+</tr>
+<tr>
+<td>U-4</td>
+<td align="center"><strong>2</strong></td>
+<td>FE: profile, lịch sử học tập (submission), tab chứng chỉ</td>
+<td>FE</td>
+<td>U-3, F-3</td>
+<td>16–20h</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Epic A — EPIC 2 Story 3–4: <code>ClassRoom</code> &amp; enrollment</h2>
+<p><strong>Mục tiêu</strong>: GV tạo lớp (<code>classCode</code> unique), mời email (<code>ClassInvite</code>); SV join; quản lý danh sách.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th align="center">Sprint</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Phụ thuộc</th>
+<th>Ước lượng</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A-1</td>
+<td align="center"><strong>2</strong></td>
+<td>API CRUD <code>ClassRoom</code> (<code>ownerId</code>, <code>academicYear</code>, <code>classCode</code> unique)</td>
+<td>BE</td>
+<td>G0-4</td>
+<td>12–16h</td>
+</tr>
+<tr>
+<td>A-2</td>
+<td align="center"><strong>2</strong></td>
+<td><code>ClassEnrollment</code> + trạng thái <code>ClassEnrollmentStatus</code>; join bằng <code>classCode</code></td>
+<td>BE</td>
+<td>A-1</td>
+<td>12–16h</td>
+</tr>
+<tr>
+<td>A-3</td>
+<td align="center"><strong>2</strong></td>
+<td><code>ClassInvite</code> token + <code>expiresAt</code> / <code>usedAt</code>; gửi email (MVP: log link)</td>
+<td>BE</td>
+<td>A-1</td>
+<td>8–12h</td>
+</tr>
+<tr>
+<td>A-4</td>
+<td align="center"><strong>2</strong></td>
+<td>GV gỡ SV (<code>REMOVED</code>)</td>
+<td>BE</td>
+<td>A-2</td>
+<td>4–6h</td>
+</tr>
+<tr>
+<td>A-5</td>
+<td align="center"><strong>2</strong></td>
+<td>FE: tạo lớp, copy mã, danh sách SV</td>
+<td>FE</td>
+<td>A-2</td>
+<td>16–24h</td>
+</tr>
+<tr>
+<td>A-6</td>
+<td align="center"><strong>2</strong></td>
+<td>FE: quản lý SV (xoá/gỡ, tìm kiếm)</td>
+<td>FE</td>
+<td>A-4</td>
+<td>12–16h</td>
+</tr>
+<tr>
+<td>A-7</td>
+<td align="center"><strong>2–3</strong></td>
+<td>E2E: tạo lớp → join → danh sách</td>
+<td>FS</td>
+<td>A-5, A-6</td>
+<td>8–12h</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Epic B — EPIC 4 Story 7–8: <code>Contest</code> &amp; làm bài</h2>
+<p><strong>Mục tiêu</strong>: <code>Contest</code> + <code>ContestProblem</code> + <code>ContestParticipant</code>; mật khẩu; thời gian; <strong><code>testFeedbackPolicy</code></strong>; <strong><code>Submission.contestId</code></strong>, <strong><code>attemptNumber</code></strong>, <strong><code>judgePriority</code></strong>.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th align="center">Sprint</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Phụ thuộc</th>
+<th>Ước lượng</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>B-1</td>
+<td align="center"><strong>2</strong></td>
+<td>API CRUD <code>Contest</code> (<code>slug</code>, <code>startAt</code>, <code>endAt</code>, <code>status</code>, <code>passwordHash</code>, <code>maxSubmissionsPerProblem</code>)</td>
+<td>BE</td>
+<td>G0-3</td>
+<td>16–20h</td>
+</tr>
+<tr>
+<td>B-2</td>
+<td align="center"><strong>2</strong></td>
+<td>Gán <code>ContestProblem</code> (order, <code>points</code>, override time/memory)</td>
+<td>BE</td>
+<td>B-1</td>
+<td>12–16h</td>
+</tr>
+<tr>
+<td>B-3</td>
+<td align="center"><strong>2</strong></td>
+<td><code>ContestParticipant</code> + API đăng ký / vào phòng (check password bcrypt)</td>
+<td>BE</td>
+<td>B-1</td>
+<td>8–12h</td>
+</tr>
+<tr>
+<td>B-4</td>
+<td align="center"><strong>2</strong></td>
+<td>Enforcement submit: trong [startAt, endAt]; check participant; <strong><code>attemptNumber</code></strong> vs max</td>
+<td>BE</td>
+<td>B-3, submission</td>
+<td>12–16h</td>
+</tr>
+<tr>
+<td>B-5</td>
+<td align="center"><strong>2</strong></td>
+<td>FE: form/wizard tạo contest</td>
+<td>FE</td>
+<td>B-2</td>
+<td>20–28h</td>
+</tr>
+<tr>
+<td>B-6</td>
+<td align="center"><strong>2</strong></td>
+<td>FE: trang contest theo <code>slug</code> + countdown + password</td>
+<td>FE</td>
+<td>B-3, B-4</td>
+<td>12–16h</td>
+</tr>
+<tr>
+<td>B-7</td>
+<td align="center"><strong>2–3</strong></td>
+<td>QA timezone / DST</td>
+<td>FS</td>
+<td>B-4</td>
+<td>6–8h</td>
+</tr>
+<tr>
+<td>B-8</td>
+<td align="center"><strong>2</strong></td>
+<td>Trả kết quả client theo <strong><code>Contest.testFeedbackPolicy</code></strong> (ẩn chi tiết test khi SUMMARY)</td>
+<td>BE</td>
+<td>B-4, F-0</td>
+<td>8–12h</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Epic C — EPIC 3 Story 5–6: AI + golden + visibility</h2>
+<p><strong>Mục tiêu</strong>: <code>AiGenerationJob</code>, <code>GoldenSolution</code>, <code>TestCase</code>; <strong><code>ProblemVisibility</code></strong> (Private / Public / Contest-only, v.v.); <strong><code>maxTestCases</code></strong>.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th align="center">Sprint</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Phụ thuộc</th>
+<th>Ước lượng</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>C-1</td>
+<td align="center"><strong>1</strong></td>
+<td>Validate số <code>TestCase</code> ≤ <strong><code>Problem.maxTestCases</code></strong> (100 mặc định)</td>
+<td>BE</td>
+<td>—</td>
+<td>4–8h</td>
+</tr>
+<tr>
+<td>C-2</td>
+<td align="center"><strong>3</strong></td>
+<td>Lưu file đề (MinIO/S3) + <code>inputDocUrl</code> / metadata</td>
+<td>BE</td>
+<td>docker</td>
+<td>12–16h</td>
+</tr>
+<tr>
+<td>C-3</td>
+<td align="center"><strong>3</strong></td>
+<td>Pipeline AI: prompt → JSON test → lưu <code>AiGenerationJob.structuredOutput</code></td>
+<td>ML/AI + BE</td>
+<td>C-2</td>
+<td>24–40h</td>
+</tr>
+<tr>
+<td>C-4</td>
+<td align="center"><strong>3</strong></td>
+<td>API chuyển job <code>SUCCEEDED</code> → tạo/cập nhật <code>TestCase</code>; publish <code>Problem</code></td>
+<td>BE</td>
+<td>C-3</td>
+<td>12–16h</td>
+</tr>
+<tr>
+<td>C-5</td>
+<td align="center"><strong>3</strong></td>
+<td>Chạy <strong><code>GoldenSolution</code></strong> với input → điền <code>expectedOutput</code>; FE duyệt từng test</td>
+<td>BE + FE</td>
+<td>C-4</td>
+<td>24–32h</td>
+</tr>
+<tr>
+<td>C-6</td>
+<td align="center"><strong>3</strong></td>
+<td>Rate limit, size file, quota AI</td>
+<td>BE</td>
+<td>C-2</td>
+<td>8–12h</td>
+</tr>
+<tr>
+<td>C-7</td>
+<td align="center"><strong>2</strong></td>
+<td>API đặt <strong><code>Problem.visibility</code></strong> theo enum (PUBLIC / PRIVATE / CONTEST_ONLY, …); <strong>không</strong> rule <code>organizationId</code> / org</td>
+<td>BE</td>
+<td>G0-3</td>
+<td>6–10h</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Epic D — EPIC 7 Story 12–13: Báo cáo, export, plagiarism</h2>
+<p><strong>Mục tiêu</strong>: Rank, pass rate; <strong><code>ReportExport</code></strong>; <strong><code>CodeSimilarityFinding</code></strong>.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th align="center">Sprint</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Phụ thuộc</th>
+<th>Ước lượng</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>D-1</td>
+<td align="center"><strong>3</strong></td>
+<td>Aggregate từ <code>Submission</code> + <code>caseResults</code> (pass rate theo problem/contest)</td>
+<td>BE</td>
+<td>F-0</td>
+<td>12–16h</td>
+</tr>
+<tr>
+<td>D-2</td>
+<td align="center"><strong>3</strong></td>
+<td>API ranking (điểm + penalty thời gian — rule product)</td>
+<td>BE</td>
+<td>D-1</td>
+<td>16–24h</td>
+</tr>
+<tr>
+<td>D-3</td>
+<td align="center"><strong>3</strong></td>
+<td>Nhóm lỗi phổ biến (theo <code>Submission.status</code> / snippet trong <code>caseResults</code>)</td>
+<td>BE</td>
+<td>D-1</td>
+<td>12–16h</td>
+</tr>
+<tr>
+<td>D-4</td>
+<td align="center"><strong>3</strong></td>
+<td>FE dashboard + kích hoạt <strong><code>ReportExport</code></strong> (XLSX/PDF) + poll <code>status</code>/<code>fileUrl</code></td>
+<td>FE</td>
+<td>D-2</td>
+<td>20–28h</td>
+</tr>
+<tr>
+<td>D-5</td>
+<td align="center"><strong>3</strong></td>
+<td>Job so khớp: ghi <strong><code>CodeSimilarityFinding</code></strong> (submissionIdA/B, <code>similarityPct</code>, <code>algorithm</code>)</td>
+<td>BE</td>
+<td>B-*</td>
+<td>16–24h</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Epic E — Story 4 (học viên): Bài tập lớp</h2>
+<p><strong>Mục tiêu</strong>: <strong><code>ClassAssignment</code></strong> (problem/contest + <code>dueAt</code>); tab bài sắp tới.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th align="center">Sprint</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Phụ thuộc</th>
+<th>Ước lượng</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>E-1</td>
+<td align="center"><strong>2</strong></td>
+<td>FE+BE: join lớp nhập <code>classCode</code></td>
+<td>FS</td>
+<td>A-2</td>
+<td>8–12h</td>
+</tr>
+<tr>
+<td>E-2</td>
+<td align="center"><strong>2</strong></td>
+<td>API CRUD <code>ClassAssignment</code>; enforce ít nhất một <code>problemId</code> hoặc <code>contestId</code></td>
+<td>BE</td>
+<td>A-1</td>
+<td>12–16h</td>
+</tr>
+<tr>
+<td>E-3</td>
+<td align="center"><strong>2</strong></td>
+<td>FE: tab bài tập + trạng thái nộp (query <code>Submission</code> + <code>classAssignmentId</code>)</td>
+<td>FE</td>
+<td>E-2</td>
+<td>16–20h</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Epic F — Submission, lịch sử &amp; chi tiết test (<code>caseResults</code>)</h2>
+<p><strong>Mục tiêu</strong>: <strong><code>Submission.context</code></strong>, realtime; list/detail; không dùng bảng <code>SubmissionTestResult</code>.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th align="center">Sprint</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Phụ thuộc</th>
+<th>Ước lượng</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>F-0</td>
+<td align="center"><strong>1</strong></td>
+<td>Chuẩn hoá schema JSON <strong><code>caseResults</code></strong> (version field trong JSON); worker ghi đủ từng test</td>
+<td>BE</td>
+<td>H-*</td>
+<td>12–16h</td>
+</tr>
+<tr>
+<td>F-2</td>
+<td align="center"><strong>2</strong></td>
+<td>Emit socket progress/ delta (map từ <code>caseResults</code> hoặc event từng test)</td>
+<td>BE</td>
+<td>F-0</td>
+<td>12–20h</td>
+</tr>
+<tr>
+<td>F-3</td>
+<td align="center"><strong>1</strong></td>
+<td>API list <code>Submission</code> filter <code>userId</code> / <code>problemId</code> / <code>contestId</code>; đọc chi tiết từ <code>caseResults</code></td>
+<td>BE</td>
+<td>F-0</td>
+<td>12–16h</td>
+</tr>
+<tr>
+<td>F-4</td>
+<td align="center"><strong>2</strong></td>
+<td>FE: submit contest + panel realtime</td>
+<td>FE</td>
+<td>F-2, B-4</td>
+<td>24–32h</td>
+</tr>
+<tr>
+<td>F-5</td>
+<td align="center"><strong>2</strong></td>
+<td>FE: lịch sử + drill-down fail (theo policy contest)</td>
+<td>FE</td>
+<td>F-3, B-8</td>
+<td>12–16h</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Epic G — EPIC 6 Story 11: Luyện tập (LeetCode-style)</h2>
+<p><strong>Mục tiêu</strong>: Filter <code>Difficulty</code>, <code>Tag</code>; leaderboard (optional); lịch sử cá nhân.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th align="center">Sprint</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Phụ thuộc</th>
+<th>Ước lượng</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>G-1</td>
+<td align="center"><strong>1</strong></td>
+<td>API list/filter <code>Problem</code> (<code>PUBLIC</code>, tag, difficulty); detail ẩn test hidden</td>
+<td>BE</td>
+<td>O-3</td>
+<td>12–16h</td>
+</tr>
+<tr>
+<td>G-2</td>
+<td align="center"><strong>1</strong></td>
+<td>FE: danh sách + trang đề + submit practice (<code>context=PRACTICE</code>)</td>
+<td>FE</td>
+<td>G-1</td>
+<td>20–28h</td>
+</tr>
+<tr>
+<td>G-3</td>
+<td align="center"><strong>3</strong></td>
+<td>Leaderboard: query best theo problem (time/memory) hoặc thêm bảng snapshot sau</td>
+<td>BE + FE</td>
+<td>G-1</td>
+<td>16–24h</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Epic H — EPIC 5 Story 9–10: Judge sandbox</h2>
+<p><strong>Mục tiêu</strong>: Docker cô lập; giới hạn CPU/RAM/time; khớp output; cập nhật <code>Submission</code> + <code>SubmissionStatus</code>.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th align="center">Sprint</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Phụ thuộc</th>
+<th>Ước lượng</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>H-1</td>
+<td align="center"><strong>1</strong></td>
+<td>Image judge v1 (vd Python); network off; FS read-only</td>
+<td>DevOps + BE</td>
+<td>—</td>
+<td>16–24h</td>
+</tr>
+<tr>
+<td>H-2</td>
+<td align="center"><strong>1</strong></td>
+<td>Worker chạy container với limit; timeout</td>
+<td>BE</td>
+<td>H-1</td>
+<td>24–40h</td>
+</tr>
+<tr>
+<td>H-3</td>
+<td align="center"><strong>1</strong></td>
+<td>So output; điền <code>caseResults</code> + điểm</td>
+<td>BE</td>
+<td>H-2, F-0</td>
+<td>16–24h</td>
+</tr>
+<tr>
+<td>H-4</td>
+<td align="center"><strong>1</strong></td>
+<td>Map WA/TLE/MLE/CE/AC → <strong><code>SubmissionStatus</code></strong></td>
+<td>BE</td>
+<td>H-3</td>
+<td>12–16h</td>
+</tr>
+<tr>
+<td>H-5</td>
+<td align="center"><strong>3</strong></td>
+<td>Giới hạn size <code>sourceCode</code>; dọn container leak</td>
+<td>BE + DevOps</td>
+<td>H-2</td>
+<td>8–16h</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Epic I — Queue &amp; scale</h2>
+<p><strong>Mục tiêu</strong>: BullMQ retry; <strong><code>judgePriority</code></strong>; quan sát queue.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th align="center">Sprint</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Phụ thuộc</th>
+<th>Ước lượng</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>I-1</td>
+<td align="center"><strong>1</strong></td>
+<td>Retry/backoff; dead-letter / requeue</td>
+<td>BE</td>
+<td>G0-1</td>
+<td>6–10h</td>
+</tr>
+<tr>
+<td>I-2</td>
+<td align="center"><strong>3</strong></td>
+<td>Metrics độ dài queue, latency</td>
+<td>DevOps + BE</td>
+<td>I-1</td>
+<td>8–16h</td>
+</tr>
+<tr>
+<td>I-3</td>
+<td align="center"><strong>3</strong></td>
+<td>Nhiều replica worker + tài liệu</td>
+<td>DevOps</td>
+<td>H-2</td>
+<td>8–12h</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Epic J — EPIC 8 Story 14: Realtime</h2>
+<p><strong>Mục tiêu</strong>: WebSocket JWT; event chuẩn; dashboard GV khi có nộp mới.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th align="center">Sprint</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Phụ thuộc</th>
+<th>Ước lượng</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>J-1</td>
+<td align="center"><strong>2</strong></td>
+<td>Contract event versioned (progress, finished, fail)</td>
+<td>BE</td>
+<td>F-2</td>
+<td>4–8h</td>
+</tr>
+<tr>
+<td>J-2</td>
+<td align="center"><strong>2</strong></td>
+<td>FE subscribe theo room an toàn (JWT)</td>
+<td>FE</td>
+<td>J-1, G0-4</td>
+<td>12–16h</td>
+</tr>
+<tr>
+<td>J-3</td>
+<td align="center"><strong>3</strong></td>
+<td>Load test nhẹ</td>
+<td>FS</td>
+<td>J-2</td>
+<td>4–8h</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Lộ trình gợi ý</h2>
+<ol>
+<li><strong>MVP chấm + luyện</strong>: G0 → O-3 → F-0 → H → G → I → J (phần practice).  </li>
+<li><strong>MVP trường + thi</strong>: U-0 → A → B → E → F (contest) → B-8.  </li>
+<li><strong>AI đề</strong>: C sau khi <code>Problem</code>/<code>TestCase</code> ổn.  </li>
+<li><strong>Báo cáo &amp; export</strong>: D sau khi có dữ liệu contest.</li>
+</ol>
+<hr>
+<h2>Tổng hợp ước lượng (tham chiếu)</h2>
+<table>
+<thead>
+<tr>
+<th>Epic</th>
+<th>Khoảng (ngày người)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>G0</td>
+<td>~1,5–3,5</td>
+</tr>
+<tr>
+<td>O</td>
+<td>~1,5–2</td>
+</tr>
+<tr>
+<td>U</td>
+<td>~9–13</td>
+</tr>
+<tr>
+<td>A</td>
+<td>~10–15</td>
+</tr>
+<tr>
+<td>B</td>
+<td>~12–18</td>
+</tr>
+<tr>
+<td>C</td>
+<td>~15–24</td>
+</tr>
+<tr>
+<td>D</td>
+<td>~12–18</td>
+</tr>
+<tr>
+<td>E</td>
+<td>~5–7</td>
+</tr>
+<tr>
+<td>F</td>
+<td>~8–12</td>
+</tr>
+<tr>
+<td>G</td>
+<td>~6–10</td>
+</tr>
+<tr>
+<td>H</td>
+<td>~12–20</td>
+</tr>
+<tr>
+<td>I</td>
+<td>~3–5</td>
+</tr>
+<tr>
+<td>J</td>
+<td>~3–4</td>
+</tr>
+</tbody></table>
+<p><strong>Tổng gói đầy đủ</strong>: <del><strong>100–150 ngày người</strong> (trùng lặp đã gộp một phần trong sprint); lịch **</del>4–8 tháng** với 4–5 dev song song (tham chiếu, không cam kết).</p>
+<hr>
+<h2>Ghi chú cho team lead</h2>
+<ul>
+<li>Schema đã có <strong><code>Submission.classRoomId</code></strong>, <strong><code>classAssignmentId</code></strong>, <strong><code>contestId</code></strong> — FE/BE cần set đúng khi nộp để báo cáo &amp; giới hạn attempt.  </li>
+<li><strong><code>CONTEST_ONLY</code></strong>: API list practice phải loại đề chỉ hiện trong contest.  </li>
+<li>Cập nhật file này khi thêm model (vd <code>Notification</code>, <code>ProblemBestSubmission</code>); gắn issue/PR cho từng ID khi làm.</li>
+</ul>
+<hr>
+<p><em>Tài liệu đồng bộ RFP + <code>apps/core-api/prisma/schema.prisma</code> (và <code>schema.md</code>).</em></p>
+
+
+      </div>
+    </main>
+  </div>
+</body>
+</html>

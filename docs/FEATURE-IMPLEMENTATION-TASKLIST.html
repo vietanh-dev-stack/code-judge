@@ -1,0 +1,1337 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FEATURE IMPLEMENTATION TASKLIST — code-judge docs</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #58a6ff;
+      --accent-dim: #388bfd66;
+      --ok: #3fb950;
+      --partial: #d29922;
+      --missing: #f85149;
+      --border: #30363d;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --sidebar-w: 280px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      min-height: 100vh;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative !important; height: auto !important; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 1.25rem 1rem;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+    }
+    .sidebar h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin: 0 0 0.75rem;
+    }
+    .sidebar nav a {
+      display: block;
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .sidebar nav a:hover { background: var(--surface2); color: var(--text); text-decoration: none; }
+    .sidebar nav a.active { background: var(--surface2); color: var(--accent); font-weight: 600; }
+    
+    main {
+      max-width: 920px;
+      padding: 2rem 2.5rem 4rem;
+    }
+    header.doc-header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    header.doc-header h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      line-height: 1.3;
+    }
+    section {
+      margin-bottom: 2.5rem;
+      scroll-margin-top: 1rem;
+    }
+    h1, h2, h3, h4, h5, h6 { color: var(--text); }
+    h2 {
+      font-size: 1.35rem;
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.75rem; }
+    p { margin: 0 0 1rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--surface2); font-weight: 600; }
+    tr:nth-child(even) td { background: #1a233280; }
+    pre, code {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    code {
+        background: var(--surface2);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+    }
+    pre code {
+        background: transparent;
+        padding: 0;
+    }
+    blockquote {
+      border-left: 4px solid var(--border);
+      padding-left: 1rem;
+      margin: 1rem 0;
+      color: var(--muted);
+    }
+</style>
+</head>
+<body>
+  <div class="layout">
+    <div class="sidebar"><h2>Documentation</h2><nav><a href="AI-TESTCASE-GENERATION.html">AI TESTCASE GENERATION</a><a href="AWS-LAMBDA-INTEGRATION.html">AWS LAMBDA INTEGRATION</a><a href="BUILD-LEVEL-PLAN.html">BUILD LEVEL PLAN</a><a href="CAU-HINH-VA-UTILS.html">CAU HINH VA UTILS</a><a href="DEPLOY-VPS.html">DEPLOY VPS</a><a href="FEATURE-IMPLEMENTATION-TASKLIST.html" class="active">FEATURE IMPLEMENTATION TASKLIST</a><a href="JUDGE0-WINDOWS-WSL.html">JUDGE0 WINDOWS WSL</a><a href="LAMBDA-CONFIG.html">LAMBDA CONFIG</a><a href="MINIO.html">MINIO</a><a href="postman-testapi.html">postman testapi</a><a href="PRISMA-SEED.html">PRISMA SEED</a><a href="USER-STORIES-TASKLIST.html">USER STORIES TASKLIST</a></nav></div>
+    <main>
+      <header class="doc-header">
+        <h1>FEATURE IMPLEMENTATION TASKLIST</h1>
+      </header>
+      <div class="content">
+        <h1>Lộ trình triển khai theo feature — Code Judge</h1>
+<p>Checklist theo <strong>thứ tự nên làm</strong> (base → cấu hình → schema → API/worker/FE). Cột <strong>Trạng thái</strong>: <code>Đã</code> = đáp ứng đủ mục tiêu checklist; <code>Một phần</code> = đã có code nhưng còn gap so với mô tả; <code>Chưa</code> = chưa có hoặc chưa đạt. Tham chiếu schema: <code>apps/core-api/prisma/schema.prisma</code>, tài liệu: <code>apps/core-api/prisma/schema.md</code>.</p>
+<p><strong>Kiểm tra codebase lần cuối:</strong> 2026-05-12 (so khớp <code>apps/core-api</code>, <code>apps/worker</code>, <code>apps/web</code>).</p>
+<p><strong>Phạm vi sản phẩm (cập nhật):</strong> <strong>Không</strong> triển khai <strong>Organization / đa tenant</strong> (không API <code>Organization</code>, <code>OrganizationMembership</code>, import org, hay policy đề <code>ORG_INTERNAL</code> theo org). Các mục lịch sử Phần F được ghi là <em>ngoài phạm vi</em>; trường nullable trên Prisma (nếu có) không có luồng nghiệp vụ.</p>
+<hr>
+<h2>Phần A — Nền tảng dự án (Project base)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Việc</th>
+<th>Trạng thái</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A.1</td>
+<td>Cấu trúc monorepo <code>apps/core-api</code>, <code>apps/worker</code>, <code>apps/web</code></td>
+<td>Đã</td>
+<td>npm workspaces; thêm <code>apps/lambda</code> (judge)</td>
+</tr>
+<tr>
+<td>A.2</td>
+<td><code>package.json</code> root: script <code>dev</code>/<code>build</code>/<code>lint</code> gọi từng app</td>
+<td>Đã</td>
+<td><code>dev</code>/<code>build</code> dùng <code>-ws</code>; <code>test</code> = smoke <code>ci/smoke.test.mjs</code></td>
+</tr>
+<tr>
+<td>A.3</td>
+<td>Docker Compose: Postgres, Redis, (MinIO nếu cần upload)</td>
+<td>Đã</td>
+<td><code>docker-compose.yml</code></td>
+</tr>
+<tr>
+<td>A.4</td>
+<td><code>.env.example</code> cho từng app + root</td>
+<td>Đã</td>
+<td>Bổ sung khi thêm service</td>
+</tr>
+<tr>
+<td>A.5</td>
+<td>README hướng dẫn chạy local (DB, migrate, 3 process)</td>
+<td>Đã</td>
+<td><code>README.md</code>; một số dòng về <code>/submissions</code> public còn lệ thời — nên sửa doc riêng</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phần B — Cấu hình kỹ thuật (Setup config)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Việc</th>
+<th>Trạng thái</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>B.1</td>
+<td><code>prisma.config.ts</code> + <code>DATABASE_URL</code></td>
+<td>Đã</td>
+<td>Prisma 7 + adapter pg</td>
+</tr>
+<tr>
+<td>B.2</td>
+<td>NestJS <code>ConfigModule</code> (<code>.env</code>, <code>.env.local</code>)</td>
+<td>Đã</td>
+<td><code>AppModule</code></td>
+</tr>
+<tr>
+<td>B.3</td>
+<td>ESLint + Prettier cho repo</td>
+<td>Đã</td>
+<td></td>
+</tr>
+<tr>
+<td>B.4</td>
+<td>CI: lint + build <code>core-api</code>, <code>worker</code>, <code>web</code></td>
+<td>Đã</td>
+<td><code>.github/workflows/ci.yml</code> (+ build image Lambda, validate compose)</td>
+</tr>
+<tr>
+<td>B.5</td>
+<td>Health endpoint (<code>/health</code>: DB, Redis)</td>
+<td>Chưa</td>
+<td>Không thấy <code>HealthController</code> / route <code>/health</code> trong <code>core-api</code></td>
+</tr>
+<tr>
+<td>B.6</td>
+<td>Swagger/OpenAPI (<code>/api-docs</code>) khi không production</td>
+<td>Đã</td>
+<td><code>main.ts</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phần C — Cơ sở dữ liệu (Schema &amp; migration)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Việc</th>
+<th>Trạng thái</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>C.1</td>
+<td>Hoàn thiện <code>schema.prisma</code> (User, Class, Problem, Contest, Submission, …)</td>
+<td>Đã</td>
+<td>Theo RFP; role thực tế chủ yếu <code>ADMIN</code> / <code>CLIENT</code> (khác tài liệu INSTRUCTOR/STUDENT); <strong>không</strong> làm module Organization</td>
+</tr>
+<tr>
+<td>C.2</td>
+<td>Sinh migration + <code>migrate deploy</code> trên DB sạch</td>
+<td>Đã</td>
+<td><code>prisma/migrations/</code></td>
+</tr>
+<tr>
+<td>C.3</td>
+<td><code>prisma generate</code> trong pipeline / sau pull</td>
+<td>Đã</td>
+<td>Bước CI</td>
+</tr>
+<tr>
+<td>C.4</td>
+<td>Seed tối thiểu: admin/instructor/student, problem <code>PUBLIC</code> + <code>TestCase</code>, tag mẫu</td>
+<td>Một phần</td>
+<td>Có <code>prisma/seed.ts</code>: user + lớp + enrollment + <strong>Tag</strong>; <strong>chưa</strong> seed <code>Problem</code>/<code>TestCase</code></td>
+</tr>
+<tr>
+<td>C.5</td>
+<td>Tài liệu DBML / giải thích trường</td>
+<td>Đã</td>
+<td><code>prisma/schema.md</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phần D — Core API — khung ứng dụng</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Việc</th>
+<th>Trạng thái</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>D.1</td>
+<td><code>PrismaModule</code> + <code>PrismaService</code> (adapter pg)</td>
+<td>Đã</td>
+<td></td>
+</tr>
+<tr>
+<td>D.2</td>
+<td>Envelope response + exception filter thống nhất</td>
+<td>Đã</td>
+<td></td>
+</tr>
+<tr>
+<td>D.3</td>
+<td><code>ValidationPipe</code> global (whitelist DTO)</td>
+<td>Đã</td>
+<td><code>main.ts</code></td>
+</tr>
+<tr>
+<td>D.4</td>
+<td>CORS, port <code>PORT</code></td>
+<td>Đã</td>
+<td></td>
+</tr>
+<tr>
+<td>D.5</td>
+<td>Module realtime (Socket.io) + gateway mẫu submission</td>
+<td>Đã</td>
+<td><code>RealtimeModule</code> / <code>SubmissionGateway</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phần E — Authentication &amp; phân quyền</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Việc</th>
+<th>Trạng thái</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>E.1</td>
+<td>Đăng ký / đăng nhập email + <code>passwordHash</code> (bcrypt)</td>
+<td>Đã</td>
+<td><code>AuthService.register</code> / <code>login</code></td>
+</tr>
+<tr>
+<td>E.2</td>
+<td>JWT access token; <code>JwtStrategy</code> + <code>JwtAuthGuard</code> global</td>
+<td>Đã</td>
+<td>Có thêm refresh cookie + <code>POST /auth/refresh</code></td>
+</tr>
+<tr>
+<td>E.3</td>
+<td><code>@Public()</code> cho route không cần token</td>
+<td>Đã</td>
+<td></td>
+</tr>
+<tr>
+<td>E.4</td>
+<td><code>@Roles()</code> + <code>RolesGuard</code> (Role: ADMIN, INSTRUCTOR, STUDENT)</td>
+<td>Một phần</td>
+<td>Có <code>@Roles(&#39;ADMIN&#39;)</code>…; schema dùng <code>CLIENT</code> thay vì INSTRUCTOR/STUDENT</td>
+</tr>
+<tr>
+<td>E.5</td>
+<td><code>GET /auth/me</code> trả user đầy đủ</td>
+<td>Một phần</td>
+<td>Có <code>GET /auth/me</code> và <code>GET /users/me</code>; <strong>không</strong> mở rộng membership tổ chức (ngoài phạm vi Organization)</td>
+</tr>
+<tr>
+<td>E.6</td>
+<td><code>User.isActive</code> — chặn login khi false</td>
+<td>Đã</td>
+<td><code>AuthService.login</code></td>
+</tr>
+<tr>
+<td>E.7</td>
+<td><code>InstructorVerificationStatus</code> — flow duyệt GV</td>
+<td>Chưa</td>
+<td></td>
+</tr>
+<tr>
+<td>E.8</td>
+<td>OAuth Google — model <code>OAuthAccount</code>, callback</td>
+<td>Đã</td>
+<td><code>AuthService</code> + route Google trong README</td>
+</tr>
+<tr>
+<td>E.9</td>
+<td>Socket: handshake JWT (bỏ query <code>userId</code> thô)</td>
+<td>Chưa</td>
+<td><code>SubmissionGateway</code> vẫn ưu tiên <code>handshake.query.userId</code> / <code>auth.userId</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phần F — <del>Organization &amp; membership</del> <em>(ngoài phạm vi — đã bỏ)</em></h2>
+<blockquote>
+<p><strong>Quyết định:</strong> Không làm đa tenant / <code>Organization</code> / <code>OrganizationMembership</code> / import email theo org / policy đề theo org. Không lên task F.1–F.4.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Việc</th>
+<th>Trạng thái</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>F.*</td>
+<td><em>(đã gỡ khỏi roadmap)</em></td>
+<td>—</td>
+<td>Nếu cần <strong>khoá tài khoản</strong> (<code>User.isActive</code>), làm qua luồng <strong>ADMIN</strong> (không cần ORG_ADMIN).</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phần G — Lớp học (Class CRUD)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Việc</th>
+<th>Trạng thái</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>G.1</td>
+<td>CRUD <code>ClassRoom</code> (<code>classCode</code> unique, <code>ownerId</code>)</td>
+<td>Đã</td>
+<td>API <code>classrooms</code>; không yêu cầu nghiệp vụ gắn tổ chức</td>
+</tr>
+<tr>
+<td>G.2</td>
+<td><code>ClassEnrollment</code>: join bằng <code>classCode</code>, trạng thái PENDING/ACTIVE/REMOVED</td>
+<td>Một phần</td>
+<td>Join tạo <code>ACTIVE</code> trực tiếp; chưa flow PENDING/duyệt</td>
+</tr>
+<tr>
+<td>G.3</td>
+<td><code>ClassInvite</code>: tạo token, hết hạn, đánh dấu <code>usedAt</code></td>
+<td>Đã</td>
+<td>Module <code>invites</code></td>
+</tr>
+<tr>
+<td>G.4</td>
+<td>GV gỡ học viên khỏi lớp</td>
+<td>Chưa</td>
+<td>Chưa thấy endpoint enrollment remove / REMOVED</td>
+</tr>
+<tr>
+<td>G.5</td>
+<td><code>ClassAssignment</code>: gắn <code>problemId</code> hoặc <code>contestId</code> + <code>dueAt</code></td>
+<td>Chưa</td>
+<td>FE có khái niệm classwork; chưa API backend rõ ràng trong <code>classrooms</code></td>
+</tr>
+<tr>
+<td>G.6</td>
+<td>FE: màn hình lớp (tạo, copy mã, danh sách SV, bài tập)</td>
+<td>Một phần</td>
+<td><code>apps/web</code> dashboard lớp, tabs; phụ thuộc API G.4/G.5</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phần H — Problem, Tag, TestCase</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Việc</th>
+<th>Trạng thái</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>H.1</td>
+<td>CRUD Problem (slug, visibility, limits, mode)</td>
+<td>Một phần</td>
+<td>CRUD qua <code>ProblemsModule</code>; <strong>chỉ <code>@Roles(&#39;ADMIN&#39;)</code></strong>, chưa INSTRUCTOR như spec</td>
+</tr>
+<tr>
+<td>H.2</td>
+<td>Gắn <code>Tag</code> / <code>ProblemTag</code></td>
+<td>Một phần</td>
+<td><code>TagsModule</code> + <code>tagIds</code> trên create/update + filter list; chưa CRUD Tag đầy đủ cho role non-admin nếu spec cần</td>
+</tr>
+<tr>
+<td>H.3</td>
+<td>CRUD <code>TestCase</code> (order, hidden, weight); validate ≤ <code>maxTestCases</code></td>
+<td>Một phần</td>
+<td>Nhúng trong create/update <code>Problem</code> + AI module; không CRUD test case độc lập</td>
+</tr>
+<tr>
+<td>H.4</td>
+<td>API list/filter practice: <code>PUBLIC</code> + published (+ tag / difficulty / mode)</td>
+<td>Một phần</td>
+<td><code>findAll</code>: published + <code>visibility</code> không <code>PRIVATE</code> + filter <code>tagSlug</code>/<code>tagId</code>; <strong>không</strong> có đa tenant / ORG_INTERNAL</td>
+</tr>
+<tr>
+<td>H.5</td>
+<td>Ẩn input/output test <code>isHidden</code> với thí sinh</td>
+<td>Chưa</td>
+<td><code>GET /problems/:id</code> public trả <strong>toàn bộ</strong> <code>testCases</code> kèm input/output</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phần I — Submission &amp; hàng đợi (Core API + BullMQ)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Việc</th>
+<th>Trạng thái</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>I.1</td>
+<td><code>BullMqModule</code>: Redis <code>maxRetriesPerRequest: null</code>, <code>Queue</code> + <code>QueueEvents</code></td>
+<td>Đã</td>
+<td></td>
+</tr>
+<tr>
+<td>I.2</td>
+<td><code>POST /submissions</code>: tạo <code>Submission</code> + add job (metadata <code>submissionId</code>, priority)</td>
+<td>Đã</td>
+<td></td>
+</tr>
+<tr>
+<td>I.3</td>
+<td>Set <code>context</code>, <code>contestId</code>, <code>classRoomId</code>, <code>judgePriority</code> đúng nghiệp vụ</td>
+<td>Một phần</td>
+<td>Có <code>context</code>/<code>contestId</code> khi body có contest; <code>classRoomId</code>/<code>judgePriority</code> contest chưa đầy đủ</td>
+</tr>
+<tr>
+<td>I.4</td>
+<td><code>BullMqEventsService</code>: progress / completed / failed → cập nhật realtime</td>
+<td>Đã</td>
+<td></td>
+</tr>
+<tr>
+<td>I.5</td>
+<td>Retry/backoff job; dead-letter hoặc requeue</td>
+<td>Chưa</td>
+<td><code>judgeQueue.add</code> chưa cấu hình <code>attempts</code>/<code>backoff</code></td>
+</tr>
+<tr>
+<td>I.6</td>
+<td>Auth: <code>userId</code> lấy từ JWT, không tin body</td>
+<td>Chưa</td>
+<td><code>SubmissionsController</code> vẫn <code>@Public()</code>; DTO bắt buộc <code>userId</code>; <code>upsert</code> user/problem demo trong service</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phần J — Worker module (Judge)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Việc</th>
+<th>Trạng thái</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>J.1</td>
+<td>Worker BullMQ consume queue trùng tên với API</td>
+<td>Đã</td>
+<td><code>apps/worker</code></td>
+</tr>
+<tr>
+<td>J.2</td>
+<td>Đọc <code>Submission</code> + <code>TestCase</code>; chạy sandbox (Docker)</td>
+<td>Một phần</td>
+<td>Đọc DB + gọi <strong>AWS Lambda</strong> khi cấu hình; không Docker sandbox cục bộ trong worker</td>
+</tr>
+<tr>
+<td>J.3</td>
+<td>Giới hạn CPU/RAM/time theo Problem / ContestProblem override</td>
+<td>Một phần</td>
+<td>Truyền <code>timeLimitMs</code>/<code>memoryLimitMb</code> problem vào payload Lambda; override contest chưa xử lý trong worker</td>
+</tr>
+<tr>
+<td>J.4</td>
+<td>Ghi <code>Submission.status</code>, <code>caseResults</code> (JSON), <code>testsPassed</code>/<code>testsTotal</code>, logs</td>
+<td>Một phần</td>
+<td>Có <code>caseResults</code> + log object khi Lambda; fallback stub ghi <code>Accepted</code> + <code>caseResults</code> rỗng</td>
+</tr>
+<tr>
+<td>J.5</td>
+<td>Ưu tiên job: đọc <code>judgePriority</code> / <code>context === CONTEST</code></td>
+<td>Chưa</td>
+<td>Chưa priority trên <code>Queue.add</code></td>
+</tr>
+<tr>
+<td>J.6</td>
+<td>Tách module judge (runner, compile, compare output) cho dễ test</td>
+<td>Một phần</td>
+<td>Logic tập trung <code>worker/src/index.ts</code> + <code>apps/lambda</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phần K — Contest</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Việc</th>
+<th>Trạng thái</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>K.1</td>
+<td>CRUD <code>Contest</code> (slug, time window, password hash, policy, max submissions)</td>
+<td>Một phần</td>
+<td><code>ContestsService</code>: create/update + <code>passwordHash</code>, policy, max submissions; CRUD <strong>ADMIN-only</strong></td>
+</tr>
+<tr>
+<td>K.2</td>
+<td><code>ContestProblem</code> (điểm, override time/memory)</td>
+<td>Đã</td>
+<td>Trong create/update contest</td>
+</tr>
+<tr>
+<td>K.3</td>
+<td><code>ContestParticipant</code> + vào phòng (verify password)</td>
+<td>Chưa</td>
+<td>Không có API join/register participant</td>
+</tr>
+<tr>
+<td>K.4</td>
+<td>Enforcement: chỉ submit trong [startAt, endAt]; check attempt vs max</td>
+<td>Chưa</td>
+<td>Submission chỉ kiểm tra problem thuộc contest</td>
+</tr>
+<tr>
+<td>K.5</td>
+<td>Trả kết quả theo <code>ContestTestFeedbackPolicy</code> (SUMMARY vs VERBOSE)</td>
+<td>Chưa</td>
+<td><code>GET /submissions/:id</code> trả nguyên <code>caseResults</code></td>
+</tr>
+<tr>
+<td>K.6</td>
+<td>FE: tạo contest, join, countdown, IDE submit</td>
+<td>Một phần</td>
+<td>Có trang contest/dashboard; thiếu API K.3–K.5 nên luồng đầy đủ chưa khép</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phần L — AI &amp; Golden solution</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Việc</th>
+<th>Trạng thái</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>L.1</td>
+<td>Lưu <code>GoldenSolution</code> (language, code, isPrimary)</td>
+<td>Một phần</td>
+<td>Có model Prisma + presign trong <code>storage-access</code>; chưa module/quy trình “golden” đầy đủ như spec</td>
+</tr>
+<tr>
+<td>L.2</td>
+<td>Upload đề → <code>AiGenerationJob</code> + storage file (<code>inputDocUrl</code>)</td>
+<td>Một phần</td>
+<td>Module <code>ai-testcase</code> + storage</td>
+</tr>
+<tr>
+<td>L.3</td>
+<td>Service gọi LLM → parse test đề xuất → lưu <code>structuredOutput</code></td>
+<td>Một phần</td>
+<td><code>AiTestcaseService</code></td>
+</tr>
+<tr>
+<td>L.4</td>
+<td>Pipeline: chạy golden trên input → điền <code>expectedOutput</code> vào <code>TestCase</code></td>
+<td>Chưa</td>
+<td></td>
+</tr>
+<tr>
+<td>L.5</td>
+<td>API duyệt / sửa / xóa test trước khi publish</td>
+<td>Một phần</td>
+<td>Có generate/save AI testcase; chưa đủ “workflow duyệt” như spec</td>
+</tr>
+<tr>
+<td>L.6</td>
+<td>Rate limit / quota AI</td>
+<td>Chưa</td>
+<td></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phần M — Báo cáo &amp; toàn vẹn</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Việc</th>
+<th>Trạng thái</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>M.1</td>
+<td>Aggregate pass rate, ranking (theo contest / lớp) từ <code>Submission</code></td>
+<td>Chưa</td>
+<td>Không có <code>leaderboard</code> API</td>
+</tr>
+<tr>
+<td>M.2</td>
+<td><code>ReportExport</code>: job async XLSX/PDF + <code>fileUrl</code></td>
+<td>Chưa</td>
+<td>Có <code>excel-report</code> util + storage assert <code>ReportExport</code> — chưa luồng hoàn chỉnh</td>
+</tr>
+<tr>
+<td>M.3</td>
+<td><code>CodeSimilarityFinding</code>: job so cặp submission (AST/heuristic)</td>
+<td>Chưa</td>
+<td></td>
+</tr>
+<tr>
+<td>M.4</td>
+<td><code>Certificate</code>: phát hành sau contest/lớp</td>
+<td>Chưa</td>
+<td></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phần N — Frontend tổng hợp (Next.js)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Việc</th>
+<th>Trạng thái</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>N.1</td>
+<td>Cấu hình <code>NEXT_PUBLIC_CORE_URL</code>, client gọi API có cookie/token</td>
+<td>Đã</td>
+<td><code>api-client.ts</code>: Bearer + refresh cookie</td>
+</tr>
+<tr>
+<td>N.2</td>
+<td>Trang đăng nhập / đăng ký</td>
+<td>Đã</td>
+<td><code>(auth)/login</code>, <code>register</code></td>
+</tr>
+<tr>
+<td>N.3</td>
+<td>Layout dashboard theo role (SV / GV / Admin)</td>
+<td>Một phần</td>
+<td>Dashboard, admin routes; role thực tế <code>CLIENT</code>/<code>ADMIN</code></td>
+</tr>
+<tr>
+<td>N.4</td>
+<td>Practice: list problem, detail, editor, submit, lịch sử</td>
+<td>Một phần</td>
+<td><code>problems</code>, <code>problem/[id]</code>; phụ thuộc bảo mật submission/I.6</td>
+</tr>
+<tr>
+<td>N.5</td>
+<td>Lớp + contest UI (gắn API phần G, K)</td>
+<td>Một phần</td>
+<td>Có màn hình; API contest/lớp còn thiếu phần enforcement/participant</td>
+</tr>
+<tr>
+<td>N.6</td>
+<td>Socket client: subscribe kết quả chấm</td>
+<td>Một phần</td>
+<td>Cần token/userId handshake — server chưa bắt buộc JWT</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Phần O — Vận hành &amp; chất lượng</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Việc</th>
+<th>Trạng thái</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>O.1</td>
+<td>Logging có cấu trúc (request id, submission id)</td>
+<td>Một phần</td>
+<td><code>morgan</code> + file log; chưa request id chuẩn</td>
+</tr>
+<tr>
+<td>O.2</td>
+<td>Metrics queue (độ dài, latency)</td>
+<td>Chưa</td>
+<td></td>
+</tr>
+<tr>
+<td>O.3</td>
+<td>Test tích hợp API chính (auth, submit happy path)</td>
+<td>Một phần</td>
+<td><code>npm test</code> = smoke nhẹ (<code>ci/smoke.test.mjs</code>)</td>
+</tr>
+<tr>
+<td>O.4</td>
+<td>E2E một luồng: đăng nhập → nộp → worker → kết quả</td>
+<td>Một phần</td>
+<td>Có thể chạy manual; chưa E2E tự động trong CI</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Thứ tự gợi ý (tóm tắt)</h2>
+<ol>
+<li><strong>A → B → C</strong> — base, config, DB.  </li>
+<li><strong>D → E</strong> — khung Nest + auth ổn định.  </li>
+<li><strong>I + J</strong> — nộp bài + worker chấm (MVP “có ý nghĩa”).  </li>
+<li><strong>H + N (practice)</strong> — đề + UI luyện.  </li>
+<li><strong>G</strong> — lớp (không org).  </li>
+<li><strong>K</strong> — contest.  </li>
+<li><strong>L, M</strong> — AI, báo cáo, export, plagiarism.  </li>
+<li><strong>O</strong> — polish vận hành.</li>
+</ol>
+<hr>
+<h2>Liên kết tài liệu khác</h2>
+<ul>
+<li>User story chi tiết + sprint: <a href="./USER-STORIES-TASKLIST.md"><code>USER-STORIES-TASKLIST.md</code></a>  </li>
+<li>Schema &amp; DBML: <code>apps/core-api/prisma/schema.md</code></li>
+</ul>
+<hr>
+<h2>Kế hoạch 3 sprint (3 tuần — mỗi sprint <strong>1 tuần</strong>, <strong>4 dev</strong>)</h2>
+<p><strong>Giả định</strong></p>
+<ul>
+<li><strong>4 dev</strong> ký hiệu: <strong>D1</strong> (BE core), <strong>D2</strong> (BE queue/worker), <strong>D3</strong> (FE), <strong>D4</strong> (FS / hỗ trợ BE+FE / DevOps nhẹ).</li>
+<li>Mỗi sprint <strong>5 ngày làm việc</strong>; ưu tiên <strong>MVP luồng: đăng nhập → đề → nộp → chấm → lớp → thi</strong>.</li>
+<li><strong>Đẩy sau</strong> (không nằm trong 3 sprint này): đăng nhập <strong>OAuth / bên thứ 3</strong>, <strong>chống gian lận</strong> (so sánh hai code / <code>CodeSimilarityFinding</code>), <strong>achievement / chứng chỉ</strong> (<code>Certificate</code>). Các mục đó chuyển xuống <strong>Backlog sau sprint 3</strong>.</li>
+</ul>
+<p><strong>Thang ưu tiên trong mỗi sprint</strong> (áp dụng cho tất cả task S1–S3):</p>
+<table>
+<thead>
+<tr>
+<th>Mức</th>
+<th>Ý nghĩa</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>High</strong></td>
+<td>Chặn mục tiêu cuối sprint; ưu tiên làm trước, ít được cắt bỏ.</td>
+</tr>
+<tr>
+<td><strong>Medium</strong></td>
+<td>Quan trọng nhưng có thể thu hẹp phạm vi hoặc làm song song sau các task High.</td>
+</tr>
+<tr>
+<td><strong>Low</strong></td>
+<td>Polish, hoặc có thể chuyển sang sprint sau nếu hết capacity.</td>
+</tr>
+</tbody></table>
+<h3>Capacity gợi ý (mỗi tuần)</h3>
+<table>
+<thead>
+<tr>
+<th>Dev</th>
+<th>Trọng tâm tuần</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>D1</td>
+<td>API Nest, Prisma, auth, contest, class</td>
+</tr>
+<tr>
+<td>D2</td>
+<td>BullMQ, worker, judge sandbox, <code>caseResults</code></td>
+</tr>
+<tr>
+<td>D3</td>
+<td>Next.js, form, editor, socket client</td>
+</tr>
+<tr>
+<td>D4</td>
+<td>Nối FE–BE, seed/migrate, CI, health, QA smoke</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Trạng thái codebase (để không lặp task) — cập nhật 2026-05-12</h3>
+<table>
+<thead>
+<tr>
+<th>Lớp</th>
+<th>Đã có</th>
+<th>Ghi chú / còn thiếu</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Core API — HTTP</strong></td>
+<td>CORS, cookie parser, <code>ValidationPipe</code>, envelope, Swagger</td>
+<td><strong>Chưa</strong> <code>/health</code></td>
+</tr>
+<tr>
+<td><strong>Core API — Auth</strong></td>
+<td>Register/login bcrypt, <code>isActive</code>, refresh cookie, Google OAuth, JWT global + <code>@Public()</code></td>
+<td>Profile: <code>GET /users/me</code>; role thực tế <code>ADMIN</code>/<code>CLIENT</code></td>
+</tr>
+<tr>
+<td><strong>Core API — Modules</strong></td>
+<td><code>Users</code>, <code>Problems</code>, <code>Tags</code>, <code>Contests</code>, <code>Classrooms</code> + <code>Invites</code>, <code>Storage</code>, <code>AiTestcase</code>, <code>Mail</code></td>
+<td><strong>Không</strong> làm Organization; contest <strong>chưa</strong> participant/enforcement</td>
+</tr>
+<tr>
+<td><strong>Core API — Queue</strong></td>
+<td>BullMQ + <code>BullMqEventsService</code> → Socket</td>
+<td><strong>Chưa</strong> retry/priority trên <code>add</code></td>
+</tr>
+<tr>
+<td><strong>Core API — Submissions</strong></td>
+<td><code>POST/GET /submissions</code>, enqueue</td>
+<td>Vẫn <strong><code>@Public()</code></strong>, <code>userId</code> body + <strong>upsert</strong> user/problem demo</td>
+</tr>
+<tr>
+<td><strong>Core API — Realtime</strong></td>
+<td><code>SubmissionGateway</code>, rooms, events</td>
+<td>Handshake <strong>chưa</strong> bắt buộc JWT (query <code>userId</code>)</td>
+</tr>
+<tr>
+<td><strong>Worker</strong></td>
+<td>Đọc submission + test cases; Lambda judge hoặc <strong>stub</strong></td>
+<td>Stub khi không có Lambda; <strong>chưa</strong> override <code>ContestProblem</code> limits; <strong>chưa</strong> job priority</td>
+</tr>
+<tr>
+<td><strong>Prisma</strong></td>
+<td>Schema + migrations</td>
+<td><strong>Seed</strong>: user + lớp + tag; <strong>không</strong> problem/test trong seed</td>
+</tr>
+<tr>
+<td><strong>Web</strong></td>
+<td><code>api-client</code> (Bearer + refresh), login/register, dashboard lớp/contest/admin, practice UI</td>
+<td>Socket/ submit cần khớp I.6 + E.9</td>
+</tr>
+</tbody></table>
+<p><strong>Ưu tiên nợ kỹ thuật (ngắn gọn):</strong> khóa <code>POST /submissions</code> + bỏ upsert; ẩn test hidden ở API public; Socket JWT; seed thêm problem + test; <code>/health</code>; API contest participant + enforcement + policy feedback; BullMQ retry/priority.</p>
+<hr>
+<h3>Sprint 1 — Tuần 1: Seed + auth thật + submission an toàn + worker có kết quả có ý nghĩa</h3>
+<p><strong>Mục tiêu cuối tuần</strong>: DB có <strong>seed</strong> ổn định; <strong>đăng ký + đăng nhập có mật khẩu</strong>; <strong><code>POST /submissions</code> bắt buộc JWT</strong>, không upsert demo; worker <strong>ghi <code>caseResults</code></strong> (chấm thật tối thiểu hoặc stub có phân nhánh trạng thái); <strong>health</strong>; FE <strong>login + submit có token</strong>.</p>
+<h4>S1-1 — Seed Prisma và quy trình khởi tạo dữ liệu local</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Một phần</strong> — có <code>prisma/seed.ts</code> (admin + user CLIENT + 2 lớp + enrollment); <strong>chưa</strong> seed Problem/TestCase; instructor trong seed dùng role <code>CLIENT</code>.</li>
+<li><strong>Đã có</strong>: migration SQL đầy đủ.</li>
+<li><strong>Việc làm</strong>: Thêm <code>prisma/seed.ts</code>: tạo vài user (ADMIN/INSTRUCTOR/STUDENT) với <code>passwordHash</code> bcrypt khớp flow login mới; ít nhất một <code>Problem</code> PUBLIC <code>isPublished</code> + vài <code>TestCase</code> (có hidden/public); khai báo <code>prisma.seed</code> trong <code>apps/core-api/package.json</code>; cập nhật README: <code>migrate deploy</code> → <code>db seed</code>.</li>
+<li><strong>Tiêu chí xong</strong>: Máy mới clone chỉ cần migrate + seed là có user đăng nhập được và problem để nộp <strong>không</strong> nhờ upsert trong <code>SubmissionsService</code>.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D1 / D4 · <strong>Checklist</strong>: C.4</li>
+</ul>
+<h4>S1-2 — GET /health (Postgres + Redis)</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Chưa</strong></li>
+<li><strong>Đã có</strong>: chưa có route health.</li>
+<li><strong>Việc làm</strong>: Module/controller <code>HealthController</code> (hoặc tương đương): ping Prisma/<code>SELECT 1</code>, ping Redis (dùng connection BullMQ hoặc client riêng); trả JSON <code>{ ok, db, redis }</code> và HTTP 503 nếu thành phần quan trọng fail.</li>
+<li><strong>Tiêu chí xong</strong>: Có thể dùng cho Docker/K8s readiness; tài liệu env tối thiểu.</li>
+<li><strong>Ưu tiên</strong>: <strong>Medium</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: B.5</li>
+</ul>
+<h4>S1-3 — Đăng ký và đăng nhập có mật khẩu (bcrypt)</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Đã làm</strong></li>
+<li><strong>Đã có (lịch sử task)</strong>: từng chỉ login theo email; hiện có <code>POST /auth/register</code> + login verify bcrypt.</li>
+<li><strong>Việc làm</strong>: <code>POST /auth/register</code> (DTO: email, password, name — validate độ mạnh tối thiểu); hash bcrypt ghi <code>passwordHash</code>; mở rộng <code>LoginDto</code> thêm <code>password</code>; trong <code>AuthService.loginByEmail</code> (hoặc đổi tên) verify hash, sai thì <code>UnauthorizedException</code> giống user không tồn tại; <code>@Public()</code> cho register + login; cập nhật Swagger.</li>
+<li><strong>Tiêu chí xong</strong>: Không thể lấy JWT chỉ bằng email hợp lệ mà không có mật khẩu đúng.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: E.1–E.3</li>
+</ul>
+<h4>S1-4 — Chặn đăng nhập khi <code>User.isActive === false</code></h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Đã làm</strong></li>
+<li><strong>Đã có</strong>: field <code>isActive</code> trên model; <code>AuthService.login</code> từ chối khi <code>!user.isActive</code>.</li>
+<li><strong>Việc làm</strong>: Trước khi ký JWT, nếu <code>!user.isActive</code> → 403 hoặc 401 với message thống nhất envelope.</li>
+<li><strong>Tiêu chí xong</strong>: User bị vô hiệu hoá không nhận token.</li>
+<li><strong>Ưu tiên</strong>: <strong>Medium</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: E.6</li>
+</ul>
+<h4>S1-5 — Siết <code>POST /submissions</code>: JWT, bỏ <code>userId</code> body, bỏ upsert demo</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Chưa</strong> — controller vẫn <code>@Public()</code>, DTO vẫn có <code>userId</code>, service vẫn <code>upsert</code> user/problem.</li>
+<li><strong>Đã có</strong>: luồng tạo <code>Submission</code> + enqueue + <code>submission:created</code>.</li>
+<li><strong>Việc làm</strong>: Gỡ <code>@Public()</code> khỏi <code>SubmissionsController</code>; <code>userId</code> lấy từ <code>@CurrentUser()</code>; <code>CreateSubmissionDto</code> bỏ <code>userId</code>, thêm rule <code>problemId</code> trỏ tới Problem đã publish; xóa toàn bộ <code>prisma.user.upsert</code> / <code>problem.upsert</code> trong <code>SubmissionsService</code>; <code>context</code> giữ <code>PRACTICE</code> trừ khi đã có contest; đảm bảo lỗi 404/400 rõ ràng.</li>
+<li><strong>Tiêu chí xong</strong>: Không thể tạo submission hộ user khác; không tự sinh user/problem ảo khi nộp bài.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: I.2, I.6</li>
+</ul>
+<h4>S1-6 — Worker: đọc test từ DB và ghi <code>caseResults</code> + trạng thái thực tế</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Một phần</strong> — đọc <code>testCases</code>, ghi <code>caseResults</code> khi có Lambda; không cấu hình Lambda → stub AC + <code>caseResults</code> rỗng.</li>
+<li><strong>Đã có</strong>: stub sleep + luôn <code>Accepted</code>, cập nhật <code>score</code>/<code>runtimeMs</code> tĩnh.</li>
+<li><strong>Việc làm</strong>: Load <code>Submission</code> kèm <code>problem.testCases</code> (hoặc query riêng), sort theo <code>order</code>; ít nhất <strong>một</strong> ngôn ngữ chấm thật (vd. Python) hoặc tạm so khớp output text nếu chưa có sandbox; điền <code>testsPassed</code>/<code>testsTotal</code>, <code>status</code> cuối (AC/WA/…), <code>caseResults</code> JSON <strong>có cấu trúc cố định</strong> (vd. mảng <code>{ index, verdict, timeMs?, memoryMb?, actual?, expected? }</code> — ẩn field nhạy cảm theo policy sau); vẫn gọi <code>job.updateProgress</code> để FE nhận event.</li>
+<li><strong>Tiêu chí xong</strong>: Một submission có thể kết thúc <strong>không</strong> phải AC nếu sai test; DB có <code>caseResults</code> không null trên happy path.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D2 · <strong>Checklist</strong>: J.1, J.2, J.4</li>
+</ul>
+<h4>S1-7 — FE: trang <code>/login</code>, <code>/register</code> và client API có Bearer</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Đã làm</strong></li>
+<li><strong>Đã có (lịch sử task)</strong>: trước đây chưa auth UI; hiện có <code>(auth)/login</code>, <code>register</code> và <code>apiFetch</code>.</li>
+<li><strong>Việc làm</strong>: Form đăng ký/đăng nhập gọi API; lưu <code>accessToken</code> (memory + <code>sessionStorage</code> hoặc cookie httpOnly nếu đã chuẩn bị — ghi rõ choice trong code); helper <code>apiFetch</code> tự gắn <code>Authorization</code>; xử lý envelope <code>{ success, result }</code> từ interceptor.</li>
+<li><strong>Tiêu chí xong</strong>: User có thể tạo tài khoản và đăng nhập chỉ qua UI.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D3 · <strong>Checklist</strong>: N.1, N.2</li>
+</ul>
+<h4>S1-8 — FE: chỉnh trang nộp bài (<code>/</code>) theo user đã đăng nhập</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Một phần</strong> — có luồng practice/submit qua các trang mới + <code>apiFetch</code>; API submit vẫn public + <code>userId</code> body nên chưa đạt tiêu chí bảo mật.</li>
+<li><strong>Đã có</strong>: form submit + Socket với <code>userId</code> tự nhập.</li>
+<li><strong>Việc làm</strong>: Redirect tới <code>/login</code> nếu chưa token; <code>POST /submissions</code> không gửi <code>userId</code>; <code>problemId</code> mặc định từ seed hoặc dropdown gọi API list (nếu S1 chưa có list API thì hardcode id từ seed + comment); hiển thị lỗi 401/validation từ API.</li>
+<li><strong>Tiêu chí xong</strong>: Luồng: register → login → nộp bài <strong>một user</strong> không nhập tay <code>userId</code>.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D3 / D4 · <strong>Checklist</strong>: N.4</li>
+</ul>
+<h4>S1-9 — CI: lint + build (GitHub Actions hoặc tương đương)</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Đã làm</strong> — <code>.github/workflows/ci.yml</code></li>
+<li><strong>Đã có</strong>: script <code>lint</code>/<code>build</code> ở root workspaces + workflow CI (lint, smoke test, build apps).</li>
+<li><strong>Việc làm</strong>: Pipeline cài dependency, chạy <code>npm run lint</code> và <code>npm run build</code> cho <code>apps/core-api</code>, <code>apps/worker</code>, <code>apps/web</code> (có thể matrix hoặc một job sequential); fail PR nếu đỏ.</li>
+<li><strong>Tiêu chí xong</strong>: Mỗi PR có kiểm tra tự động tối thiểu.</li>
+<li><strong>Ưu tiên</strong>: <strong>Medium</strong></li>
+<li><strong>Owner</strong>: D4 · <strong>Checklist</strong>: B.4</li>
+</ul>
+<h4>S1-10 — Socket.io: xác thực JWT, bỏ <code>?userId=</code> trên production path</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Chưa</strong> — gateway vẫn đọc <code>query.userId</code> / <code>auth.userId</code>.</li>
+<li><strong>Đã có</strong>: join room từ query; server emit đúng user từ DB trong <code>BullMqEventsService</code>.</li>
+<li><strong>Việc làm</strong>: Trong <code>handleConnection</code>, parse JWT từ <code>handshake.auth.token</code> (hoặc header tương thích client); verify cùng secret/exp với API; <code>sub</code> → join <code>user:&lt;sub&gt;</code>; từ chối connection nếu token sai; FE <code>io(url, { auth: { token } })</code>.</li>
+<li><strong>Tiêu chí xong</strong>: Không thể subscribe kết quả của user khác chỉ bằng query string.</li>
+<li><strong>Ưu tiên</strong>: <strong>Medium</strong></li>
+<li><strong>Owner</strong>: D2 / D3 · <strong>Checklist</strong>: E.9, N.6</li>
+</ul>
+<p><strong>Không làm trong S1</strong>: OAuth (E.8), <strong>Organization</strong> (đã bỏ phạm vi), Class, Contest, AI, export file, plagiarism, certificate. <strong>Không</strong> lên task riêng cho: Swagger, envelope, BullMQ wiring, JwtAuthGuard global (đã có).</p>
+<hr>
+<h3>Sprint 2 — Tuần 2: Problem + Tag + TestCase + Class + Practice UI</h3>
+<p><strong>Mục tiêu cuối tuần</strong>: <strong>Module REST</strong> cho Problem/TestCase/Tag; <strong>ClassRoom + enrollment</strong>; worker chấm <strong>đủ</strong> test với TLE/MLE/CE nếu sandbox cho phép; FE <strong>practice</strong> và <strong>lớp</strong> nối API thật.</p>
+<p><strong>Lưu ý</strong>: Trong <code>apps/core-api/src</code> <strong>chưa</strong> có controller/service Problem hay Class — toàn bộ S2-1…S2-6 là phát triển mới, có thể chia module theo <code>problems/</code>, <code>classes/</code>.</p>
+<h4>S2-1 — Module Problem: CRUD + quyền INSTRUCTOR/ADMIN</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Một phần</strong> — có HTTP CRUD; <strong>chỉ</strong> <code>@Roles(&#39;ADMIN&#39;)</code>, chưa INSTRUCTOR.</li>
+<li><strong>Đã có (lịch sử task)</strong>: khi viết plan ban đầu chưa có HTTP API; hiện có <code>ProblemsModule</code>.</li>
+<li><strong>Việc làm</strong>: <code>ProblemsModule</code>: tạo/sửa/xóa (soft delete nếu schema hỗ trợ) với <code>@Roles(INSTRUCTOR|ADMIN)</code>; field <code>slug</code> unique, <code>visibility</code>, <code>difficulty</code>, <code>mode</code>, giới hạn time/memory, <code>maxTestCases</code>, <code>supportedLanguages</code>; validate slug; DTO + Swagger.</li>
+<li><strong>Tiêu chí xong</strong>: GV tạo đề mới qua API; student không gọi được CRUD (chỉ xem list public ở S2-2).</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: H.1</li>
+</ul>
+<h4>S2-2 — GET list/filter Problem cho practice (PUBLIC + published)</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Một phần</strong> — có list published + search/paging + filter tag; detail public vẫn lộ test ẩn (xem H.5).</li>
+<li><strong>Việc làm</strong>: Endpoint list phân trang, filter <code>difficulty</code>/<code>mode</code>/<code>tagSlug</code>; <code>isPublished=true</code>; optional search <code>title</code>/<code>slug</code>; response list/detail <strong>không</strong> chứa test hidden cho viewer không quyền (redact H.5).</li>
+<li><strong>Tiêu chí xong</strong>: FE có thể gọi một API thay vì hardcode <code>problemId</code>.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: H.4</li>
+</ul>
+<h4>S2-3 — Tag + <code>ProblemTag</code> + filter theo tag</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-14):</strong> <strong>Một phần</strong> — đã có <code>GET/POST /tags</code>, <code>tagIds</code> trên problem, <code>tagId</code>/<code>tagSlug</code> trên list + FE filter.</li>
+<li><strong>Việc làm</strong> <em>(còn lại)</em>: Hoàn thiện CRUD/tag theo role nếu cần; đồng bộ tài liệu/README.</li>
+<li><strong>Tiêu chí xong</strong>: Lọc đề theo ít nhất một tag trên UI.</li>
+<li><strong>Ưu tiên</strong>: <strong>Medium</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: H.2, H.4</li>
+</ul>
+<h4>S2-4 — CRUD TestCase (GV) + API “student view”</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Một phần</strong> — test case qua body create/update Problem + AI; <strong>không</strong> tách endpoint; public detail <strong>chưa</strong> redact hidden.</li>
+<li><strong>Việc làm</strong>: CRUD test case theo <code>problemId</code>, validate <code>order</code>, <code>isHidden</code>, đếm <code>≤ maxTestCases</code>; endpoint <strong>public/student</strong> khi xem đề chỉ trả test không hidden (hoặc chỉ meta số test); instructor thấy đủ.</li>
+<li><strong>Tiêu chí xong</strong>: Không lộ input/output test ẩn qua API public.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: H.3, H.5</li>
+</ul>
+<h4>S2-5 — ClassRoom CRUD + <code>classCode</code></h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Đã làm</strong> (API <code>classrooms</code>)</li>
+<li><strong>Việc làm</strong>: Module <code>ClassRoom</code>: tạo lớp (owner = instructor đang login), sinh <code>classCode</code> unique (format rõ ràng), update tên/mô tả, archive nếu có field (<strong>không</strong> yêu cầu gắn tổ chức).</li>
+<li><strong>Tiêu chí xong</strong>: GV có API tạo lớp và đọc chi tiết lớp của mình.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: G.1</li>
+</ul>
+<h4>S2-6 — ClassEnrollment: join bằng mã, duyệt, gỡ</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Một phần</strong> — join + list people; <strong>chưa</strong> duyệt PENDING; <strong>chưa</strong> gỡ học viên.</li>
+<li><strong>Việc làm</strong>: SV gửi mã → tạo/kích hoạt enrollment (PENDING → ACTIVE tùy policy: auto-approve MVP); GV list học viên, PATCH trạng thái, DELETE/REMOVED; chặn join lớp không tồn tại.</li>
+<li><strong>Tiêu chí xong</strong>: Hai user: GV tạo lớp, SV join bằng mã qua API.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: G.2, G.4</li>
+</ul>
+<h4>S2-7 — ClassInvite MVP (token + hết hạn)</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Đã làm</strong> (<code>invites</code> module)</li>
+<li><strong>Việc làm</strong>: Tạo invite record, <code>expiresAt</code>, one-time <code>usedAt</code>; endpoint “consume” khi mở link; log URL ra console thay email nếu chưa SMTP.</li>
+<li><strong>Tiêu chí xong</strong>: Một link mời chỉ dùng được trong TTL và không tái sử dụng sau <code>usedAt</code>.</li>
+<li><strong>Ưu tiên</strong>: <strong>Medium</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: G.3</li>
+</ul>
+<h4>S2-8 — Worker: sandbox đầy đủ trạng thái (AC/WA/TLE/MLE/CE/RE)</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Một phần</strong> — phụ thuộc Lambda; stub local không phân nhánh WA/TLE/MLE/CE đầy đủ.</li>
+<li><strong>Đã có</strong>: pipeline stub đã được thay ở S1 bằng bước đầu có <code>caseResults</code>.</li>
+<li><strong>Việc làm</strong>: Áp dụng <code>timeLimitMs</code>/<code>memoryLimitMb</code> của Problem; biên dịch/chạy (nếu đa ngôn ngữ thì ưu tiên 1–2 ngôn ngữ trước); map lỗi runtime → status; ghi log compile vào <code>logs</code>; cập nhật từng phần <code>caseResults</code>.</li>
+<li><strong>Tiêu chí xong</strong>: Có thể demo WA và TLE cố ý bằng đề có test tương ứng.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D2 · <strong>Checklist</strong>: J.2–J.4</li>
+</ul>
+<h4>S2-9 — BullMQ: retry, backoff, <code>judgePriority</code> khi có <code>contestId</code></h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Chưa</strong></li>
+<li><strong>Việc làm</strong>: Cấu hình <code>attempts</code>/<code>backoff</code> trên <code>add</code>; khi enqueue submission có <code>contestId</code> (chuẩn bị S3) set priority cao hơn practice; document hành vi.</li>
+<li><strong>Tiêu chí xong</strong>: Job fail tạm thời được retry giới hạn; contest job không bị nghẽn sau practice trong test tải giả lập.</li>
+<li><strong>Ưu tiên</strong>: <strong>Medium</strong></li>
+<li><strong>Owner</strong>: D2 · <strong>Checklist</strong>: I.5, J.5</li>
+</ul>
+<h4>S2-10 — FE Practice: danh sách, chi tiết đề, editor, lịch sử submission</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Một phần</strong> — có <code>problems</code>, <code>problem/[id]</code> workspace; lịch sử tuỳ tích hợp <code>GET /submissions</code>.</li>
+<li><strong>Việc làm</strong>: Trang <code>/problems</code>, <code>/problems/[slug]</code>; gọi list + detail API; editor (có thể textarea trước, Monaco sau); <code>POST /submissions</code>; trang hoặc panel “lịch sử” gọi <code>GET</code> submissions (nếu chưa có API thì <strong>bổ sung</strong> <code>GET /submissions/me</code> hoặc filter query — ghi vào task D1 phụ).</li>
+<li><strong>Tiêu chí xong</strong>: User đăng nhập luyện tập end-to-end không dùng trang <code>/</code> demo cũ.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D3 · <strong>Checklist</strong>: N.4</li>
+</ul>
+<h4>S2-11 — FE Lớp: tạo lớp, copy mã, join, danh sách</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Một phần</strong> — dashboard lớp + invite modal; API gỡ SV chưa có.</li>
+<li><strong>Việc làm</strong>: Màn GV: tạo lớp, hiển thị <code>classCode</code>, list SV; màn SV: nhập mã join; dùng layout theo role (MVP).</li>
+<li><strong>Tiêu chí xong</strong>: Hai role thấy đúng dữ liệu từ API S2-5/S2-6.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D3 / D4 · <strong>Checklist</strong>: G.6, N.5</li>
+</ul>
+<h4>S2-12 — Bổ sung GET submissions (nếu S2-10 cần)</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Một phần</strong> — có <code>GET /submissions</code> + query nhưng endpoint <strong>public</strong>; chưa scope JWT-only.</li>
+<li><strong>Việc làm</strong>: <code>GET /submissions</code> scoped theo user hiện tại + optional <code>problemId</code>, phân trang; ẩn field nhạy cảm nếu contest (chưa có thì chỉ practice).</li>
+<li><strong>Tiêu chí xong</strong>: FE hiển thị lịch sử không hack id.</li>
+<li><strong>Ưu tiên</strong>: <strong>Medium</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: Phần I (mở rộng list submissions)</li>
+</ul>
+<h4>S2-13 — Smoke E2E: GV tạo đề + SV nộp trong lớp (hoặc practice)</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Một phần</strong> — CI có smoke nhẹ; chưa kịch bản E2E đầy đủ trong repo.</li>
+<li><strong>Việc làm</strong>: Kịch bản manual/script: register 2 acc → instructor tạo problem + test → student list → submit → thấy WA/AC.</li>
+<li><strong>Tiêu chí xong</strong>: Checklist QA trong README hoặc <code>docs/</code>.</li>
+<li><strong>Ưu tiên</strong>: <strong>Medium</strong></li>
+<li><strong>Owner</strong>: D4 · <strong>Checklist</strong>: O.4</li>
+</ul>
+<p><strong>Không làm trong S2</strong>: OAuth, AI sinh test (L), <code>ReportExport</code>, plagiarism, certificate, <strong>Organization</strong> (đã bỏ phạm vi). <strong>Đã làm ở S1</strong>: Socket JWT — không lặp task trừ khi còn nợ kỹ thuật.</p>
+<hr>
+<h3>Sprint 3 — Tuần 3: Contest + enforcement + báo cáo nhẹ + polish</h3>
+<p><strong>Mục tiêu cuối tuần</strong>: <strong>Contest</strong> đầy đời trên API + FE: tạo kỳ thi, vào phòng, nộp trong khung giờ, giới hạn attempt, <strong>feedback policy</strong>, worker đọc override limit; <strong>stats/ranking</strong> đơn giản (không export).</p>
+<p><strong>Lưu ý</strong>: Contest hiện chỉ có trên Prisma — cần module <code>contests/</code> (hoặc tương đương) và mở rộng <code>POST /submissions</code> / <code>CreateSubmissionDto</code> đã có.</p>
+<h4>S3-1 — CRUD Contest + gán <code>ContestProblem</code> (điểm, override limit)</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Một phần</strong> — có create/update/delete + <code>ContestProblem</code>; <strong>ADMIN-only</strong>; slug sinh từ title.</li>
+<li><strong>Việc làm</strong>: Tạo/sửa contest: <code>slug</code>, <code>startAt</code>/<code>endAt</code>, <code>maxSubmissionsPerProblem</code>, <code>testFeedbackPolicy</code>, <code>passwordHash</code> nullable (bcrypt nếu có mật khẩu phòng); CRUD <code>ContestProblem</code> liên kết <code>problemId</code>, <code>maxScore</code>, override <code>timeLimitMs</code>/<code>memoryLimitMb</code>; validate thời gian và đề đã publish.</li>
+<li><strong>Tiêu chí xong</strong>: Instructor tạo contest và gán ít nhất một đề qua API.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: K.1, K.2</li>
+</ul>
+<h4>S3-2 — ContestParticipant: join, verify password, trạng thái</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Chưa</strong></li>
+<li><strong>Việc làm</strong>: Endpoint “register participant” (user đã JWT); nếu contest có password thì body gửi plaintext so bcrypt; lưu <code>ContestParticipant</code>; chặn join khi quá hạn đăng ký nếu có rule (hoặc chỉ check vào lúc submit — ghi rõ).</li>
+<li><strong>Tiêu chí xong</strong>: User không join được contest private khi sai mật khẩu.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: K.3</li>
+</ul>
+<h4>S3-3 — Enforcement: thời gian + số lần nộp + đề thuộc contest</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Chưa</strong> — chỉ kiểm tra problem thuộc contest.</li>
+<li><strong>Việc làm</strong>: Trong service tạo submission: bắt buộc <code>contestId</code> + <code>problemId</code> thuộc contest; <code>now</code> ∈ <code>[startAt,endAt]</code> (timezone UTC hoặc config); đếm submission trước đó của user cho cặp (contest, problem) so với <code>maxSubmissionsPerProblem</code>; từ chối nếu chưa là participant ACTIVE.</li>
+<li><strong>Tiêu chí xong</strong>: Nộp ngoài giờ hoặc quá số lần → 409/400 với message cố định.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: K.4</li>
+</ul>
+<h4>S3-4 — <code>POST /submissions</code> mở rộng: <code>context=CONTEST</code>, <code>contestId</code>, <code>judgePriority</code></h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Một phần</strong> — có <code>contestId</code> → <code>context</code> CONTEST; <code>judgePriority</code> cố định 0.</li>
+<li><strong>Việc làm</strong>: DTO nhận optional <code>contestId</code>; khi có thì set <code>context</code> CONTEST, tăng <code>judgePriority</code> (khớp S2-9); đảm bảo worker nhận đủ metadata trong job data nếu cần.</li>
+<li><strong>Tiêu chí xong</strong>: Submission contest và practice phân biệt được trong DB và queue.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: I.3</li>
+</ul>
+<h4>S3-5 — API trả kết quả theo <code>ContestTestFeedbackPolicy</code></h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Chưa</strong></li>
+<li><strong>Việc làm</strong>: Serializer layer cho <code>GET /submissions/:id</code> (và payload realtime nếu cần): SUMMARY chỉ tổng điểm/trạng thái; VERBOSE cho phép <code>caseResults</code> chi tiết hơn cho role instructor/admin; thí sinh không thấy test hidden details.</li>
+<li><strong>Tiêu chí xong</strong>: Hai contest cùng submission logic nhưng policy khác → JSON khác nhau đúng spec.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: K.5</li>
+</ul>
+<h4>S3-6 — Worker: áp <code>ContestProblem</code> override khi chấm</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Chưa</strong></li>
+<li><strong>Việc làm</strong>: Nếu job/submission có <code>contestId</code>, resolve <code>ContestProblem</code> và ưu tiên limit override so với Problem gốc khi spawn sandbox.</li>
+<li><strong>Tiêu chí xong</strong>: Đề trong contest có time limit khác practice trên cùng Problem.</li>
+<li><strong>Ưu tiên</strong>: <strong>Medium</strong></li>
+<li><strong>Owner</strong>: D2 · <strong>Checklist</strong>: J.3</li>
+</ul>
+<h4>S3-7 — ClassAssignment MVP + list bài theo lớp</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Chưa</strong> (FE có classwork UI; backend chưa khớp spec)</li>
+<li><strong>Việc làm</strong>: Model <code>ClassAssignment</code>: gắn <code>classRoomId</code>, <code>problemId</code> hoặc <code>contestId</code>, <code>dueAt</code>; API GV tạo/gỡ; API SV list assignment của lớp đã join.</li>
+<li><strong>Tiêu chí xong</strong>: Từ FE lớp, SV thấy bài được giao dẫn tới problem/contest.</li>
+<li><strong>Ưu tiên</strong>: <strong>Medium</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: G.5</li>
+</ul>
+<h4>S3-8 — FE: màn tạo/sửa contest (MVP) + join + countdown</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Một phần</strong> — có trang contest/dashboard; thiếu join + enforcement API.</li>
+<li><strong>Việc làm</strong>: Form tạo contest + chọn đề; trang public/private link join; input password; component countdown <code>startAt</code>/<code>endAt</code> (client sync clock hoặc hiển thị server time một lần).</li>
+<li><strong>Tiêu chí xong</strong>: GV và SV hoàn tất join trước khi mở đề.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D3 · <strong>Checklist</strong>: K.6</li>
+</ul>
+<h4>S3-9 — FE: IDE nộp bài trong contest + realtime + respect policy</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Một phần</strong> — phụ thuộc S3-3, S3-5, socket JWT.</li>
+<li><strong>Việc làm</strong>: Reuse editor practice; gọi <code>POST /submissions</code> kèm <code>contestId</code>; hiển thị kết quả/socket theo mức detail API cho phép (ẩn chi tiết case khi SUMMARY); handle lỗi enforcement (quá giờ, hết lượt).</li>
+<li><strong>Tiêu chí xong</strong>: Thí sinh không “lộ” đáp án test qua UI khi policy cấm.</li>
+<li><strong>Ưu tiên</strong>: <strong>High</strong></li>
+<li><strong>Owner</strong>: D3 / D4 · <strong>Checklist</strong>: N.5</li>
+</ul>
+<h4>S3-10 — API stats: pass rate + ranking (in-memory hoặc query SQL)</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Chưa</strong></li>
+<li><strong>Việc làm</strong>: Endpoint <code>GET /contests/:id/leaderboard</code> hoặc tương đương: tổng điểm theo rule contest (AC full điểm partial nếu có), tie-break thời gian nộp bài cuối cùng đạt điểm; optional pass rate theo problem; <strong>không</strong> tạo file export.</li>
+<li><strong>Tiêu chí xong</strong>: Leaderboard đúng với vài submission mẫu trong seed hoặc manual test.</li>
+<li><strong>Ưu tiên</strong>: <strong>Medium</strong></li>
+<li><strong>Owner</strong>: D1 · <strong>Checklist</strong>: M.1</li>
+</ul>
+<h4>S3-11 — Hardening &amp; tài liệu demo contest E2E</h4>
+<ul>
+<li><strong>Trạng thái (2026-05-12):</strong> <strong>Chưa</strong> (README chưa mô tả đủ luồng contest E2E như tiêu chí)</li>
+<li><strong>Việc làm</strong>: Rà soát lỗi nhỏ; cập nhật README: tạo contest → 2 user → nộp → xem rank; ghi env cần cho demo.</li>
+<li><strong>Tiêu chí xong</strong>: Người mới làm theo doc chạy được demo trong &lt; 30 phút (máy đã có Docker DB/Redis).</li>
+<li><strong>Ưu tiên</strong>: <strong>Low</strong></li>
+<li><strong>Owner</strong>: D4 · <strong>Checklist</strong>: A.5, O.3</li>
+</ul>
+<p><strong>Không làm trong S3</strong>: OAuth (E.8), <strong>CodeSimilarityFinding</strong> (M.3), <strong>Certificate</strong> (M.4), <strong>ReportExport</strong> (M.2) — nằm <strong>Backlog sau sprint 3</strong>. AI đầy đủ (L) chỉ <strong>spike</strong> nếu còn giờ.</p>
+<hr>
+<h3>Backlog sau sprint 3 (ưu tiên thấp hơn — theo yêu cầu “đẩy sau”)</h3>
+<table>
+<thead>
+<tr>
+<th>Thứ tự gợi ý</th>
+<th>Hạng mục</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>B1</td>
+<td><strong>Đăng nhập bên thứ 3 (OAuth / Google)</strong></td>
+<td><code>OAuthAccount</code>, E.8</td>
+</tr>
+<tr>
+<td>B2</td>
+<td><strong>Chống gian lận — so khớp hai mã nguồn</strong></td>
+<td><code>CodeSimilarityFinding</code>, job AST/hash, UI % giống</td>
+</tr>
+<tr>
+<td>B3</td>
+<td><strong>Achievement / chứng chỉ</strong></td>
+<td><code>Certificate</code>, phát hành sau contest/lớp</td>
+</tr>
+<tr>
+<td>B4</td>
+<td><strong>Export báo cáo file</strong></td>
+<td><code>ReportExport</code> XLSX/PDF</td>
+</tr>
+<tr>
+<td>B5</td>
+<td><strong>AI sinh test + Golden</strong> đầy đủ</td>
+<td>Phần L</td>
+</tr>
+<tr>
+<td><del>B6</del></td>
+<td><del><strong>Organization</strong></del></td>
+<td><strong>Đã bỏ</strong> — không nằm trong phạm vi sản phẩm</td>
+</tr>
+<tr>
+<td>B7</td>
+<td><strong>InstructorVerification</strong> workflow + admin duyệt</td>
+<td>E.7</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Tổng hợp theo dev (gợi ý phân bổ tuần)</h3>
+<table>
+<thead>
+<tr>
+<th>Dev</th>
+<th>Sprint 1</th>
+<th>Sprint 2</th>
+<th>Sprint 3</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>D1</strong></td>
+<td>Seed, health, register/login bcrypt, siết submissions, auth edge cases</td>
+<td>ProblemsModule + tests + classes + list API + GET submissions</td>
+<td>ContestsModule, enforcement, policy serializer, stats</td>
+</tr>
+<tr>
+<td><strong>D2</strong></td>
+<td>Worker <code>caseResults</code> + judge thật tối thiểu, socket JWT</td>
+<td>Sandbox đủ verdict, retry/priority</td>
+<td>Worker đọc override <code>ContestProblem</code></td>
+</tr>
+<tr>
+<td><strong>D3</strong></td>
+<td><code>/login</code>, <code>/register</code>, refactor <code>/</code> submit + socket token</td>
+<td>Practice pages, class UI</td>
+<td>Contest create/join/countdown, submit trong contest</td>
+</tr>
+<tr>
+<td><strong>D4</strong></td>
+<td>Seed hỗ trợ, CI workflow, nối FE submit</td>
+<td>QA smoke GV/SV</td>
+<td>Demo doc E2E contest</td>
+</tr>
+</tbody></table>
+<hr>
+<p><em>File này: <strong>thứ tự feature</strong> ở các phần A–O; <strong>3 sprint</strong> lọc theo <strong>trạng thái codebase</strong> (mục “Trạng thái codebase”), task gồm <strong>đã có / việc làm / tiêu chí xong / ưu tiên</strong>. Chi tiết story point có thể bổ sung trong <code>USER-STORIES-TASKLIST.md</code>.</em></p>
+
+
+      </div>
+    </main>
+  </div>
+</body>
+</html>

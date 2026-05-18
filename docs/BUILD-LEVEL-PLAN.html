@@ -1,0 +1,440 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BUILD LEVEL PLAN — code-judge docs</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #58a6ff;
+      --accent-dim: #388bfd66;
+      --ok: #3fb950;
+      --partial: #d29922;
+      --missing: #f85149;
+      --border: #30363d;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --sidebar-w: 280px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      min-height: 100vh;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative !important; height: auto !important; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 1.25rem 1rem;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+    }
+    .sidebar h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin: 0 0 0.75rem;
+    }
+    .sidebar nav a {
+      display: block;
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .sidebar nav a:hover { background: var(--surface2); color: var(--text); text-decoration: none; }
+    .sidebar nav a.active { background: var(--surface2); color: var(--accent); font-weight: 600; }
+    
+    main {
+      max-width: 920px;
+      padding: 2rem 2.5rem 4rem;
+    }
+    header.doc-header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    header.doc-header h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      line-height: 1.3;
+    }
+    section {
+      margin-bottom: 2.5rem;
+      scroll-margin-top: 1rem;
+    }
+    h1, h2, h3, h4, h5, h6 { color: var(--text); }
+    h2 {
+      font-size: 1.35rem;
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.75rem; }
+    p { margin: 0 0 1rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--surface2); font-weight: 600; }
+    tr:nth-child(even) td { background: #1a233280; }
+    pre, code {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    code {
+        background: var(--surface2);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+    }
+    pre code {
+        background: transparent;
+        padding: 0;
+    }
+    blockquote {
+      border-left: 4px solid var(--border);
+      padding-left: 1rem;
+      margin: 1rem 0;
+      color: var(--muted);
+    }
+</style>
+</head>
+<body>
+  <div class="layout">
+    <div class="sidebar"><h2>Documentation</h2><nav><a href="AI-TESTCASE-GENERATION.html">AI TESTCASE GENERATION</a><a href="AWS-LAMBDA-INTEGRATION.html">AWS LAMBDA INTEGRATION</a><a href="BUILD-LEVEL-PLAN.html" class="active">BUILD LEVEL PLAN</a><a href="CAU-HINH-VA-UTILS.html">CAU HINH VA UTILS</a><a href="DEPLOY-VPS.html">DEPLOY VPS</a><a href="FEATURE-IMPLEMENTATION-TASKLIST.html">FEATURE IMPLEMENTATION TASKLIST</a><a href="JUDGE0-WINDOWS-WSL.html">JUDGE0 WINDOWS WSL</a><a href="LAMBDA-CONFIG.html">LAMBDA CONFIG</a><a href="MINIO.html">MINIO</a><a href="postman-testapi.html">postman testapi</a><a href="PRISMA-SEED.html">PRISMA SEED</a><a href="USER-STORIES-TASKLIST.html">USER STORIES TASKLIST</a></nav></div>
+    <main>
+      <header class="doc-header">
+        <h1>BUILD LEVEL PLAN</h1>
+      </header>
+      <div class="content">
+        <h1>Build Plan Theo Develop Va Testing</h1>
+<p>Tai lieu nay duoc to chuc theo 2 track chinh:</p>
+<ul>
+<li><strong>Develop</strong></li>
+<li><strong>Testing</strong></li>
+</ul>
+<p>Va trong moi track se chia theo tung module de de quan ly.</p>
+<hr>
+<h2>1) DEVELOP</h2>
+<h2>Module: Auth</h2>
+<h3>Setup</h3>
+<ul>
+<li><code>AUTH-SETUP-01</code>: User/Role/Permission schema + migration</li>
+<li><code>AUTH-SETUP-02</code>: Seed default roles + admin account</li>
+</ul>
+<h3>BE</h3>
+<ul>
+<li><code>AUTH-BE-01</code>: Register/Login/Refresh APIs</li>
+<li><code>AUTH-BE-02</code>: Token rotation + logout revoke (Redis)</li>
+<li><code>AUTH-BE-03</code>: RBAC guard + decorator</li>
+</ul>
+<h3>FE</h3>
+<ul>
+<li><code>AUTH-FE-01</code>: Login/Register screens</li>
+<li><code>AUTH-FE-02</code>: Auth store + interceptor + protected routes</li>
+</ul>
+<h2>Module: Classroom &amp; Enrollment</h2>
+<h3>Setup</h3>
+<ul>
+<li><code>CLASS-SETUP-01</code>: Classroom/enrollment entities + migration</li>
+</ul>
+<h3>BE</h3>
+<ul>
+<li><code>CLASS-BE-01</code>: Class CRUD APIs</li>
+<li><code>CLASS-BE-02</code>: Enrollment apply/approve/reject APIs</li>
+</ul>
+<h3>FE</h3>
+<ul>
+<li><code>CLASS-FE-01</code>: Classroom dashboard</li>
+<li><code>CLASS-FE-02</code>: Member management UI</li>
+</ul>
+<h2>Module: Problem &amp; Testcase</h2>
+<h3>Setup</h3>
+<ul>
+<li><code>PROB-SETUP-01</code>: Problem/testcase entities + migration</li>
+</ul>
+<h3>BE</h3>
+<ul>
+<li><code>PROB-BE-01</code>: Problem CRUD APIs</li>
+<li><code>PROB-BE-02</code>: Testcase CRUD APIs (public/hidden)</li>
+</ul>
+<h3>FE</h3>
+<ul>
+<li><code>PROB-FE-01</code>: Problem creator/editor</li>
+<li><code>PROB-FE-02</code>: Testcase editor (text/upload)</li>
+</ul>
+<h2>Module: Submission</h2>
+<h3>Setup</h3>
+<ul>
+<li><code>SUB-SETUP-01</code>: Submission/result entities + migration</li>
+</ul>
+<h3>BE</h3>
+<ul>
+<li><code>SUB-BE-01</code>: Submission create API</li>
+<li><code>SUB-BE-02</code>: Source/object key mapping + persistence</li>
+</ul>
+<h3>FE</h3>
+<ul>
+<li><code>SUB-FE-01</code>: Code editor workspace</li>
+<li><code>SUB-FE-02</code>: Submission history + verdict details</li>
+</ul>
+<h2>Module: Judge Worker (Code)</h2>
+<h3>Setup</h3>
+<ul>
+<li><code>JUDGE-CODE-SETUP-01</code>: Queue topics, payload schema, retry policy</li>
+</ul>
+<h3>BE</h3>
+<ul>
+<li><code>JUDGE-CODE-BE-01</code>: Queue producer</li>
+<li><code>JUDGE-CODE-BE-02</code>: Verdict mapper + persister API contract</li>
+</ul>
+<h3>FE</h3>
+<ul>
+<li><code>JUDGE-CODE-FE-01</code>: Verdict/status model mapping for UI</li>
+</ul>
+<h3>Worker</h3>
+<ul>
+<li><code>JUDGE-CODE-WK-01</code>: Worker consumer core</li>
+<li><code>JUDGE-CODE-WK-02</code>: Code compile/run pipeline</li>
+</ul>
+<h2>Module: Sandbox</h2>
+<h3>Setup</h3>
+<ul>
+<li><code>SAND-SETUP-01</code>: Base Docker images + runtime profiles</li>
+</ul>
+<h3>BE</h3>
+<ul>
+<li><code>SAND-BE-01</code>: Sandbox policy config exposure (time/memory/lang)</li>
+</ul>
+<h3>FE</h3>
+<ul>
+<li><code>SAND-FE-01</code>: Display limits/config in assignment/problem UI</li>
+</ul>
+<h3>Worker</h3>
+<ul>
+<li><code>SAND-WK-01</code>: Docker driver adapter</li>
+<li><code>SAND-WK-02</code>: Resource limits (cpu/memory/time)</li>
+<li><code>SAND-WK-03</code>: Security profile (network/seccomp)</li>
+<li><code>SAND-WK-04</code>: Language execution scripts</li>
+</ul>
+<h2>Module: Realtime</h2>
+<h3>Setup</h3>
+<ul>
+<li><code>WS-SETUP-01</code>: Event naming convention + room strategy</li>
+</ul>
+<h3>BE</h3>
+<ul>
+<li><code>WS-BE-01</code>: Socket gateway + JWT handshake</li>
+<li><code>WS-BE-02</code>: Worker -&gt; gateway event emitter</li>
+</ul>
+<h3>FE</h3>
+<ul>
+<li><code>WS-FE-01</code>: Realtime listener + UI updates</li>
+</ul>
+<h2>Module: Storage (MinIO)</h2>
+<h3>Setup</h3>
+<ul>
+<li><code>STO-SETUP-01</code>: MinIO bucket policy + CORS + env config</li>
+</ul>
+<h3>BE</h3>
+<ul>
+<li><code>STO-BE-01</code>: Presign upload/download APIs</li>
+<li><code>STO-BE-02</code>: Bind object key APIs</li>
+</ul>
+<h3>FE</h3>
+<ul>
+<li><code>STO-FE-01</code>: Upload test route (image/file/zip/folder)</li>
+</ul>
+<h2>Module: AI Testcase</h2>
+<h3>Setup</h3>
+<ul>
+<li><code>AI-SETUP-01</code>: Provider keys/config + model routing policy</li>
+</ul>
+<h3>BE</h3>
+<ul>
+<li><code>AI-BE-01</code>: AI provider client + retry/backoff</li>
+<li><code>AI-BE-02</code>: Prompt/context builder</li>
+<li><code>AI-BE-03</code>: Generation job orchestrator</li>
+<li><code>AI-BE-04</code>: Parse/validate output schema</li>
+<li><code>AI-BE-05</code>: Persist generated testcase draft</li>
+<li><code>AI-BE-06</code>: Review/approve/reject APIs</li>
+</ul>
+<h3>FE</h3>
+<ul>
+<li><code>AI-FE-01</code>: AI generate + review UI</li>
+</ul>
+<h2>Module: Judge Worker (Project)</h2>
+<h3>Setup</h3>
+<ul>
+<li><code>JUDGE-PROJ-SETUP-01</code>: Project submission manifest schema</li>
+<li><code>JUDGE-PROJ-SETUP-02</code>: Assignment build/test config schema</li>
+</ul>
+<h3>BE</h3>
+<ul>
+<li><code>JUDGE-PROJ-BE-01</code>: Assignment build/test config APIs</li>
+<li><code>JUDGE-PROJ-BE-02</code>: Score breakdown + rubric mapper</li>
+</ul>
+<h3>FE</h3>
+<ul>
+<li><code>JUDGE-PROJ-FE-01</code>: Project upload + progress UI</li>
+<li><code>JUDGE-PROJ-FE-02</code>: Build/test logs + score viewer</li>
+</ul>
+<h3>Worker</h3>
+<ul>
+<li><code>JUDGE-PROJ-WK-01</code>: Artifact extractor + workspace prep</li>
+<li><code>JUDGE-PROJ-WK-02</code>: Build phase executor</li>
+<li><code>JUDGE-PROJ-WK-03</code>: Test phase executor</li>
+<li><code>JUDGE-PROJ-WK-04</code>: Build/test logs + artifact uploader</li>
+</ul>
+<h2>Module: Observability &amp; Ops</h2>
+<h3>Setup</h3>
+<ul>
+<li><code>OPS-SETUP-01</code>: Docker compose dev/test profiles</li>
+<li><code>OPS-SETUP-02</code>: Seed data + bootstrap scripts</li>
+</ul>
+<h3>BE</h3>
+<ul>
+<li><code>OPS-BE-01</code>: Structured logging + correlation id</li>
+<li><code>OPS-BE-02</code>: Health/readiness endpoints</li>
+<li><code>OPS-BE-03</code>: Queue metrics endpoints/dashboard feed</li>
+</ul>
+<h3>FE</h3>
+<ul>
+<li><code>OPS-FE-01</code>: Internal admin monitor page (queue/job overview)</li>
+</ul>
+<hr>
+<h2>2) TESTING</h2>
+<h2>Module: Auth</h2>
+<ul>
+<li><code>AUTH-TEST-01</code>: Unit tests auth services/token utils</li>
+<li><code>AUTH-TEST-02</code>: Integration tests register/login/refresh/logout</li>
+<li><code>AUTH-TEST-03</code>: FE e2e auth flow + route guard</li>
+</ul>
+<h2>Module: Classroom &amp; Enrollment</h2>
+<ul>
+<li><code>CLASS-TEST-01</code>: API integration class CRUD</li>
+<li><code>CLASS-TEST-02</code>: API integration enrollment states</li>
+<li><code>CLASS-TEST-03</code>: FE e2e create class/join/approve</li>
+</ul>
+<h2>Module: Problem &amp; Testcase</h2>
+<ul>
+<li><code>PROB-TEST-01</code>: Validation/permission tests</li>
+<li><code>PROB-TEST-02</code>: Hidden/public testcase behavior tests</li>
+<li><code>PROB-TEST-03</code>: FE form behavior/error state tests</li>
+</ul>
+<h2>Module: Submission</h2>
+<ul>
+<li><code>SUB-TEST-01</code>: Submission API contract tests</li>
+<li><code>SUB-TEST-02</code>: Source persistence/object key tests</li>
+<li><code>SUB-TEST-03</code>: FE submit + history rendering e2e</li>
+</ul>
+<h2>Module: Judge Worker (Code)</h2>
+<ul>
+<li><code>JUDGE-CODE-TEST-01</code>: End-to-end queue -&gt; worker -&gt; verdict</li>
+<li><code>JUDGE-CODE-TEST-02</code>: Verdict mapping tests (AC/WA/TLE/RE)</li>
+<li><code>JUDGE-CODE-TEST-03</code>: Retry/dead-letter behavior tests</li>
+</ul>
+<h2>Module: Sandbox</h2>
+<ul>
+<li><code>SAND-TEST-01</code>: Timeout/memory limit tests</li>
+<li><code>SAND-TEST-02</code>: Security escape tests (fork bomb/path abuse)</li>
+<li><code>SAND-TEST-03</code>: Multi-language execution smoke tests</li>
+</ul>
+<h2>Module: Realtime</h2>
+<ul>
+<li><code>WS-TEST-01</code>: Event ordering tests</li>
+<li><code>WS-TEST-02</code>: Reconnect/missed event tests</li>
+<li><code>WS-TEST-03</code>: Multi-client status consistency tests</li>
+</ul>
+<h2>Module: Storage (MinIO)</h2>
+<ul>
+<li><code>STO-TEST-01</code>: Presign expiration/access tests</li>
+<li><code>STO-TEST-02</code>: Upload matrix tests (image/file/zip/folder)</li>
+<li><code>STO-TEST-03</code>: Download validation + permission tests</li>
+</ul>
+<h2>Module: AI Testcase</h2>
+<ul>
+<li><code>AI-TEST-01</code>: Prompt accuracy benchmark</li>
+<li><code>AI-TEST-02</code>: Schema parse robustness tests</li>
+<li><code>AI-TEST-03</code>: Latency/failure fallback tests</li>
+<li><code>AI-TEST-04</code>: Review permission + audit tests</li>
+</ul>
+<h2>Module: Judge Worker (Project)</h2>
+<ul>
+<li><code>JUDGE-PROJ-TEST-01</code>: Happy path project build/test pass</li>
+<li><code>JUDGE-PROJ-TEST-02</code>: Build fail scenario tests</li>
+<li><code>JUDGE-PROJ-TEST-03</code>: Test fail + partial scoring tests</li>
+<li><code>JUDGE-PROJ-TEST-04</code>: Artifact security tests (zip bomb/path traversal)</li>
+<li><code>JUDGE-PROJ-TEST-05</code>: Concurrent project jobs performance tests</li>
+</ul>
+<h2>Module: Regression &amp; Release</h2>
+<ul>
+<li><code>REL-TEST-01</code>: Cross-module smoke test (full user flow)</li>
+<li><code>REL-TEST-02</code>: P0/P1 bug bash</li>
+<li><code>REL-TEST-03</code>: Staging deploy + final sanity checks</li>
+</ul>
+<hr>
+<h2>3) Uu tien thuc hien de xay dung theo muc do kho</h2>
+<ol>
+<li><strong>Develop + Testing cho Code Judge core truoc</strong><ul>
+<li>Auth -&gt; Problem/Testcase -&gt; Submission -&gt; Judge Code -&gt; Sandbox -&gt; Realtime</li>
+</ul>
+</li>
+<li><strong>Sau do mo AI Testcase</strong></li>
+<li><strong>Cuoi cung mo Project Judge</strong></li>
+</ol>
+<p>Thu tu nay giup tach ro do kho:</p>
+<ul>
+<li>AI testcase la bai toan chat luong noi dung</li>
+<li>Project judge la bai toan van hanh/sandbox phuc tap nhat</li>
+</ul>
+
+
+      </div>
+    </main>
+  </div>
+</body>
+</html>
