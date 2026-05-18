@@ -154,9 +154,6 @@ export default function AdminProblemCreate() {
       });
     }
 
-    if (editId && formData.dueAt && new Date(formData.dueAt) < new Date()) {
-      newErrors.dueAt = 'Hạn nộp không được ở quá khứ';
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -713,45 +710,7 @@ export default function AdminProblemCreate() {
                   </div>
                 </div>
 
-                {editId ? (
-                <div className="space-y-2 pt-2">
-                  <Label className="text-sm font-semibold flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5" /> Hạn nộp (tùy chọn)
-                  </Label>
-                  <Input
-                    type="datetime-local"
-                    min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000)
-                      .toISOString()
-                      .slice(0, 16)}
-                    value={
-                      formData.dueAt
-                        ? new Date(
-                            new Date(formData.dueAt).getTime() -
-                              new Date().getTimezoneOffset() * 60000,
-                          )
-                            .toISOString()
-                            .slice(0, 16)
-                        : ''
-                    }
-                    onChange={(e) => {
-                      const date = e.target.value;
-                      setFormData({
-                        ...formData,
-                        dueAt: date ? new Date(date).toISOString() : undefined,
-                      });
-                      if (errors.dueAt) setErrors({ ...errors, dueAt: '' });
-                    }}
-                    className={`rounded-xl border-gray-200 h-10 ${errors.dueAt ? 'border-red-500 bg-red-50' : ''}`}
-                  />
-                  {errors.dueAt && (
-                    <p className="text-[10px] text-red-500 font-medium">{errors.dueAt}</p>
-                  )}
-                  <p className="text-[10px] text-muted-foreground italic">
-                    Chỉ khi đề đã được gán trên ít nhất một lớp; cập nhật sẽ đồng bộ tiêu đề / mô tả / hạn
-                    trên các bài gán đó.
-                  </p>
-                </div>
-                ) : null}
+
 
                 <div className="space-y-3 pt-4 border-t">
                   <div className="flex items-center justify-between">

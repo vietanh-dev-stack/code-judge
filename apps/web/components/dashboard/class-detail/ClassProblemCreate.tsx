@@ -143,9 +143,6 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
       });
     }
 
-    if (formData.dueAt && new Date(formData.dueAt) < new Date()) {
-      newErrors.dueAt = 'Due date cannot be in the past';
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -662,42 +659,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                   </div>
                 </div>
 
-                <div className="space-y-2 pt-2">
-                  <Label className="text-sm font-semibold flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5" /> Due Date (Optional)
-                  </Label>
-                  <Input
-                    type="datetime-local"
-                    min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000)
-                      .toISOString()
-                      .slice(0, 16)}
-                    value={
-                      formData.dueAt
-                        ? new Date(
-                            new Date(formData.dueAt).getTime() -
-                              new Date().getTimezoneOffset() * 60000,
-                          )
-                            .toISOString()
-                            .slice(0, 16)
-                        : ''
-                    }
-                    onChange={(e) => {
-                      const date = e.target.value;
-                      setFormData({
-                        ...formData,
-                        dueAt: date ? new Date(date).toISOString() : undefined,
-                      });
-                      if (errors.dueAt) setErrors({ ...errors, dueAt: '' });
-                    }}
-                    className={`rounded-xl border-gray-200 h-10 ${errors.dueAt ? 'border-red-500 bg-red-50' : ''}`}
-                  />
-                  {errors.dueAt && (
-                    <p className="text-[10px] text-red-500 font-medium">{errors.dueAt}</p>
-                  )}
-                  <p className="text-[10px] text-muted-foreground italic">
-                    Students will see this as the deadline.
-                  </p>
-                </div>
+
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
                   <p className="text-xs text-blue-700">
