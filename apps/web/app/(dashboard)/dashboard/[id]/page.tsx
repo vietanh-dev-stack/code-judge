@@ -4,13 +4,14 @@ import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { getClassroomDetail } from '@/services/classroom.apis';
 import { getPublicCoreUrl } from '@/lib/public-config';
-import { Copy } from 'lucide-react';
+import { BellRing, Copy } from 'lucide-react';
 import { AssignmentPost } from '@/components/dashboard/class-detail/assignment-post';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getClassroomBannerColor } from '@/lib/classroom-banner';
 import { Contest, contestsApi } from '@/services/contest.apis';
-
+import { authApi } from '@/services/auth.apis';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 export const metadata: Metadata = {
   title: 'Class Stream | CodeJudge',
@@ -27,17 +28,18 @@ export default async function ClassStreamPage({ params }: { params: Promise<{ id
 
   let classroom;
   let contests: Contest[] = [];
+  let user;
 
   try {
-    const [classroomRes, contestsRes] = await Promise.all([
+    const [classroomRes, contestsRes, userRes] = await Promise.all([
       getClassroomDetail(id, { headers: { Cookie: cookieHeader } }),
-      contestsApi.findAll(
-        { limit: 10, classRoomId: id },
-        { headers: { Cookie: cookieHeader } },
-      ),
+      contestsApi.findAll({ limit: 10, classRoomId: id }, { headers: { Cookie: cookieHeader } }),
+      authApi.me({ headers: { Cookie: cookieHeader } }).catch(() => null),
     ]);
     classroom = classroomRes;
     contests = contestsRes.items;
+    console.log(contests);
+    user = userRes;
   } catch (error: any) {
     // If not in class or class not found, redirect to dashboard
     if (error.status === 403 || error.status === 404) {
@@ -49,6 +51,8 @@ export default async function ClassStreamPage({ params }: { params: Promise<{ id
   const sortedAssignments = [...(classroom.assignments || [])].sort(
     (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
   );
+
+  const incomingContests = contests.filter((c) => new Date(c.endAt) > new Date());
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -66,20 +70,25 @@ export default async function ClassStreamPage({ params }: { params: Promise<{ id
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         {/* Left Column (Upcoming) */}
         <div className="w-full lg:w-56 flex-shrink-0">
-          {classroom.owner && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-4">
-              <h2 className="font-semibold text-gray-900 mb-2">Class code</h2>
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{classroom.classCode}</p>
-                <Button className="cursor-pointer" variant="outline" size="icon">
-                  <Copy className="w-4 h-4" />
-                </Button>
-              </div>
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-4">
+            <h2 className="font-semibold text-gray-900 mb-2">Class code</h2>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500">{classroom.classCode}</p>
+              <Button className="cursor-pointer" variant="outline" size="icon">
+                <Copy className="w-4 h-4" />
+              </Button>
             </div>
-          )}
+          </div>
+
           <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
             <h2 className="font-semibold text-gray-900 mb-2">Incoming Test</h2>
-            <p className="text-sm text-gray-500 mb-4">Great, there are no incoming test!</p>
+            {incomingContests.length === 0 ? (
+              <p className="text-sm text-gray-500 mb-4">Great, there are no incoming test!</p>
+            ) : (
+              <p className="text-sm text-gray-500 mb-4">
+                You have {incomingContests.length} incoming test{incomingContests.length > 1 ? 's' : ''}.
+              </p>
+            )}
 
             <div className="flex justify-end">
               <Button
@@ -87,7 +96,7 @@ export default async function ClassStreamPage({ params }: { params: Promise<{ id
                 className="p-0 h-auto text-black font-semibold hover:no-underline hover:text-gray-700 cursor-pointer"
                 asChild
               >
-                <Link href={`/dashboard/${id}/classwork`}>View all classwork</Link>
+                <Link href={`/dashboard/${id}/contests`}>View all contest</Link>
               </Button>
             </div>
           </div>
@@ -96,7 +105,7 @@ export default async function ClassStreamPage({ params }: { params: Promise<{ id
         {/* Right Column (Feed) */}
         <div className="flex-1 w-full space-y-4">
           {/* Announce something to your class box */}
-          {classroom.owner && (
+          {classroom.ownerId === user?.id && (
             <Link
               href={`/dashboard/${id}/contests`}
               className="cursor-pointer bg-white border border-gray-200 rounded-lg p-4 shadow-sm flex items-center gap-4 hover:bg-gray-50 transition-colors"
