@@ -14,6 +14,7 @@ import { AiTestcaseModule } from './ai-testcase/ai-testcase.module';
 import { InvitesModule } from './invites/invites.module';
 import { MailModule } from './mail/mail.module';
 import { GoldenSolutionsModule } from './golden-solutions/golden-solutions.module';
+import { AdminDashboardModule } from './admin-dashboard/admin-dashboard.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { GoldenSolutionsModule } from './golden-solutions/golden-solutions.modul
     MailModule,
     InvitesModule,
     GoldenSolutionsModule,
+    AdminDashboardModule,
   ],
 })
 export class AppModule {}

@@ -36,6 +36,7 @@ import { Problem, problemsApi } from '@/services/problem.apis';
 import { useDebounce } from '@/hooks/use-debounce';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import Link from 'next/link';
 
 export default function ClassContestsTab({
   classId,
@@ -246,6 +247,8 @@ export default function ClassContestsTab({
       contest.description?.toLowerCase().includes(debouncedSearch.toLowerCase()),
   );
 
+  console.log(filteredContests);
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'RUNNING':
@@ -277,7 +280,11 @@ export default function ClassContestsTab({
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Class Contests</h2>
-          <p className="text-muted-foreground">Manage and track contests for your students.</p>
+          <p className="text-muted-foreground">
+            {isOwner
+              ? 'Manage and track contests for your students.'
+              : 'View contests available for your class.'}
+          </p>
         </div>
         {isOwner && (
           <Button
@@ -525,8 +532,8 @@ export default function ClassContestsTab({
                 <TableHead className="py-4 font-bold text-black">Status</TableHead>
                 <TableHead className="py-4 font-bold text-black">Timeline</TableHead>
                 <TableHead className="py-4 font-bold text-black">Problems</TableHead>
-                <TableHead className="py-4 font-bold text-black text-right pr-6">
-                  {isOwner ? 'Actions' : ''}
+                <TableHead className="py-4 font-bold text-black text-right pr-12">
+                  Actions
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -576,7 +583,7 @@ export default function ClassContestsTab({
                       </div>
                     </TableCell>
                     <TableCell className="py-4 text-right pr-6">
-                      {isOwner && (
+                      {isOwner ? (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -605,6 +612,13 @@ export default function ClassContestsTab({
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                      ) : (
+                        <Link
+                          href={`/dashboard/${classId}/contests/${contest.id}`}
+                          className="border border-gray-800 rounded-md p-2 bg-black text-white font-medium hover:bg-gray-800"
+                        >
+                          View Details
+                        </Link>
                       )}
                     </TableCell>
                   </TableRow>

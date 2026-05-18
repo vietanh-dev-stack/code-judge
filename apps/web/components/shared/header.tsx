@@ -11,7 +11,6 @@ export default function Header() {
   return (
     <nav className="sticky top-0 z-40 bg-background border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-
         {/* Logo */}
         <div className="flex items-center gap-2">
           <Link href="/" className="flex items-center gap-2">
@@ -24,22 +23,36 @@ export default function Header() {
 
         {/* Menu */}
         <div className="hidden md:flex items-center gap-8">
-          <Link href="/dashboard/problems" className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1.5 group">
+          <Link
+            href="/#for-educators"
+            className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1.5 group"
+          >
             <span className="w-1.5 h-1.5 rounded-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-            Problems
+            Educators
           </Link>
-          <Link href="/dashboard/contests" className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1.5 group">
+          <Link
+            href="/#for-students"
+            className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1.5 group"
+          >
             <span className="w-1.5 h-1.5 rounded-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-            Contests
+            Students
           </Link>
-          <a href="/#features" className="text-sm font-medium hover:text-primary transition-colors">
+          <Link
+            href="/#features"
+            className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1.5 group"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
             Features
-          </a>
+          </Link>
         </div>
 
         <div className="flex items-center gap-4">
           {user ? (
-            <Button variant="default" asChild className="rounded-full px-6 shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95">
+            <Button
+              variant="default"
+              asChild
+              className="rounded-full px-6 shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+            >
               <Link href="/dashboard" className="flex items-center gap-2">
                 <LayoutDashboard className="w-4 h-4" />
                 Go to Dashboard
@@ -50,7 +63,10 @@ export default function Header() {
               <Button variant="ghost" asChild className="hover:bg-primary/5">
                 <Link href="/login">Sign In</Link>
               </Button>
-              <Button asChild className="rounded-full px-6 shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95">
+              <Button
+                asChild
+                className="rounded-full px-6 shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+              >
                 <Link href="/register">Get Started</Link>
               </Button>
             </>

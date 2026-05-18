@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { getPublicCoreUrl } from '@/lib/public-config';
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import ClassworkList from '@/components/dashboard/class-detail/ClassworkList';
 import { Problem, problemsApi } from '@/services/problem.apis';
 import { getClassroomDetail } from '@/services/classroom.apis';
@@ -17,29 +18,43 @@ export default async function ClassworkPage({ params }: { params: Promise<{ id: 
   const cookieStore = await cookies();
   const cookieHeader = cookieStore.toString();
 
-  const [problemsResult, classroom, user] = await Promise.all([
-    problemsApi.findAll(
-      {
-        limit: 50,
-        classRoomId: id,
-      },
-      {
+  let problemsResult;
+  let classroom;
+  let user;
+
+  try {
+    const results = await Promise.all([
+      problemsApi.findAll(
+        {
+          limit: 50,
+          classRoomId: id,
+        },
+        {
+          headers: {
+            Cookie: cookieHeader,
+          },
+        },
+      ),
+      getClassroomDetail(id, {
         headers: {
           Cookie: cookieHeader,
         },
-      },
-    ),
-    getClassroomDetail(id, {
-      headers: {
-        Cookie: cookieHeader,
-      },
-    }),
-    authApi.me({
-      headers: {
-        Cookie: cookieHeader,
-      },
-    }),
-  ]);
+      }),
+      authApi.me({
+        headers: {
+          Cookie: cookieHeader,
+        },
+      }),
+    ]);
+    problemsResult = results[0];
+    classroom = results[1];
+    user = results[2];
+  } catch (error: any) {
+    if (error.status === 403 || error.status === 404) {
+      redirect('/dashboard');
+    }
+    throw error;
+  }
 
   const initialProblems = problemsResult.items as Problem[];
   const isOwner = classroom.ownerId === user.id;

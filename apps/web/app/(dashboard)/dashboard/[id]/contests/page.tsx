@@ -3,6 +3,7 @@ import ClassContestsTab from '@/components/dashboard/class-detail/ClassContestsT
 import { getClassroomDetail } from '@/services/classroom.apis';
 import { authApi } from '@/services/auth.apis';
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Manage Contests | CodeJudge',
@@ -14,18 +15,30 @@ export default async function ClassContestsPage({ params }: { params: Promise<{ 
   const cookieStore = await cookies();
   const cookieHeader = cookieStore.toString();
 
-  const [classroom, user] = await Promise.all([
-    getClassroomDetail(id, {
-      headers: {
-        Cookie: cookieHeader,
-      },
-    }),
-    authApi.me({
-      headers: {
-        Cookie: cookieHeader,
-      },
-    }),
-  ]);
+  let classroom;
+  let user;
+
+  try {
+    const results = await Promise.all([
+      getClassroomDetail(id, {
+        headers: {
+          Cookie: cookieHeader,
+        },
+      }),
+      authApi.me({
+        headers: {
+          Cookie: cookieHeader,
+        },
+      }),
+    ]);
+    classroom = results[0];
+    user = results[1];
+  } catch (error: any) {
+    if (error.status === 403 || error.status === 404) {
+      redirect('/dashboard');
+    }
+    throw error;
+  }
 
   const isOwner = classroom.ownerId === user.id;
 

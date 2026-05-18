@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Contest, contestsApi } from '@/services/contest.apis';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 export default function ContestDetailPage() {
   const params = useParams();
@@ -20,6 +22,8 @@ export default function ContestDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const router = useRouter();
+
   useEffect(() => {
     if (!contestId) return;
 
@@ -29,10 +33,19 @@ export default function ContestDetailPage() {
 
       try {
         const data = await contestsApi.findById(contestId);
+
+        if (new Date(data.startAt) > new Date()) {
+          toast.error('This contest is not start yet. You can not access to this contest!', {
+            position: 'top-center',
+          });
+          router.back();
+          return;
+        }
+
         setContest(data);
       } catch (err) {
         console.error('Failed to load contest:', err);
-        setError('Không thể tải thông tin contest. Vui lòng thử lại sau.');
+        setError('Failed to load contest data!');
       } finally {
         setLoading(false);
       }

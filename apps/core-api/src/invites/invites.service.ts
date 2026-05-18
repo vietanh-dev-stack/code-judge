@@ -124,18 +124,32 @@ export class InvitesService {
     });
 
     if (existing) {
-      throw new BadRequestException('Already enrolled in this class');
-    }
+      if (existing.status === 'ACTIVE') {
+        throw new BadRequestException('You are already enrolled in this class');
+      }
+      if (existing.status === 'BLOCKED') {
+        throw new ForbiddenException('You have been blocked from this class');
+      }
 
-    await this.prisma.classEnrollment.create({
-      data: {
-        classRoomId: invite.classRoomId,
-        userId,
-        role: 'MEMBER',
-        status: 'ACTIVE',
-        joinedAt: new Date(),
-      },
-    });
+      // Re-activate enrollment
+      await this.prisma.classEnrollment.update({
+        where: { id: existing.id },
+        data: {
+          status: 'ACTIVE',
+          joinedAt: new Date(),
+        },
+      });
+    } else {
+      await this.prisma.classEnrollment.create({
+        data: {
+          classRoomId: invite.classRoomId,
+          userId,
+          role: 'MEMBER',
+          status: 'ACTIVE',
+          joinedAt: new Date(),
+        },
+      });
+    }
 
     await this.prisma.classInvite.update({
       where: { id: invite.id },
