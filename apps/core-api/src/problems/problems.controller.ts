@@ -4,6 +4,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { RequestUser } from '../common/interfaces/request-user.interface';
 import { CurrentUser, Public, Roles } from '../common';
 import { GenerateAiTestcaseDto } from '../ai-testcase/dto/generate-ai-testcase.dto';
+import { GenerateAiProjectTestcaseDto } from '../ai-testcase/dto/generate-ai-project-testcase.dto';
 import { AiTestcaseService } from '../ai-testcase/ai-testcase.service';
 import { CreateAdminProblemDto } from './dto/create-admin-problem.dto';
 import { CreateProblemDto } from './dto/create-problem.dto';
@@ -34,6 +35,8 @@ export class ProblemsController {
     @Query('classRoomId') classRoomId?: string,
     @Query('difficulty') difficulty?: string,
     @Query('mode') mode?: string,
+    @Query('tagId') tagId?: string,
+    @Query('tagSlug') tagSlug?: string,
   ) {
     return this.problemsService.findAll({
       search,
@@ -41,7 +44,7 @@ export class ProblemsController {
       limit: limit ? Number(limit) : undefined,
       classRoomId,
       difficulty,
-      mode,
+      mode
     });
   }
 
@@ -53,11 +56,13 @@ export class ProblemsController {
     @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('tagId') tagId?: string,
+    @Query('tagSlug') tagSlug?: string,
   ) {
     return this.problemsService.findAllAdmin({
       search,
       page: page ? Number(page) : undefined,
-      limit: limit ? Number(limit) : undefined,
+      limit: limit ? Number(limit) : undefined
     });
   }
 
@@ -77,6 +82,16 @@ export class ProblemsController {
   @Post('generate-test-cases-draft')
   async generateTestCasesDraft(@Body() dto: GenerateAiTestcaseDto) {
     return this.aiTestcaseService.generateDraft(dto);
+  }
+
+  @ApiBearerAuth('JWT')
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: 'Sinh bản nháp hidden tests PROJECT (phân tích đề + file test). Chỉ ADMIN.',
+  })
+  @Post('generate-project-test-cases-draft')
+  async generateProjectTestCasesDraft(@Body() dto: GenerateAiProjectTestcaseDto) {
+    return this.aiTestcaseService.generateProjectDraft(dto);
   }
 
   @Public()

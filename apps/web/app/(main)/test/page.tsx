@@ -27,6 +27,7 @@ import { getPublicCoreUrl } from '@/lib/public-config';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { apiFetch, getApiBaseUrl } from '@/services/api-client';
 import { readSourceFileAsUtf8Text } from '@/lib/read-source-file';
+import { ProjectTestcaseGenerateTab } from '@/components/test/ProjectTestcaseGenerateTab';
 
 function coreApiHeaders(jsonBody = false): HeadersInit {
   const headers: Record<string, string> = {};
@@ -781,7 +782,7 @@ export default function TestPage() {
           <p className={cn('text-xs font-medium uppercase tracking-wider text-muted-foreground')}>Test</p>
           <h1 className={cn('text-3xl font-semibold tracking-tight')}>Lab tích hợp (/test)</h1>
           <p className={cn('max-w-2xl text-sm text-muted-foreground')}>
-            Hai chế độ: upload MinIO (presign) và thử AI sinh testcase + chạy golden Python để đối chiếu đáp án.
+            Ba tab: upload MinIO, AI ALGO + golden verify, và sinh hidden tests cho bài PROJECT.
           </p>
           <p className={cn('text-xs text-muted-foreground')}>
             Core API URL hiện tại: <code className={cn('rounded bg-muted px-1')}>{coreUrl}</code> (từ{' '}
@@ -790,13 +791,18 @@ export default function TestPage() {
         </header>
 
         <Tabs defaultValue="upload" className={cn('w-full')}>
-          <TabsList className={cn('mb-6')}>
+          <TabsList className={cn('mb-6 flex-wrap h-auto gap-1')}>
             <TabsTrigger value="upload">Upload MinIO</TabsTrigger>
             <TabsTrigger value="ai-golden">AI + golden verify</TabsTrigger>
+            <TabsTrigger value="project-testcase">PROJECT testcase</TabsTrigger>
           </TabsList>
 
           <TabsContent value="ai-golden" className={cn('space-y-6')}>
             <AiGoldenVerifyTab />
+          </TabsContent>
+
+          <TabsContent value="project-testcase" className={cn('space-y-6')}>
+            <ProjectTestcaseGenerateTab />
           </TabsContent>
 
           <TabsContent value="upload" className={cn('space-y-10')}>

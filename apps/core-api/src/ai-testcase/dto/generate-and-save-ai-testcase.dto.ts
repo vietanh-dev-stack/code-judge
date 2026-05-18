@@ -46,4 +46,27 @@ export class GenerateAndSaveAiTestcaseDto {
   @IsString()
   @MaxLength(120)
   model?: string;
+
+  @ApiPropertyOptional({ enum: ['backend', 'frontend', 'fullstack'] })
+  @IsOptional()
+  @IsIn(['backend', 'frontend', 'fullstack'])
+  stack?: 'backend' | 'frontend' | 'fullstack';
+
+  @ApiPropertyOptional({ example: 'nest' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  framework?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(10000)
+  rubric?: string;
+
+  @ApiPropertyOptional({ description: 'Mô tả golden solution để căn test' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(12000)
+  goldenSummary?: string;
 }

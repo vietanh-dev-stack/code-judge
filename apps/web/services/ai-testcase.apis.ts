@@ -36,6 +36,110 @@ export interface VerifyTestcasesWithGoldenBody {
   timeLimitMsPerCase?: number;
 }
 
+export type ProjectTestcaseSampleKey = 'backend' | 'frontend' | 'fullstack';
+
+export interface GenerateAiProjectTestcaseBody {
+  title: string;
+  statement: string;
+  stack?: 'backend' | 'frontend' | 'fullstack';
+  framework?: string;
+  difficulty?: string;
+  maxTestCases?: number;
+  rubric?: string;
+  acceptanceCriteria?: string[];
+  goldenSummary?: string;
+  starterTemplateSummary?: string;
+  supplementaryText?: string;
+  installCommand?: string;
+  testCommand?: string;
+  resultParser?: 'jest-json' | 'playwright-json';
+  dockerImage?: string;
+  provider?: 'openai' | 'google';
+  model?: string;
+}
+
+export interface ProjectTestManifestItem {
+  testName: string;
+  requirementIds: string[];
+  suite: string;
+  filePath: string;
+  weight: number;
+  isHidden: boolean;
+  rationale: string;
+}
+
+export interface ProjectTestFile {
+  path: string;
+  content: string;
+}
+
+export interface GeneratedProjectTestcaseParsed {
+  problemBrief: {
+    title: string;
+    summary: string;
+    stack: 'backend' | 'frontend' | 'fullstack';
+    functionalRequirements: Array<{
+      id: string;
+      description: string;
+      priority: 'must' | 'should' | 'could';
+    }>;
+    apiEndpoints?: string[];
+    uiFlows?: string[];
+    assumptions: string[];
+    outOfScope: string[];
+  };
+  testManifest: ProjectTestManifestItem[];
+  files: ProjectTestFile[];
+  runConfig: {
+    installCommand: string;
+    testCommand: string;
+    resultParser: 'jest-json' | 'playwright-json';
+    dockerImage: string;
+  };
+  notes?: string;
+}
+
+export interface GenerateProjectDraftResult {
+  provider: string;
+  model: string;
+  promptVersion: string;
+  raw: string;
+  parsed: GeneratedProjectTestcaseParsed | null;
+  parseError?: string;
+  validation?: {
+    valid: boolean;
+    issues: Array<{ code: string; message: string; path?: string }>;
+  };
+}
+
+export interface ProjectTestcaseSampleListResult {
+  keys: ProjectTestcaseSampleKey[];
+  samples: Array<{
+    key: ProjectTestcaseSampleKey;
+    label: string;
+    description: string;
+    dto: GenerateAiProjectTestcaseBody;
+  }>;
+}
+
+export interface TestGenerateProjectSampleResult {
+  mode: 'single' | 'all';
+  results: Array<{
+    sample: ProjectTestcaseSampleKey;
+    label: string;
+    ok: boolean;
+    provider: string;
+    model: string;
+    promptVersion: string;
+    parseError?: string;
+    validation?: GenerateProjectDraftResult['validation'];
+    problemBrief?: GeneratedProjectTestcaseParsed['problemBrief'];
+    testCount?: number;
+    fileCount?: number;
+    rawPreview?: string;
+  }>;
+}
+
 export const aiTestcaseApi = {
   async verifyTestcasesWithGolden(
     body: VerifyTestcasesWithGoldenBody,
@@ -43,6 +147,28 @@ export const aiTestcaseApi = {
   ): Promise<VerifyTestcasesWithGoldenResult> {
     return apiFetch('/ai-testcase/verify-testcases-with-golden', {
       ...options,
+      method: 'POST',
+      body,
+    });
+  },
+
+  async listProjectTestcaseSamples(): Promise<ProjectTestcaseSampleListResult> {
+    return apiFetch('/ai-testcase/project-testcase-samples', { method: 'GET' });
+  },
+
+  async generateProjectDraft(body: GenerateAiProjectTestcaseBody): Promise<GenerateProjectDraftResult> {
+    return apiFetch('/ai-testcase/generate-project-draft', {
+      method: 'POST',
+      body,
+    });
+  },
+
+  async testGenerateProjectSample(body: {
+    sample?: ProjectTestcaseSampleKey;
+    provider?: 'openai' | 'google';
+    model?: string;
+  }): Promise<TestGenerateProjectSampleResult> {
+    return apiFetch('/ai-testcase/test-generate-project-sample', {
       method: 'POST',
       body,
     });

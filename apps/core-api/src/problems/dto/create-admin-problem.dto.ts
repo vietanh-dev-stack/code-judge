@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  ArrayMaxSize,
   IsArray,
   IsBoolean,
   IsIn,
@@ -7,6 +8,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -80,4 +82,11 @@ export class CreateAdminProblemDto {
   @ValidateNested({ each: true })
   @Type(() => CreateTestCaseDto)
   testCases?: CreateTestCaseDto[];
+
+  @ApiPropertyOptional({ type: [String], description: 'UUID các Tag gán cho đề' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(40)
+  @IsUUID('4', { each: true })
+  tagIds?: string[];
 }

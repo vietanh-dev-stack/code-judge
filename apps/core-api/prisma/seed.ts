@@ -95,6 +95,22 @@ async function seed(): Promise<void> {
     ],
   });
 
+  const seedTags = [
+    { slug: 'array', name: 'Array / Mảng' },
+    { slug: 'string', name: 'String / Xâu' },
+    { slug: 'math', name: 'Math / Số học' },
+    { slug: 'implementation', name: 'Implementation' },
+    { slug: 'graphs', name: 'Graphs / Đồ thị' },
+    { slug: 'dp', name: 'Dynamic programming' },
+  ] as const;
+  for (const t of seedTags) {
+    await prisma.tag.upsert({
+      where: { slug: t.slug },
+      create: { slug: t.slug, name: t.name },
+      update: { name: t.name },
+    });
+  }
+
   const now = new Date();
 
   await prisma.classRoom.createMany({

@@ -11,9 +11,28 @@ import {
   generatedTestcaseSchema,
   GeneratedTestcaseOutput,
 } from './ai-testcase.prompt';
+import {
+  AI_PROJECT_PROMPT_VERSION_DEFAULT,
+  buildAiProjectTestcaseMessages,
+  generatedProjectTestcaseSchema,
+  GeneratedProjectTestcaseOutput,
+} from './ai-project-testcase.prompt';
 import { GenerateAiTestcaseDto } from './dto/generate-ai-testcase.dto';
+import { GenerateAiProjectTestcaseDto } from './dto/generate-ai-project-testcase.dto';
 import { GenerateAndSaveAiTestcaseDto } from './dto/generate-and-save-ai-testcase.dto';
 import { QuickGenerateAiTestcaseDto } from './dto/quick-generate-ai-testcase.dto';
+import { TestGenerateProjectSampleDto } from './dto/test-generate-project-sample.dto';
+import {
+  validateGeneratedProjectTestcase,
+  type ProjectTestcaseValidationResult,
+} from './project-testcase-output.validator';
+import {
+  getProjectTestcaseSample,
+  PROJECT_TESTCASE_SAMPLE_KEYS,
+  PROJECT_TESTCASE_SAMPLES,
+  type ProjectTestcaseSampleDefinition,
+  type ProjectTestcaseSampleKey,
+} from './project-testcase-samples';
 
 interface GenerateDraftResult {
   provider: 'openai' | 'google';
@@ -24,6 +43,16 @@ interface GenerateDraftResult {
   parseError?: string;
 }
 
+export interface GenerateProjectDraftResult {
+  provider: 'openai' | 'google';
+  model: string;
+  promptVersion: string;
+  raw: string;
+  parsed: GeneratedProjectTestcaseOutput | null;
+  parseError?: string;
+  validation?: ProjectTestcaseValidationResult;
+}
+
 interface GenerateAndSaveResult {
   jobId: string;
   mode: ProblemMode;
@@ -32,10 +61,8 @@ interface GenerateAndSaveResult {
   model?: string;
   promptVersion?: string;
   parseError?: string;
-  projectSetup?: {
-    storageIntegrated: false;
-    plannedObjectKeys: Array<{ index: number; input: string; expected: string }>;
-  };
+  validation?: ProjectTestcaseValidationResult;
+  problemBrief?: GeneratedProjectTestcaseOutput['problemBrief'];
 }
 
 @Injectable()
@@ -171,6 +198,224 @@ export class AiTestcaseService {
     };
   }
 
+  async generateProjectDraft(input: GenerateAiProjectTestcaseDto): Promise<GenerateProjectDraftResult> {
+    const fastMode = this.isFastModeEnabled();
+    const primaryProvider = input.provider ?? this.getDefaultProvider();
+    const primaryModel = input.model ?? this.getDefaultModel(primaryProvider);
+    const promptVersion =
+      this.config.get<string>(EnvKeys.AI_PROJECT_PROMPT_VERSION) ?? AI_PROJECT_PROMPT_VERSION_DEFAULT;
+    const maxTests = Math.min(Math.max(input.maxTestCases ?? 12, 1), 25);
+    const configuredMaxTokens = Number(this.config.get<string>(EnvKeys.AI_MAX_TOKENS) ?? 4096);
+    const tokenFloor = 2400 + maxTests * 450;
+    const outputCap = fastMode ? 16384 : 32768;
+    const maxTokens = Math.min(Math.max(configuredMaxTokens, tokenFloor), outputCap);
+    const configuredTemperature = Number(this.config.get<string>(EnvKeys.AI_TEMPERATURE) ?? 0.2);
+    const temperature = fastMode ? 0 : configuredTemperature;
+
+    const messages = buildAiProjectTestcaseMessages(input, promptVersion);
+    const effectiveMessages = fastMode ? this.buildFastModeProjectMessages(messages) : messages;
+    const fallbackProvider: 'openai' | 'google' = primaryProvider === 'google' ? 'openai' : 'google';
+    const fallbackModel = this.getDefaultModel(fallbackProvider);
+
+    const plans: Array<{ provider: 'openai' | 'google'; model: string }> = fastMode
+      ? [{ provider: primaryProvider, model: primaryModel }]
+      : [
+          { provider: primaryProvider, model: primaryModel },
+          { provider: fallbackProvider, model: fallbackModel },
+        ];
+
+    let text = '';
+    let usedProvider = primaryProvider;
+    let usedModel = primaryModel;
+    const planFailures: string[] = [];
+
+    for (const plan of plans) {
+      try {
+        const chunk = await this.generateWithRetry(
+          plan.provider,
+          plan.model,
+          effectiveMessages,
+          temperature,
+          maxTokens,
+          fastMode ? 1 : 3,
+        );
+        if (!chunk.trim()) {
+          planFailures.push(`${plan.provider}/${plan.model}: empty model response`);
+          continue;
+        }
+        text = chunk;
+        usedProvider = plan.provider;
+        usedModel = plan.model;
+        break;
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        planFailures.push(`${plan.provider}/${plan.model}: ${msg}`);
+      }
+    }
+
+    if (!text.trim()) {
+      const detail = planFailures.length ? planFailures.join(' | ') : 'no attempts recorded';
+      throw new Error(`All AI providers failed. ${detail}`);
+    }
+
+    let parsed: GeneratedProjectTestcaseOutput | null = null;
+    let parseError: string | undefined;
+    let validation: ProjectTestcaseValidationResult | undefined;
+
+    try {
+      parsed = this.parseProjectOutput(text);
+      validation = validateGeneratedProjectTestcase(parsed, { maxTestCases: maxTests });
+      if (!validation.valid) {
+        parseError = validation.issues.map((i) => `${i.code}: ${i.message}`).join('; ');
+        parsed = null;
+      }
+    } catch (error) {
+      if (this.isLikelyTruncatedOutput(text)) {
+        const compactMessages = this.buildCompactRetryMessages(messages);
+        const retryBudget = Math.min(outputCap, Math.max(maxTokens * 2, 8000));
+        try {
+          const retryText = await this.generateWithRetry(
+            usedProvider,
+            usedModel,
+            compactMessages,
+            0,
+            retryBudget,
+            1,
+          );
+          text = retryText;
+          parsed = this.parseProjectOutput(retryText);
+          validation = validateGeneratedProjectTestcase(parsed, { maxTestCases: maxTests });
+          if (!validation.valid) {
+            parseError = validation.issues.map((i) => `${i.code}: ${i.message}`).join('; ');
+            parsed = null;
+          } else {
+            parseError = undefined;
+          }
+        } catch (retryError) {
+          parseError = retryError instanceof Error ? retryError.message : 'Unknown parse error';
+        }
+      } else {
+        parseError = error instanceof Error ? error.message : 'Unknown parse error';
+      }
+    }
+
+    return {
+      provider: usedProvider,
+      model: usedModel,
+      promptVersion,
+      raw: text,
+      parsed,
+      parseError,
+      validation,
+    };
+  }
+
+  listProjectTestcaseSamples(): {
+    samples: Array<{
+      key: ProjectTestcaseSampleKey;
+      label: string;
+      description: string;
+      dto: GenerateAiProjectTestcaseDto;
+    }>;
+    keys: readonly ProjectTestcaseSampleKey[];
+  } {
+    const samples = PROJECT_TESTCASE_SAMPLE_KEYS.map((key) => {
+      const def = PROJECT_TESTCASE_SAMPLES[key];
+      return {
+        key: def.key,
+        label: def.label,
+        description: def.description,
+        dto: def.dto,
+      };
+    });
+    return { keys: PROJECT_TESTCASE_SAMPLE_KEYS, samples };
+  }
+
+  async testGenerateProjectSample(
+    input: TestGenerateProjectSampleDto,
+  ): Promise<{
+    mode: 'single' | 'all';
+    results: Array<{
+      sample: ProjectTestcaseSampleKey;
+      label: string;
+      ok: boolean;
+      provider: string;
+      model: string;
+      promptVersion: string;
+      parseError?: string;
+      validation?: ProjectTestcaseValidationResult;
+      problemBrief?: GeneratedProjectTestcaseOutput['problemBrief'];
+      testCount?: number;
+      fileCount?: number;
+      /** Raw JSON string từ model — có thể rất dài khi debug */
+      rawPreview?: string;
+    }>;
+  }> {
+    const keys: ProjectTestcaseSampleKey[] = input.sample
+      ? [input.sample]
+      : [...PROJECT_TESTCASE_SAMPLE_KEYS];
+
+    const results: Array<{
+      sample: ProjectTestcaseSampleKey;
+      label: string;
+      ok: boolean;
+      provider: string;
+      model: string;
+      promptVersion: string;
+      parseError?: string;
+      validation?: ProjectTestcaseValidationResult;
+      problemBrief?: GeneratedProjectTestcaseOutput['problemBrief'];
+      testCount?: number;
+      fileCount?: number;
+      rawPreview?: string;
+    }> = [];
+
+    for (const key of keys) {
+      const def: ProjectTestcaseSampleDefinition = getProjectTestcaseSample(key);
+      const dto: GenerateAiProjectTestcaseDto = {
+        ...def.dto,
+        ...(input.provider ? { provider: input.provider } : {}),
+        ...(input.model ? { model: input.model } : {}),
+      };
+
+      try {
+        const generated = await this.generateProjectDraft(dto);
+        const ok = Boolean(generated.parsed) && (generated.validation?.valid ?? false);
+        results.push({
+          sample: key,
+          label: def.label,
+          ok,
+          provider: generated.provider,
+          model: generated.model,
+          promptVersion: generated.promptVersion,
+          parseError: generated.parseError,
+          validation: generated.validation,
+          problemBrief: generated.parsed?.problemBrief,
+          testCount: generated.parsed?.testManifest.length,
+          fileCount: generated.parsed?.files.length,
+          rawPreview: generated.raw.length > 4000 ? `${generated.raw.slice(0, 4000)}…` : generated.raw,
+        });
+      } catch (error) {
+        results.push({
+          sample: key,
+          label: def.label,
+          ok: false,
+          provider: input.provider ?? this.getDefaultProvider(),
+          model: input.model ?? this.getDefaultModel(input.provider ?? this.getDefaultProvider()),
+          promptVersion:
+            this.config.get<string>(EnvKeys.AI_PROJECT_PROMPT_VERSION) ??
+            AI_PROJECT_PROMPT_VERSION_DEFAULT,
+          parseError: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    return {
+      mode: input.sample ? 'single' : 'all',
+      results,
+    };
+  }
+
   async generateAndSave(input: GenerateAndSaveAiTestcaseDto, user: RequestUser): Promise<GenerateAndSaveResult> {
     const problem = await this.prisma.problem.findUnique({
       where: { id: input.problemId },
@@ -204,37 +449,111 @@ export class AiTestcaseService {
       },
     });
 
-    // PROJECT mode is intentionally "setup-only" for now:
-    // we generate planned storage keys and persist metadata, but do not insert TestCase rows yet.
     if (problem.mode === ProblemMode.PROJECT) {
-      const plannedCount = Math.min(input.maxTestCases ?? problem.maxTestCases ?? 8, 20);
-      const plannedObjectKeys = Array.from({ length: plannedCount }, (_, index) => {
-        const keys = buildAiGeneratedTestcaseObjectKeys(createdJob.id, index);
-        return { index, input: keys.input, expected: keys.expected };
-      });
-
       await this.prisma.aiGenerationJob.update({
         where: { id: createdJob.id },
-        data: {
-          status: 'SUCCEEDED',
-          structuredOutput: {
-            mode: 'PROJECT',
-            storageIntegrated: false,
-            message:
-              'Project testcase generation setup is prepared. Storage persistence is intentionally not integrated yet.',
-            plannedObjectKeys,
-          },
-        },
+        data: { status: 'RUNNING' },
       });
+
+      const projectPromptVersion =
+        this.config.get<string>(EnvKeys.AI_PROJECT_PROMPT_VERSION) ?? AI_PROJECT_PROMPT_VERSION_DEFAULT;
+
+      const generated = await this.generateProjectDraft({
+        title: problem.title,
+        statement: problem.statementMd ?? problem.description ?? '',
+        difficulty: problem.difficulty,
+        stack: input.stack ?? this.inferProjectStack(problem.supportedLanguages),
+        framework: input.framework,
+        maxTestCases: Math.min(input.maxTestCases ?? problem.maxTestCases ?? 12, 25),
+        supplementaryText: input.supplementaryText,
+        rubric: input.rubric,
+        goldenSummary: input.goldenSummary,
+        provider: input.provider,
+        model: input.model,
+      });
+
+      if (!generated.parsed) {
+        await this.prisma.aiGenerationJob.update({
+          where: { id: createdJob.id },
+          data: {
+            status: 'FAILED',
+            promptVersion: projectPromptVersion,
+            errorMessage: generated.parseError ?? 'Failed to parse or validate project testcase output',
+            structuredOutput: {
+              mode: 'PROJECT',
+              raw: generated.raw,
+              parseError: generated.parseError,
+              validation: generated.validation,
+            },
+          },
+        });
+
+        return {
+          jobId: createdJob.id,
+          mode: ProblemMode.PROJECT,
+          persistedTestCaseCount: 0,
+          provider: generated.provider,
+          model: generated.model,
+          promptVersion: generated.promptVersion,
+          parseError: generated.parseError,
+          validation: generated.validation,
+        };
+      }
+
+      const existingMax = await this.prisma.testCase.aggregate({
+        where: { problemId: problem.id },
+        _max: { orderIndex: true },
+      });
+      const nextOrderIndex = (existingMax._max.orderIndex ?? -1) + 1;
+
+      const testcaseRows = generated.parsed.testManifest.map((item, idx) => ({
+        problemId: problem.id,
+        orderIndex: nextOrderIndex + idx,
+        input: item.testName,
+        expectedOutput: JSON.stringify({
+          type: 'PROJECT_TEST_META',
+          filePath: item.filePath,
+          suite: item.suite,
+          requirementIds: item.requirementIds,
+          rationale: item.rationale,
+        }),
+        isHidden: item.isHidden ?? true,
+        weight: item.weight ?? 1,
+      }));
+
+      await this.prisma.$transaction([
+        this.prisma.testCase.createMany({ data: testcaseRows }),
+        this.prisma.aiGenerationJob.update({
+          where: { id: createdJob.id },
+          data: {
+            status: 'SUCCEEDED',
+            promptVersion: generated.promptVersion,
+            structuredOutput: {
+              mode: 'PROJECT',
+              provider: generated.provider,
+              model: generated.model,
+              promptVersion: generated.promptVersion,
+              problemBrief: generated.parsed.problemBrief,
+              testManifest: generated.parsed.testManifest,
+              runConfig: generated.parsed.runConfig,
+              fileCount: generated.parsed.files.length,
+              files: generated.parsed.files,
+              validation: generated.validation,
+              raw: generated.raw,
+            },
+          },
+        }),
+      ]);
 
       return {
         jobId: createdJob.id,
         mode: ProblemMode.PROJECT,
-        persistedTestCaseCount: 0,
-        projectSetup: {
-          storageIntegrated: false,
-          plannedObjectKeys,
-        },
+        persistedTestCaseCount: testcaseRows.length,
+        provider: generated.provider,
+        model: generated.model,
+        promptVersion: generated.promptVersion,
+        problemBrief: generated.parsed.problemBrief,
+        validation: generated.validation,
       };
     }
 
@@ -544,43 +863,32 @@ export class AiTestcaseService {
     return payload.choices?.[0]?.message?.content?.trim() ?? '';
   }
 
+  private parseProjectOutput(raw: string): GeneratedProjectTestcaseOutput {
+    const normalized = raw.trim().replace(/^\uFEFF/, '');
+    const candidates = this.collectJsonCandidates(normalized);
+
+    let lastError: unknown;
+    for (const candidate of candidates) {
+      try {
+        const json = JSON.parse(candidate) as unknown;
+        return generatedProjectTestcaseSchema.parse(json);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw new Error(
+      `Failed to parse PROJECT AI output as JSON. Last error: ${
+        lastError instanceof Error ? lastError.message : 'unknown parse error'
+      }`,
+    );
+  }
+
   private parseOutput(raw: string): GeneratedTestcaseOutput {
     // Model responses can contain markdown fences or stray prose.
     // We try multiple normalized candidates before failing hard.
     const normalized = raw.trim().replace(/^\uFEFF/, '');
-    const fencedBlocks = [...normalized.matchAll(/```[a-zA-Z0-9_-]*\s*([\s\S]*?)\s*```/g)].map(
-      (match) => match[1]?.trim(),
-    );
-
-    const candidates: string[] = [];
-    for (const block of fencedBlocks) {
-      if (block) {
-        candidates.push(block);
-      }
-    }
-
-    // Fallback: remove leading/trailing markdown fence if present.
-    const deFenced = normalized
-      .replace(/^```[a-zA-Z0-9_-]*\s*/i, '')
-      .replace(/\s*```$/i, '')
-      .trim();
-    if (deFenced !== normalized) {
-      candidates.push(deFenced);
-    }
-
-    // Remove all fence markers globally, then retry.
-    const stripAllFences = normalized.replace(/```[a-zA-Z0-9_-]*\s*|```/g, '').trim();
-    if (stripAllFences && stripAllFences !== normalized) {
-      candidates.push(stripAllFences);
-    }
-
-    // Extract first balanced JSON object from text.
-    const extractedJsonObject = this.extractFirstJsonObject(normalized);
-    if (extractedJsonObject) {
-      candidates.push(extractedJsonObject);
-    }
-
-    candidates.push(normalized);
+    const candidates = this.collectJsonCandidates(normalized);
 
     let lastError: unknown;
     for (const candidate of candidates) {
@@ -596,6 +904,67 @@ export class AiTestcaseService {
       `Failed to parse AI output as JSON. Last error: ${
         lastError instanceof Error ? lastError.message : 'unknown parse error'
       }`,
+    );
+  }
+
+  private collectJsonCandidates(normalized: string): string[] {
+    const fencedBlocks = [...normalized.matchAll(/```[a-zA-Z0-9_-]*\s*([\s\S]*?)\s*```/g)].map(
+      (match) => match[1]?.trim(),
+    );
+
+    const candidates: string[] = [];
+    for (const block of fencedBlocks) {
+      if (block) {
+        candidates.push(block);
+      }
+    }
+
+    const deFenced = normalized
+      .replace(/^```[a-zA-Z0-9_-]*\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+    if (deFenced !== normalized) {
+      candidates.push(deFenced);
+    }
+
+    const stripAllFences = normalized.replace(/```[a-zA-Z0-9_-]*\s*|```/g, '').trim();
+    if (stripAllFences && stripAllFences !== normalized) {
+      candidates.push(stripAllFences);
+    }
+
+    const extractedJsonObject = this.extractFirstJsonObject(normalized);
+    if (extractedJsonObject) {
+      candidates.push(extractedJsonObject);
+    }
+
+    candidates.push(normalized);
+    return candidates;
+  }
+
+  private inferProjectStack(
+    supportedLanguages: unknown,
+  ): 'backend' | 'frontend' | 'fullstack' {
+    if (!Array.isArray(supportedLanguages)) {
+      return 'backend';
+    }
+    const langs = supportedLanguages.map((l) => String(l).toLowerCase());
+    const hasJs = langs.some((l) => l.includes('javascript') || l.includes('typescript') || l === 'js');
+    const hasFe = langs.some((l) => l.includes('react') || l.includes('frontend') || l.includes('next'));
+    if (hasFe) {
+      return hasJs ? 'fullstack' : 'frontend';
+    }
+    return 'backend';
+  }
+
+  private buildFastModeProjectMessages(
+    messages: Array<{ role: 'system' | 'user'; content: string }>,
+  ): Array<{ role: 'system' | 'user'; content: string }> {
+    const fastInstruction =
+      '\nFAST MODE: Return compact valid JSON only. problemBrief with 3-5 FR-* must items. testManifest 4-6 tests max. Keep file content minimal but runnable.';
+    return messages.map((message, index) =>
+      index === 0
+        ? { ...message, content: `${message.content}${fastInstruction}` }
+        : message,
     );
   }
 

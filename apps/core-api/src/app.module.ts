@@ -15,6 +15,7 @@ import { InvitesModule } from './invites/invites.module';
 import { MailModule } from './mail/mail.module';
 import { GoldenSolutionsModule } from './golden-solutions/golden-solutions.module';
 import { AdminDashboardModule } from './admin-dashboard/admin-dashboard.module';
+import { TagsModule } from './tags/tags.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { AdminDashboardModule } from './admin-dashboard/admin-dashboard.module';
     InvitesModule,
     GoldenSolutionsModule,
     AdminDashboardModule,
+    TagsModule,
   ],
 })
 export class AppModule {}

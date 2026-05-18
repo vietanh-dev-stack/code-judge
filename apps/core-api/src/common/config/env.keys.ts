@@ -37,6 +37,8 @@ export const EnvKeys = {
   AI_DEFAULT_MODEL_GOOGLE: 'AI_DEFAULT_MODEL_GOOGLE',
   /** Prompt version identifier for auditing/revision. */
   AI_PROMPT_VERSION: 'AI_PROMPT_VERSION',
+  /** Prompt version for PROJECT hidden-test generation. */
+  AI_PROJECT_PROMPT_VERSION: 'AI_PROJECT_PROMPT_VERSION',
   /** Enable fast mode for first-response latency optimization. */
   AI_FAST_MODE: 'AI_FAST_MODE',
   /** Max tokens sent to generation endpoint. */

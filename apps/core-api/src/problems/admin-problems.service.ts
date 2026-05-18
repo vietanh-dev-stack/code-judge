@@ -3,6 +3,7 @@ import { Difficulty, ProblemMode, ProblemVisibility, type Problem } from '@prism
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAdminProblemDto } from './dto/create-admin-problem.dto';
 import { buildUniqueProblemSlug } from './problem-slug.util';
+import { replaceProblemTags } from './problem-tag-sync.util';
 
 @Injectable()
 export class AdminProblemsService {
@@ -44,7 +45,17 @@ export class AdminProblemsService {
         });
       }
 
-      return problem;
+      if (dto.tagIds !== undefined) {
+        await replaceProblemTags(tx, problem.id, dto.tagIds);
+      }
+
+      return tx.problem.findUniqueOrThrow({
+        where: { id: problem.id },
+        include: {
+          tags: { include: { tag: true } },
+          testCases: { orderBy: { orderIndex: 'asc' } },
+        },
+      });
     });
   }
 }

@@ -4,11 +4,14 @@ import { Role } from '@prisma/client';
 import { CurrentUser, Roles } from '../common';
 import type { RequestUser } from '../common/interfaces/request-user.interface';
 import { GenerateAiTestcaseDto } from './dto/generate-ai-testcase.dto';
+import { GenerateAiProjectTestcaseDto } from './dto/generate-ai-project-testcase.dto';
 import { AiTestcaseService } from './ai-testcase.service';
 import { QuickGenerateAiTestcaseDto } from './dto/quick-generate-ai-testcase.dto';
 import { GenerateAndSaveAiTestcaseDto } from './dto/generate-and-save-ai-testcase.dto';
 import { VerifyTestcasesWithGoldenDto } from './dto/verify-testcases-with-golden.dto';
 import { AiGoldenVerifyService } from './ai-golden-verify.service';
+import { TestGenerateProjectSampleDto } from './dto/test-generate-project-sample.dto';
+import { PROJECT_TESTCASE_SAMPLE_KEYS } from './project-testcase-samples';
 
 @ApiTags('ai-testcase')
 @ApiBearerAuth('JWT')
@@ -37,9 +40,65 @@ export class AiTestcaseController {
     return this.aiTestcaseService.generateDraft(dto);
   }
 
+  @Roles(Role.ADMIN)
   @ApiOperation({
     summary:
-      'Sinh testcase và ghi DB (ALGO) — user đã đăng nhập; chỉ chủ đề (creator) hoặc admin; createdById trong body bị bỏ qua, dùng JWT',
+      'Sinh bản nháp hidden tests PROJECT (file bundle + phân tích đề bài). Chỉ ADMIN.',
+    description:
+      'LLM trả về problemBrief (FR-*), testManifest, files runnable, runConfig. Có validator tĩnh trước khi coi là hợp lệ.',
+  })
+  @Post('generate-project-draft')
+  async generateProjectDraft(@Body() dto: GenerateAiProjectTestcaseDto) {
+    return this.aiTestcaseService.generateProjectDraft(dto);
+  }
+
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: 'Danh sách 3 sample đề PROJECT (backend, frontend, fullstack) — không gọi LLM',
+    description:
+      'Dùng payload `dto` để gọi POST /ai-testcase/generate-project-draft hoặc POST test-generate-project-sample.',
+  })
+  @Get('project-testcase-samples')
+  listProjectTestcaseSamples() {
+    return this.aiTestcaseService.listProjectTestcaseSamples();
+  }
+
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: 'Test sinh PROJECT testcase từ sample tích hợp sẵn',
+    description: `Body.sample: ${PROJECT_TESTCASE_SAMPLE_KEYS.join(' | ')}. Bỏ sample để chạy cả 3 (3 lần LLM). Cần OPENAI_API_KEY hoặc GOOGLE_GENERATIVE_AI_API_KEY.`,
+  })
+  @Post('test-generate-project-sample')
+  testGenerateProjectSample(@Body() dto: TestGenerateProjectSampleDto) {
+    return this.aiTestcaseService.testGenerateProjectSample(dto);
+  }
+
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: 'Shortcut: test sample backend',
+  })
+  @Post('test-generate-project-sample/backend')
+  testGenerateProjectSampleBackend(@Body() body: Omit<TestGenerateProjectSampleDto, 'sample'>) {
+    return this.aiTestcaseService.testGenerateProjectSample({ ...body, sample: 'backend' });
+  }
+
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Shortcut: test sample frontend' })
+  @Post('test-generate-project-sample/frontend')
+  testGenerateProjectSampleFrontend(@Body() body: Omit<TestGenerateProjectSampleDto, 'sample'>) {
+    return this.aiTestcaseService.testGenerateProjectSample({ ...body, sample: 'frontend' });
+  }
+
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Shortcut: test sample fullstack' })
+  @Post('test-generate-project-sample/fullstack')
+  testGenerateProjectSampleFullstack(@Body() body: Omit<TestGenerateProjectSampleDto, 'sample'>) {
+    return this.aiTestcaseService.testGenerateProjectSample({ ...body, sample: 'fullstack' });
+  }
+
+  @ApiOperation({
+    summary:
+      'Sinh testcase và ghi DB — ALGO: input/output; PROJECT: testManifest + file bundle trong job. JWT creator/admin.',
   })
   @Post('generate-and-save')
   async generateAndSave(@CurrentUser() user: RequestUser, @Body() dto: GenerateAndSaveAiTestcaseDto) {
