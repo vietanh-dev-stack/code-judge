@@ -21,11 +21,18 @@ import { GenerateAiTestcaseDto } from './dto/generate-ai-testcase.dto';
 import { GenerateAiProjectTestcaseDto } from './dto/generate-ai-project-testcase.dto';
 import { GenerateAndSaveAiTestcaseDto } from './dto/generate-and-save-ai-testcase.dto';
 import { QuickGenerateAiTestcaseDto } from './dto/quick-generate-ai-testcase.dto';
+import { ExplainProjectTestFileDto } from './dto/explain-project-test-file.dto';
 import { TestGenerateProjectSampleDto } from './dto/test-generate-project-sample.dto';
 import {
   validateGeneratedProjectTestcase,
   type ProjectTestcaseValidationResult,
 } from './project-testcase-output.validator';
+import {
+  buildExplainProjectTestFileMessages,
+  projectTestFileExplanationSchema,
+  type ProjectTestFileExplanation,
+  validateLineBlocksAgainstSource,
+} from './project-testfile-explain';
 import {
   getProjectTestcaseSample,
   PROJECT_TESTCASE_SAMPLE_KEYS,
@@ -33,6 +40,16 @@ import {
   type ProjectTestcaseSampleDefinition,
   type ProjectTestcaseSampleKey,
 } from './project-testcase-samples';
+
+export type ExplainProjectTestFileResult = {
+  filePath: string;
+  provider: 'openai' | 'google';
+  model: string;
+  structured: ProjectTestFileExplanation | null;
+  parseError?: string;
+  /** Plain-text fallback when structured parse fails */
+  explanation?: string;
+};
 
 interface GenerateDraftResult {
   provider: 'openai' | 'google';
@@ -414,6 +431,66 @@ export class AiTestcaseService {
       mode: input.sample ? 'single' : 'all',
       results,
     };
+  }
+
+  async explainProjectTestFile(dto: ExplainProjectTestFileDto): Promise<ExplainProjectTestFileResult> {
+    const provider = dto.provider ?? this.getDefaultProvider();
+    const model = dto.model ?? this.getDefaultModel(provider);
+    const totalLines = Math.max(1, dto.fileContent.split('\n').length);
+
+    const messages = buildExplainProjectTestFileMessages({
+      filePath: dto.filePath,
+      fileContent: dto.fileContent,
+      problemSummary: dto.problemSummary,
+      relatedTestsJson: dto.relatedTestsJson,
+    });
+
+    const text = await this.generateWithRetry(provider, model, messages, 0.2, 4096, 2);
+
+    try {
+      const json = JSON.parse(this.extractFirstJsonObject(text) ?? text) as unknown;
+      const structured = projectTestFileExplanationSchema.parse(json);
+      const blockIssues = validateLineBlocksAgainstSource(structured, totalLines);
+      return {
+        filePath: dto.filePath,
+        provider,
+        model,
+        structured,
+        ...(blockIssues.length > 0 ? { parseError: blockIssues.join('; ') } : {}),
+      };
+    } catch (error) {
+      const parseError = error instanceof Error ? error.message : 'Unknown parse error';
+      return {
+        filePath: dto.filePath,
+        provider,
+        model,
+        structured: null,
+        parseError,
+        explanation: text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim(),
+      };
+    }
+  }
+
+  private formatExplanationAsText(structured: ProjectTestFileExplanation): string {
+    const parts = [
+      `Mục đích file: ${structured.filePurpose}`,
+      `Tương tác code SV: ${structured.studentCodeInteraction}`,
+      '',
+      'Theo dòng:',
+      ...structured.lineBlocks.map(
+        (b) =>
+          `  Dòng ${b.lineStart}-${b.lineEnd} — ${b.label}: ${b.responsibility}`,
+      ),
+    ];
+    if (structured.testBreakdown.length) {
+      parts.push('', 'Test case:');
+      for (const t of structured.testBreakdown) {
+        const range =
+          t.lineStart && t.lineEnd ? ` (dòng ${t.lineStart}-${t.lineEnd})` : '';
+        parts.push(`  • ${t.testName}${range}: ${t.validates}`);
+      }
+    }
+    return parts.join('\n');
   }
 
   async generateAndSave(input: GenerateAndSaveAiTestcaseDto, user: RequestUser): Promise<GenerateAndSaveResult> {

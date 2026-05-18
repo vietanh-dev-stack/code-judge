@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { getApiBaseUrl } from '@/services/api-client';
+import { ProjectTestcaseFilesPreview } from '@/components/test/ProjectTestcaseFilesPreview';
 import {
   aiTestcaseApi,
   type GenerateAiProjectTestcaseBody,
@@ -63,8 +64,6 @@ export function ProjectTestcaseGenerateTab() {
   const [log, setLog] = useState('');
   const [draftResult, setDraftResult] = useState<GenerateProjectDraftResult | null>(null);
   const [batchResult, setBatchResult] = useState<TestGenerateProjectSampleResult | null>(null);
-  const [expandedFile, setExpandedFile] = useState<string | null>(null);
-
   const loadSamples = useCallback(async () => {
     setSamplesLoading(true);
     try {
@@ -469,31 +468,11 @@ export function ProjectTestcaseGenerateTab() {
                   </div>
                 </div>
 
-                <div className={cn('space-y-2')}>
-                  <h3 className={cn('text-sm font-semibold')}>
-                    files ({parsed.files.length})
-                  </h3>
-                  <div className={cn('flex flex-wrap gap-2')}>
-                    {parsed.files.map((f) => (
-                      <Button
-                        key={f.path}
-                        type="button"
-                        size="sm"
-                        variant={expandedFile === f.path ? 'default' : 'outline'}
-                        onClick={() =>
-                          setExpandedFile((cur) => (cur === f.path ? null : f.path))
-                        }
-                      >
-                        {f.path}
-                      </Button>
-                    ))}
-                  </div>
-                  {expandedFile ? (
-                    <pre className={cn('max-h-[320px] overflow-auto rounded-lg border p-3 text-xs')}>
-                      {parsed.files.find((f) => f.path === expandedFile)?.content ?? ''}
-                    </pre>
-                  ) : null}
-                </div>
+                <ProjectTestcaseFilesPreview
+                  parsed={parsed}
+                  provider={form.provider}
+                  model={form.model}
+                />
 
                 <div className={cn('text-xs text-muted-foreground')}>
                   <code>install</code>: {parsed.runConfig.installCommand}

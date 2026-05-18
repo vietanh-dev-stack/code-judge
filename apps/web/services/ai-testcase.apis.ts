@@ -122,6 +122,39 @@ export interface ProjectTestcaseSampleListResult {
   }>;
 }
 
+export interface ProjectTestFileLineBlock {
+  lineStart: number;
+  lineEnd: number;
+  label: string;
+  responsibility: string;
+  relatedRequirementIds?: string[];
+}
+
+export interface ProjectTestFileTestExplain {
+  testName: string;
+  lineStart?: number;
+  lineEnd?: number;
+  validates: string;
+  expectedBehavior?: string;
+}
+
+export interface ProjectTestFileExplanation {
+  filePurpose: string;
+  studentCodeInteraction: string;
+  lineBlocks: ProjectTestFileLineBlock[];
+  testBreakdown: ProjectTestFileTestExplain[];
+  reviewChecklist: string[];
+}
+
+export interface ExplainProjectTestFileResult {
+  filePath: string;
+  provider: string;
+  model: string;
+  structured: ProjectTestFileExplanation | null;
+  parseError?: string;
+  explanation?: string;
+}
+
 export interface TestGenerateProjectSampleResult {
   mode: 'single' | 'all';
   results: Array<{
@@ -169,6 +202,20 @@ export const aiTestcaseApi = {
     model?: string;
   }): Promise<TestGenerateProjectSampleResult> {
     return apiFetch('/ai-testcase/test-generate-project-sample', {
+      method: 'POST',
+      body,
+    });
+  },
+
+  async explainProjectTestFile(body: {
+    filePath: string;
+    fileContent: string;
+    problemSummary?: string;
+    relatedTestsJson?: string;
+    provider?: 'openai' | 'google';
+    model?: string;
+  }): Promise<ExplainProjectTestFileResult> {
+    return apiFetch('/ai-testcase/explain-project-test-file', {
       method: 'POST',
       body,
     });

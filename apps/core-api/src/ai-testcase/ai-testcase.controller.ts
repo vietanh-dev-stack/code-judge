@@ -10,6 +10,7 @@ import { QuickGenerateAiTestcaseDto } from './dto/quick-generate-ai-testcase.dto
 import { GenerateAndSaveAiTestcaseDto } from './dto/generate-and-save-ai-testcase.dto';
 import { VerifyTestcasesWithGoldenDto } from './dto/verify-testcases-with-golden.dto';
 import { AiGoldenVerifyService } from './ai-golden-verify.service';
+import { ExplainProjectTestFileDto } from './dto/explain-project-test-file.dto';
 import { TestGenerateProjectSampleDto } from './dto/test-generate-project-sample.dto';
 import { PROJECT_TESTCASE_SAMPLE_KEYS } from './project-testcase-samples';
 
@@ -71,6 +72,16 @@ export class AiTestcaseController {
   @Post('test-generate-project-sample')
   testGenerateProjectSample(@Body() dto: TestGenerateProjectSampleDto) {
     return this.aiTestcaseService.testGenerateProjectSample(dto);
+  }
+
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: 'Giải thích một file test PROJECT (AI, tiếng Việt)',
+    description: 'Dùng sau khi generate draft — gửi filePath + fileContent + problemSummary.',
+  })
+  @Post('explain-project-test-file')
+  explainProjectTestFile(@Body() dto: ExplainProjectTestFileDto) {
+    return this.aiTestcaseService.explainProjectTestFile(dto);
   }
 
   @Roles(Role.ADMIN)
