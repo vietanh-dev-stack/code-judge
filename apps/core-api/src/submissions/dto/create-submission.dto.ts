@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateSubmissionDto {
   @ApiProperty({ example: 'clxxxxxxxxxxxxxxxxxxxxxxxx' })
@@ -39,4 +39,9 @@ export class CreateSubmissionDto {
   @IsOptional()
   @IsString()
   sourceCodeObjectKey?: string;
+
+  @ApiPropertyOptional({ example: false })
+  @IsOptional()
+  @IsBoolean()
+  isDryRun?: boolean;
 }

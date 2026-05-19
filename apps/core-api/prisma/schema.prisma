@@ -374,6 +374,7 @@ model Submission {
   problemId         String
   mode              ProblemMode
   context           SubmissionContext
+  isDryRun          Boolean           @default(false)
   contestId         String?
   classRoomId       String?
   classAssignmentId String?

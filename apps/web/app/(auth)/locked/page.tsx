@@ -16,12 +16,12 @@ export default function LockedPage() {
         </div>
         
         <h1 className="text-2xl font-bold text-slate-900 mb-2">
-          Tài khoản đã bị khóa
+          Account Locked
         </h1>
         
         <p className="text-slate-500 mb-8 leading-relaxed">
-          Tài khoản của bạn hiện đang bị khóa bởi quản trị viên. 
-          Vui lòng liên hệ với chúng tôi nếu bạn cho rằng đây là một sự nhầm lẫn.
+          Your account has been locked by an administrator. 
+          Please contact support if you believe this is a mistake.
         </p>
 
         <div className="space-y-3">
@@ -29,14 +29,14 @@ export default function LockedPage() {
             onClick={() => logout()}
             className="w-full bg-slate-900 hover:bg-slate-800 h-11 text-base cursor-pointer"
           >
-            Quay lại trang đăng nhập
+            Back to Login
           </Button>
           
           <Link 
             href="/"
             className="block text-sm text-slate-400 hover:text-slate-600 transition-colors"
           >
-            Về trang chủ
+            Go to Home
           </Link>
         </div>
       </div>

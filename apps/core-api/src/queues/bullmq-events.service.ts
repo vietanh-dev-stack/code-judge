@@ -45,6 +45,7 @@ export class BullMqEventsService implements OnModuleInit, OnModuleDestroy {
         where: { id: jobId },
         select: {
           userId: true,
+          problemId: true,
           status: true,
           score: true,
           runtimeMs: true,
@@ -54,9 +55,44 @@ export class BullMqEventsService implements OnModuleInit, OnModuleDestroy {
           testsPassed: true,
           testsTotal: true,
           language: true,
+          isDryRun: true,
+          caseResults: true,
         },
       });
       if (!submission) return;
+
+      let sanitizedCaseResults = null;
+      if (submission.caseResults) {
+        try {
+          const resultsObj = JSON.parse(JSON.stringify(submission.caseResults));
+          if (resultsObj.testCases && Array.isArray(resultsObj.testCases)) {
+            const problemTestCases = await this.prisma.testCase.findMany({
+              where: { problemId: submission.problemId },
+              select: { id: true, isHidden: true },
+            });
+            const hiddenMap = new Map(problemTestCases.map(tc => [tc.id, tc.isHidden]));
+
+            resultsObj.testCases = resultsObj.testCases.map((tc: any) => {
+              const isHidden = hiddenMap.get(tc.testCaseId) ?? tc.isHidden ?? false;
+              if (isHidden) {
+                return {
+                  ...tc,
+                  isHidden: true,
+                  output: '[Hidden Test Case]',
+                  error: tc.error ? '[Hidden Test Case]' : null,
+                };
+              }
+              return {
+                ...tc,
+                isHidden: false,
+              };
+            });
+          }
+          sanitizedCaseResults = resultsObj;
+        } catch (e) {
+          sanitizedCaseResults = submission.caseResults;
+        }
+      }
 
       const payload = {
         submissionId: jobId,
@@ -68,6 +104,8 @@ export class BullMqEventsService implements OnModuleInit, OnModuleDestroy {
         testsPassed: submission.testsPassed ?? 0,
         testsTotal: submission.testsTotal ?? 0,
         language: submission.language ?? null,
+        isDryRun: submission.isDryRun ?? false,
+        caseResults: sanitizedCaseResults,
       };
 
       // Emit to private room for the submitter
@@ -87,15 +125,51 @@ export class BullMqEventsService implements OnModuleInit, OnModuleDestroy {
         where: { id: jobId },
         select: {
           userId: true,
+          problemId: true,
           status: true,
           error: true,
           contestId: true,
           testsPassed: true,
           testsTotal: true,
           language: true,
+          isDryRun: true,
+          caseResults: true,
         },
       });
       if (!submission) return;
+
+      let sanitizedCaseResults = null;
+      if (submission.caseResults) {
+        try {
+          const resultsObj = JSON.parse(JSON.stringify(submission.caseResults));
+          if (resultsObj.testCases && Array.isArray(resultsObj.testCases)) {
+            const problemTestCases = await this.prisma.testCase.findMany({
+              where: { problemId: submission.problemId },
+              select: { id: true, isHidden: true },
+            });
+            const hiddenMap = new Map(problemTestCases.map(tc => [tc.id, tc.isHidden]));
+
+            resultsObj.testCases = resultsObj.testCases.map((tc: any) => {
+              const isHidden = hiddenMap.get(tc.testCaseId) ?? tc.isHidden ?? false;
+              if (isHidden) {
+                return {
+                  ...tc,
+                  isHidden: true,
+                  output: '[Hidden Test Case]',
+                  error: tc.error ? '[Hidden Test Case]' : null,
+                };
+              }
+              return {
+                ...tc,
+                isHidden: false,
+              };
+            });
+          }
+          sanitizedCaseResults = resultsObj;
+        } catch (e) {
+          sanitizedCaseResults = submission.caseResults;
+        }
+      }
 
       const payload = {
         submissionId: jobId,
@@ -105,6 +179,8 @@ export class BullMqEventsService implements OnModuleInit, OnModuleDestroy {
         testsPassed: submission.testsPassed ?? 0,
         testsTotal: submission.testsTotal ?? 0,
         language: submission.language ?? null,
+        isDryRun: submission.isDryRun ?? false,
+        caseResults: sanitizedCaseResults,
       };
 
       this.realtime.emitToUser(submission.userId, 'submission:failed', payload);

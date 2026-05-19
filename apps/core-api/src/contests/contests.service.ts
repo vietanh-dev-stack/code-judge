@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { hashPassword } from '../common';
 import { ContestStatus, ContestTestFeedbackPolicy, Prisma, Contest } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -14,7 +19,7 @@ export class ContestsService {
     private readonly prisma: PrismaService,
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
   async create(dto: CreateContestDto, creatorId: string, isAdmin = false) {
     if (dto.classRoomId) {
@@ -99,8 +104,6 @@ export class ContestsService {
           .map((e: any) => e.user.email)
           .filter((email: string | null): email is string => !!email);
 
-        console.log(`[ContestsService] Found ${memberEmails.length} members to notify for contest "${contest.title}" in class "${assignment.classRoom.name}"`);
-
         if (memberEmails.length > 0) {
           const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3001';
           this.mailerService
@@ -128,14 +131,14 @@ export class ContestsService {
     const search = query.search?.trim();
     const where: Prisma.ContestWhereInput = query.classRoomId
       ? {
-        assignments: {
-          some: { classRoomId: query.classRoomId },
-        },
-      }
+          assignments: {
+            some: { classRoomId: query.classRoomId },
+          },
+        }
       : {
-        status: { not: 'DRAFT' },
-        assignments: { none: {} }, // Chỉ lấy contest KHÔNG thuộc classroom nào
-      };
+          status: { not: 'DRAFT' },
+          assignments: { none: {} }, // Chỉ lấy contest KHÔNG thuộc classroom nào
+        };
 
     if (search) {
       where.OR = [
@@ -145,7 +148,13 @@ export class ContestsService {
     }
 
     const [items, total] = await Promise.all([
-      this.prisma.contest.findMany({ where, skip, take: limit, orderBy: { startAt: 'desc' } }),
+      this.prisma.contest.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { startAt: 'desc' },
+        include: { problems: true },
+      }),
       this.prisma.contest.count({ where }),
     ]);
     return { items, total, page, limit };
@@ -159,11 +168,11 @@ export class ContestsService {
     const where: Prisma.ContestWhereInput = {
       ...(search
         ? {
-          OR: [
-            { title: { contains: search, mode: 'insensitive' as const } },
-            { description: { contains: search, mode: 'insensitive' as const } },
-          ],
-        }
+            OR: [
+              { title: { contains: search, mode: 'insensitive' as const } },
+              { description: { contains: search, mode: 'insensitive' as const } },
+            ],
+          }
         : {}),
     };
 
@@ -173,7 +182,10 @@ export class ContestsService {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: { createdBy: { select: { name: true, email: true } } },
+        include: {
+          createdBy: { select: { name: true, email: true } },
+          problems: true,
+        },
       }),
       this.prisma.contest.count({ where }),
     ]);
@@ -194,19 +206,14 @@ export class ContestsService {
     return result;
   }
 
-  async update(
-    contestId: string,
-    dto: UpdateContestDto,
-    updaterId: string,
-    isAdmin = false,
-  ) {
+  async update(contestId: string, dto: UpdateContestDto, updaterId: string, isAdmin = false) {
     const contest = await this.prisma.contest.findUnique({
       where: { id: contestId },
       include: {
         problems: true,
         assignments: {
-          include: { classRoom: { select: { isActive: true } } }
-        }
+          include: { classRoom: { select: { isActive: true } } },
+        },
       },
     });
     if (!contest) {
@@ -218,9 +225,11 @@ export class ContestsService {
     }
 
     // Check if any associated classroom is archived
-    const hasArchivedClass = contest.assignments.some(a => !a.classRoom.isActive);
+    const hasArchivedClass = contest.assignments.some((a) => !a.classRoom.isActive);
     if (hasArchivedClass && !isAdmin) {
-      throw new ForbiddenException('This contest belongs to an archived classroom and cannot be edited.');
+      throw new ForbiddenException(
+        'This contest belongs to an archived classroom and cannot be edited.',
+      );
     }
 
     if (dto.problems && dto.problems.length > 0) {
@@ -303,8 +312,8 @@ export class ContestsService {
       select: {
         createdById: true,
         assignments: {
-          include: { classRoom: { select: { isActive: true } } }
-        }
+          include: { classRoom: { select: { isActive: true } } },
+        },
       },
     });
     if (!contest) {
@@ -314,9 +323,11 @@ export class ContestsService {
       throw new ForbiddenException('Bạn không có quyền xóa cuộc thi này');
     }
 
-    const hasArchivedClass = contest.assignments.some(a => !a.classRoom.isActive);
+    const hasArchivedClass = contest.assignments.some((a) => !a.classRoom.isActive);
     if (hasArchivedClass && !isAdmin) {
-      throw new ForbiddenException('This contest belongs to an archived classroom and cannot be deleted.');
+      throw new ForbiddenException(
+        'This contest belongs to an archived classroom and cannot be deleted.',
+      );
     }
     return this.prisma.$transaction(async (tx) => {
       await tx.classAssignment.deleteMany({ where: { contestId } });
@@ -356,17 +367,20 @@ export class ContestsService {
     const allUserIds = [...new Set([...submissionUserIds, ...participantUserIds])];
 
     // Fetch thông tin user cho những người nộp bài nhưng không phải participant
-    const missingUserIds = submissionUserIds.filter(id => !participantUserIds.includes(id));
-    const missingUsers = missingUserIds.length > 0
-      ? await this.prisma.user.findMany({
-        where: { id: { in: missingUserIds } },
-        select: { id: true, name: true, image: true }
-      })
-      : [];
+    const missingUserIds = submissionUserIds.filter((id) => !participantUserIds.includes(id));
+    const missingUsers =
+      missingUserIds.length > 0
+        ? await this.prisma.user.findMany({
+            where: { id: { in: missingUserIds } },
+            select: { id: true, name: true, image: true },
+          })
+        : [];
 
     const userMap = new Map<string, { name: string; image: string | null }>();
-    contest.participants.forEach(p => userMap.set(p.userId, { name: p.user.name, image: p.user.image }));
-    missingUsers.forEach(u => userMap.set(u.id, { name: u.name || 'Unknown', image: u.image }));
+    contest.participants.forEach((p) =>
+      userMap.set(p.userId, { name: p.user.name, image: p.user.image }),
+    );
+    missingUsers.forEach((u) => userMap.set(u.id, { name: u.name || 'Unknown', image: u.image }));
 
     const leaderboard = allUserIds.map((userId) => {
       const user = userMap.get(userId)!;

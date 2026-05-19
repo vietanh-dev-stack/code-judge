@@ -14,13 +14,14 @@ type CodeEditorPanelProps = {
   code: string;
   setCode: (val: string) => void;
   isRunning: boolean;
-  onSubmit: (language: string) => void;
+  isSubmitting?: boolean;
+  onSubmit: (language: string, isDryRun?: boolean) => void;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
 };
 
 export default function CodeEditorPanel({ 
-  problem, code, setCode, isRunning, onSubmit, isDarkMode, toggleDarkMode 
+  problem, code, setCode, isRunning, isSubmitting = false, onSubmit, isDarkMode, toggleDarkMode 
 }: CodeEditorPanelProps) {
   
   const [language, setLanguage] = useState('PYTHON');
@@ -103,12 +104,21 @@ export default function CodeEditorPanel({
 
         <div className="flex items-center gap-3">
           <button 
-            onClick={() => onSubmit(language)} 
+            onClick={() => onSubmit(language, true)} 
+            disabled={isRunning} 
+            className="flex items-center gap-2 rounded-lg border border-border bg-background hover:bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+          >
+            <Play size={16} className="text-emerald-500 fill-emerald-500" />
+            {isRunning && !isSubmitting ? 'Running...' : 'Run'}
+          </button>
+
+          <button 
+            onClick={() => onSubmit(language, false)} 
             disabled={isRunning} 
             className="flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-500 px-5 py-2 text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 shadow-[0_0_15px_rgba(37,99,235,0.2)]"
           >
             <Send size={16} />
-            {isRunning ? 'Submitting...' : 'Submit'}
+            {isRunning && isSubmitting ? 'Submitting...' : 'Submit'}
           </button>
         </div>
       </div>

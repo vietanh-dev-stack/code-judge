@@ -18,6 +18,8 @@ import {
 } from '@/components/ui/table';
 import { Contest, contestsApi } from '@/services/contest.apis';
 import { getClassroomPeople } from '@/services/classroom.apis';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 export default function ContestDetailPage() {
   const params = useParams();
@@ -32,6 +34,8 @@ export default function ContestDetailPage() {
   const [stats, setStats] = useState<{ submitted: number; total: number } | null>(null);
   const [studentsStatus, setStudentsStatus] = useState<any[]>([]);
 
+  const router = useRouter();
+
   useEffect(() => {
     if (!contestId) return;
 
@@ -45,6 +49,14 @@ export default function ContestDetailPage() {
           getClassroomPeople(classId as string).catch(() => null),
           contestsApi.getLeaderboard(contestId).catch(() => null)
         ]);
+
+        if (new Date(contestData.startAt) > new Date()) {
+          toast.error('This contest is not start yet. You can not access to this contest!', {
+            position: 'top-center',
+          });
+          router.back();
+          return;
+        }
 
         setContest(contestData);
 

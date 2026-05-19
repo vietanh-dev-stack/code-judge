@@ -58,8 +58,8 @@ export class MailerService {
 
     await this.transporter.sendMail({
       from: `CodeJudge <${fromEmail}>`,
-      to: fromEmail, // Send to self
-      bcc: params.to, // Hide member emails from each other
+      to: 'noreply@codejudge.com', // Dummy address to avoid notifying the teacher
+      bcc: params.to, // Notifications only to students via BCC
       subject: `[${params.classroomName}] New ${typeLabel}: ${params.title}`,
       html,
     });

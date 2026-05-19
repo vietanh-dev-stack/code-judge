@@ -32,6 +32,17 @@ export type ProblemType = {
 };
 
 // 2. TYPE CHO KẾT QUẢ CHẤM ĐIỂM
+export type TestCaseResult = {
+  testCaseId: string;
+  status: string;
+  runtimeMs?: number;
+  memoryMb?: number;
+  output?: string | null;
+  error?: string | null;
+  passed: boolean;
+  isHidden: boolean;
+};
+
 export type SubmissionResult = {
   status: string;
   testsPassed: number;
@@ -40,6 +51,9 @@ export type SubmissionResult = {
   memoryMb?: number;
   errorMessage?: string;
   language?: string | null;
+  caseResults?: {
+    testCases: TestCaseResult[];
+  };
 };
 
 interface ProblemWorkspaceProps {
@@ -51,6 +65,7 @@ export default function ProblemWorkspace({ problem, contestId }: ProblemWorkspac
   const user = useAuthStore((state) => state.user);
   const [code, setCode] = useState('');
   const [isRunning, setIsRunning] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<SubmissionResult | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const { socket } = useSocket();
@@ -73,6 +88,7 @@ export default function ProblemWorkspace({ problem, contestId }: ProblemWorkspac
     if (socket) {
       const handleFinished = (data: any) => {
         setIsRunning(false);
+        setIsSubmitting(false);
         setResult({
           status: data.status,
           testsPassed: data.testsPassed ?? 0,
@@ -81,11 +97,19 @@ export default function ProblemWorkspace({ problem, contestId }: ProblemWorkspac
           memoryMb: data.memoryMb,
           errorMessage: data.error,
           language: data.language,
+          caseResults: data.caseResults,
         });
-        loadSubmissions();
+        
+        if (!data.isDryRun) {
+          loadSubmissions();
+        }
         
         if (data.status === 'Accepted') {
-          toast.success('Accepted!', { description: `All ${data.testsTotal} test cases passed.` });
+          toast.success(data.isDryRun ? 'Run Code Success!' : 'Accepted!', {
+            description: data.isDryRun 
+              ? `Passed all ${data.testsTotal} sample test cases.` 
+              : `All ${data.testsTotal} test cases passed.`,
+          });
         } else {
           toast.error(data.status, { description: data.error || 'Some test cases failed.' });
         }
@@ -93,14 +117,18 @@ export default function ProblemWorkspace({ problem, contestId }: ProblemWorkspac
 
       const handleFailed = (data: any) => {
         setIsRunning(false);
+        setIsSubmitting(false);
         setResult({
           status: 'Error',
           testsPassed: data.testsPassed ?? 0,
           testsTotal: data.testsTotal ?? 0,
           errorMessage: data.error || 'Judging failed',
           language: data.language,
+          caseResults: data.caseResults,
         });
-        loadSubmissions();
+        if (!data.isDryRun) {
+          loadSubmissions();
+        }
         toast.error('Error', { description: data.error || 'Judging failed' });
       };
 
@@ -142,7 +170,7 @@ export default function ProblemWorkspace({ problem, contestId }: ProblemWorkspac
   const [submissions, setSubmissions] = useState<Submission[]>([]);
 
 
-  const handleSubmit = async (language: string) => {
+  const handleSubmit = async (language: string, isDryRun: boolean = false) => {
     if (!user) {
       toast.error('Authentication Required', { description: 'Please log in to submit your code.' });
       return;
@@ -153,7 +181,11 @@ export default function ProblemWorkspace({ problem, contestId }: ProblemWorkspac
       return;
     }
 
-    setIsRunning(true);
+    if (isDryRun) {
+      setIsRunning(true);
+    } else {
+      setIsSubmitting(true);
+    }
     setResult(null);
 
     try {
@@ -186,13 +218,17 @@ export default function ProblemWorkspace({ problem, contestId }: ProblemWorkspac
         mode: problem.mode,
         language: optionLang,
         sourceCodeObjectKey: presign.objectKey,
+        isDryRun,
       });
 
-      toast.info('Submission Received', { description: 'Your code is being judged...' });
+      toast.info(isDryRun ? 'Running Code' : 'Submission Received', {
+        description: isDryRun ? 'Running your code against sample test cases...' : 'Your code is being judged...',
+      });
     } catch (error: any) {
       console.error('Submission failed:', error);
       toast.error('Submission Error', { description: error.message || 'Failed to submit code.' });
       setIsRunning(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -211,12 +247,13 @@ export default function ProblemWorkspace({ problem, contestId }: ProblemWorkspac
             problem={problem}
             code={code} 
             setCode={setCode} 
-            isRunning={isRunning} 
+            isRunning={isRunning || isSubmitting} 
+            isSubmitting={isSubmitting}
             onSubmit={handleSubmit}
             isDarkMode={isDarkMode}
             toggleDarkMode={() => setIsDarkMode(!isDarkMode)} 
           />
-          <ConsolePanel isRunning={isRunning} result={result} />
+          <ConsolePanel isRunning={isRunning || isSubmitting} result={result} problem={problem} />
         </div>
       </div>
     </div>

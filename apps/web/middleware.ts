@@ -43,7 +43,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // 2. ĐÃ LOGIN (Có refreshToken)
-  
+
   // Kiểm tra nếu thiếu accessToken thì thử refresh ngay tại middleware (Silent Refresh)
   if (!accessToken) {
     const apiBaseUrl = process.env.NEXT_PUBLIC_CORE_URL || 'http://localhost:3000'
@@ -58,13 +58,13 @@ export async function middleware(request: NextRequest) {
       if (res.ok) {
         // Lấy tokens mới từ Set-Cookie header
         // getSetCookie() trả về mảng các chuỗi Set-Cookie
-        const setCookieHeaders = typeof res.headers.getSetCookie === 'function' 
-          ? res.headers.getSetCookie() 
+        const setCookieHeaders = typeof res.headers.getSetCookie === 'function'
+          ? res.headers.getSetCookie()
           : [res.headers.get('set-cookie')].filter(Boolean) as string[]
-        
+
         // Tạo response mới để tiếp tục hành trình
         const response = NextResponse.next()
-        
+
         // Đồng bộ cookies mới vào response gửi về browser
         setCookieHeaders.forEach(cookieStr => {
           response.headers.append('Set-Cookie', cookieStr)
@@ -87,19 +87,19 @@ export async function middleware(request: NextRequest) {
         if (newAccessToken) {
           const requestHeaders = new Headers(request.headers)
           requestHeaders.set('Cookie', `accessToken=${newAccessToken}; refreshToken=${newRefreshToken}`)
-          
+
           // Trả về response với request headers đã được cập nhật
           const finalResponse = NextResponse.next({
             request: {
               headers: requestHeaders,
             },
           })
-          
+
           // Copy Set-Cookie headers sang finalResponse
           setCookieHeaders.forEach(cookieStr => {
             finalResponse.headers.append('Set-Cookie', cookieStr)
           })
-          
+
           return finalResponse
         }
       }
@@ -124,12 +124,11 @@ export async function middleware(request: NextRequest) {
   const decodedToken = decodeJwtPayload(refreshToken)
   const userRole = decodedToken?.role || 'CLIENT'
 
-// No automatic redirect from / to dashboard
 
   // Nếu đã login mà cố vào login/register
   if (pathname === '/login' || pathname === '/register') {
     if (userRole === 'ADMIN') {
-      return NextResponse.redirect(new URL('/admin/users', request.url))
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url))
     }
 
     return NextResponse.redirect(new URL('/dashboard', request.url))

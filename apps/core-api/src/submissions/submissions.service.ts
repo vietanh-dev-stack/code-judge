@@ -7,6 +7,8 @@ import { JUDGE_JOB_MAX_ATTEMPTS } from '../common/constants/queue.constants';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { buildSubmissionSourceObjectKey } from '../storage/storage-key.builder';
 import { StorageService } from '../storage/storage.service';
+import { Role } from '@prisma/client';
+import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class SubmissionsService {
@@ -68,6 +70,7 @@ export class SubmissionsService {
         status: 'Pending',
         sourceCode: shouldExternalizeCode ? null : sourceCode,
         sourceCodeObjectKey: externalizedObjectKey,
+        isDryRun: dto.isDryRun ?? false,
       },
     });
 
@@ -106,11 +109,12 @@ export class SubmissionsService {
     return submission;
   }
 
-  async findById(submissionId: string) {
+  async findById(submissionId: string, req?: any) {
     const submission = await this.prisma.submission.findUnique({
       where: { id: submissionId },
       select: {
         id: true,
+        problemId: true,
         status: true,
         score: true,
         error: true,
@@ -119,6 +123,12 @@ export class SubmissionsService {
         language: true,
         createdAt: true,
         updatedAt: true,
+        problem: {
+          select: {
+            creatorId: true,
+            assignments: { select: { classRoomId: true } },
+          },
+        },
       },
     });
 
@@ -126,11 +136,110 @@ export class SubmissionsService {
       throw new NotFoundException('Submission không tồn tại');
     }
 
-    return submission;
+    // Check if the user is authorized to view raw, unsanitized hidden outputs (admin/creator/teacher)
+    let isAuthorized = false;
+    if (req) {
+      const token = req.cookies?.accessToken;
+      if (token) {
+        try {
+          const decoded: any = jwt.decode(token);
+          if (decoded && decoded.sub) {
+            const userId = decoded.sub;
+            const role = decoded.role;
+            isAuthorized = await this.canManageProblem(submission.problem, userId, role);
+          }
+        } catch (err) {
+          // Token decode fail, treat as unauthorized (student)
+        }
+      }
+    }
+
+    // Process caseResults and dynamically map isHidden from the database to bypass worker lag
+    if (submission.caseResults) {
+      try {
+        const resultsObj = JSON.parse(JSON.stringify(submission.caseResults));
+        if (resultsObj.testCases && Array.isArray(resultsObj.testCases)) {
+          const problemTestCases = await this.prisma.testCase.findMany({
+            where: { problemId: submission.problemId },
+            select: { id: true, isHidden: true },
+          });
+          const hiddenMap = new Map(problemTestCases.map(tc => [tc.id, tc.isHidden]));
+
+          resultsObj.testCases = resultsObj.testCases.map((tc: any) => {
+            const isHidden = hiddenMap.get(tc.testCaseId) ?? tc.isHidden ?? false;
+            if (isHidden) {
+              return {
+                ...tc,
+                isHidden: true,
+                output: isAuthorized ? tc.output : '[Hidden Test Case]',
+                error: isAuthorized ? tc.error : (tc.error ? '[Hidden Test Case]' : null),
+              };
+            }
+            return {
+              ...tc,
+              isHidden: false,
+            };
+          });
+        }
+        submission.caseResults = resultsObj;
+      } catch (err) {
+        // Safe fallback
+      }
+    }
+
+    // We should not return the "problem" select block to the client
+    const { problem, ...rest } = submission as any;
+    return rest;
+  }
+
+  private async canManageProblem(
+    problem: {
+      creatorId: string | null;
+      assignments: { classRoomId: string }[];
+    },
+    userId: string,
+    role?: string,
+  ): Promise<boolean> {
+    if (role === Role.ADMIN) {
+      return true;
+    }
+    if (problem.creatorId === userId) {
+      return true;
+    }
+    for (const a of problem.assignments) {
+      if (await this.userIsClassOwnerForRoom(a.classRoomId, userId)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private async userIsClassOwnerForRoom(classRoomId: string, userId: string): Promise<boolean> {
+    const classRoom = await this.prisma.classRoom.findUnique({
+      where: { id: classRoomId },
+      select: { ownerId: true, isActive: true },
+    });
+    if (!classRoom) {
+      return false;
+    }
+    if (classRoom.ownerId === userId) {
+      return true;
+    }
+    const enrollment = await this.prisma.classEnrollment.findFirst({
+      where: {
+        classRoomId,
+        userId,
+        role: 'OWNER',
+        status: 'ACTIVE',
+      },
+    });
+    return Boolean(enrollment);
   }
 
   async findMany(filter: { userId?: string; problemId?: string }) {
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = {
+      isDryRun: false,
+    };
     if (filter.userId) {
       where.userId = filter.userId;
     }

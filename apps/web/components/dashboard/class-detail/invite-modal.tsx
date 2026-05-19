@@ -38,7 +38,9 @@ export default function InviteModal({ classRoomId }: InviteModalProps) {
         const res = await searchUsers(email);
         setSuggestions(res);
         setShowSuggest(true);
-      } catch {}
+      } catch (err) {
+        console.error('Failed to search users:', err);
+      }
     }, 300);
 
     return () => clearTimeout(delay);

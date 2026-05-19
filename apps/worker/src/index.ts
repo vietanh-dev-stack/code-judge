@@ -165,6 +165,7 @@ async function processSubmission(job: any) {
       language: true,
       sourceCode: true,
       sourceCodeObjectKey: true,
+      isDryRun: true,
     },
   });
 
@@ -196,6 +197,8 @@ async function processSubmission(job: any) {
   if (!problem) {
     throw new Error(`Problem not found: ${existingSubmission.problemId}`);
   }
+
+  let testCasesToRun = problem.testCases;
 
   await prisma.submission.update({
     where: { id: submissionId },
@@ -265,8 +268,8 @@ async function processSubmission(job: any) {
     job.updateProgress({ pct: 20, log: `Judging with Judge0 (ID: ${languageId})...` });
 
     try {
-      for (let i = 0; i < problem.testCases.length; i++) {
-      const testCase = problem.testCases[i];
+      for (let i = 0; i < testCasesToRun.length; i++) {
+      const testCase = testCasesToRun[i];
       totalWeight += testCase.weight;
 
       if (stopEarly) {
@@ -278,6 +281,7 @@ async function processSubmission(job: any) {
           output: '',
           error: null,
           passed: false,
+          isHidden: testCase.isHidden,
         });
         continue;
       }
@@ -357,6 +361,7 @@ async function processSubmission(job: any) {
           output: stdout,
           error: stderr || null,
           passed,
+          isHidden: testCase.isHidden,
         });
 
         // Cập nhật trạng thái tổng quát
@@ -371,10 +376,14 @@ async function processSubmission(job: any) {
           combinedLogs += `Test case ${i + 1}: PASSED (${runtimeMs}ms, ${memoryMb}MB)\n`;
         } else {
           combinedLogs += `Test case ${i + 1}: ${caseStatus.toUpperCase()}\n`;
-          combinedLogs += `--- Input ---\n${testCase.input.substring(0, 100)}\n`;
-          combinedLogs += `--- Expected Output ---\n${testCase.expectedOutput.trim()}\n`;
-          combinedLogs += `--- Actual Output ---\n${stdout.trim()}\n`;
-          if (stderr) combinedLogs += `--- Stderr ---\n${stderr.substring(0, 200)}\n`;
+          if (testCase.isHidden) {
+            combinedLogs += `[Hidden Test Case]\n`;
+          } else {
+            combinedLogs += `--- Input ---\n${testCase.input.substring(0, 100)}\n`;
+            combinedLogs += `--- Expected Output ---\n${testCase.expectedOutput.trim()}\n`;
+            combinedLogs += `--- Actual Output ---\n${stdout.trim()}\n`;
+            if (stderr) combinedLogs += `--- Stderr ---\n${stderr.substring(0, 200)}\n`;
+          }
           combinedLogs += `-------------------\n`;
         }
 
@@ -388,14 +397,15 @@ async function processSubmission(job: any) {
           output: '',
           error: errMsg,
           passed: false,
+          isHidden: testCase.isHidden,
         });
         if (finalStatus === SubmissionStatus.Accepted) finalStatus = SubmissionStatus.Wrong;
         combinedLogs += `Test case ${i + 1}: WRONG (Judge Error: ${errMsg})\n`;
       }
 
       job.updateProgress({ 
-        pct: 20 + Math.round(((i + 1) / problem.testCases.length) * 70), 
-        log: `Case ${i + 1}/${problem.testCases.length} done.` 
+        pct: 20 + Math.round(((i + 1) / testCasesToRun.length) * 70), 
+        log: `Case ${i + 1}/${testCasesToRun.length} done.` 
       });
     }
 
@@ -413,7 +423,7 @@ async function processSubmission(job: any) {
         runtimeMs: maxTime,
         memoryMb: maxMemory,
         testsPassed: testCaseResults.filter(r => r.passed).length,
-        testsTotal: problem.testCases.length,
+        testsTotal: testCasesToRun.length,
         logs: combinedLogs,
         caseResults: {
           logObjectKey,
@@ -459,7 +469,7 @@ async function processSubmission(job: any) {
         timeLimit: problem.timeLimitMs,
         memoryLimitMb: problem.memoryLimitMb,
         bucket: getOptionalEnv(process.env.MINIO_BUCKET, 'codejudge'),
-        testCases: problem.testCases.map((testCase: any) => ({
+        testCases: testCasesToRun.map((testCase: any) => ({
           id: testCase.id,
           input: testCase.input,
           expectedOutput: testCase.expectedOutput,
@@ -505,8 +515,8 @@ async function processSubmission(job: any) {
         logs += `payload=${responsePayload}\n`;
         hasError = true;
       } else {
-        for (let i = 0; i < problem.testCases.length; i++) {
-          const testCase = problem.testCases[i];
+        for (let i = 0; i < testCasesToRun.length; i++) {
+          const testCase = testCasesToRun[i];
           const resultItem = lambdaResult.results[i] ?? {};
           const output = String(resultItem.output ?? '').trim();
           const expectedOutput = testCase.expectedOutput.trim();
@@ -523,6 +533,7 @@ async function processSubmission(job: any) {
                 ? null
                 : String(resultItem.output ?? resultItem.stderr ?? ''),
             passed,
+            isHidden: testCase.isHidden,
           };
 
           testCaseResults.push(caseResult);
@@ -534,8 +545,12 @@ async function processSubmission(job: any) {
           } else {
             console.log(`Test case ${i + 1}: FAILED`);
             logs += `Test case ${i + 1}: FAILED\n`;
-            logs += `  Expected: ${expectedOutput}\n`;
-            logs += `  Got: ${output}\n`;
+            if (testCase.isHidden) {
+              logs += `  [Hidden Test Case]\n`;
+            } else {
+              logs += `  Expected: ${expectedOutput}\n`;
+              logs += `  Got: ${output}\n`;
+            }
           }
 
           totalWeight += testCase.weight;
@@ -564,7 +579,7 @@ async function processSubmission(job: any) {
         runtimeMs: testCaseResults.reduce((max, r) => Math.max(max, r.runtimeMs || 0), 0),
         memoryMb: testCaseResults.reduce((max, r) => Math.max(max, r.memoryMb || 0), 0),
         testsPassed: testCaseResults.filter(r => r.passed).length,
-        testsTotal: problem.testCases.length,
+        testsTotal: testCasesToRun.length,
         logs,
         caseResults: {
           logObjectKey,
@@ -607,6 +622,8 @@ async function processSubmission(job: any) {
       runtimeMs: 123,
       memoryMb: 64,
       logs: `Accepted (stub - no Lambda)\n`,
+      testsPassed: testCasesToRun.length,
+      testsTotal: testCasesToRun.length,
       caseResults: {
         logObjectKey,
         testCases: [],

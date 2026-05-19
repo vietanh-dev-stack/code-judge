@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,7 +24,17 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
-import { Plus, Search, Calendar, Edit2, Trash2, Clock, Trophy, MoreVertical } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  Calendar,
+  Edit2,
+  Trash2,
+  Clock,
+  Trophy,
+  MoreVertical,
+  Eye,
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +47,7 @@ import { Problem, problemsApi } from '@/services/problem.apis';
 import { useDebounce } from '@/hooks/use-debounce';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import Link from 'next/link';
 
 export default function ClassContestsTab({
   classId,
@@ -54,6 +66,7 @@ export default function ClassContestsTab({
   const [contestToDelete, setContestToDelete] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const debouncedSearch = useDebounce(search, 300);
+  const router = useRouter();
 
   const [formData, setFormData] = useState<CreateContestDto>({
     title: '',
@@ -263,6 +276,10 @@ export default function ClassContestsTab({
     }
   };
 
+  const handleNavigateContest = (contestId: string) => {
+    router.push(`/dashboard/${classId}/contests/${contestId}`);
+  };
+
   if (loading && contests.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
@@ -277,7 +294,11 @@ export default function ClassContestsTab({
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Class Contests</h2>
-          <p className="text-muted-foreground">Manage and track contests for your students.</p>
+          <p className="text-muted-foreground">
+            {isOwner
+              ? 'Manage and track contests for your students.'
+              : 'View contests available for your class.'}
+          </p>
         </div>
         {isOwner && (
           <Button
@@ -525,8 +546,8 @@ export default function ClassContestsTab({
                 <TableHead className="py-4 font-bold text-black">Status</TableHead>
                 <TableHead className="py-4 font-bold text-black">Timeline</TableHead>
                 <TableHead className="py-4 font-bold text-black">Problems</TableHead>
-                <TableHead className="py-4 font-bold text-black text-right pr-6">
-                  {isOwner ? 'Actions' : ''}
+                <TableHead className="py-4 font-bold text-black text-right pr-12">
+                  Actions
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -576,7 +597,7 @@ export default function ClassContestsTab({
                       </div>
                     </TableCell>
                     <TableCell className="py-4 text-right pr-6">
-                      {isOwner && (
+                      {isOwner ? (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -592,6 +613,12 @@ export default function ClassContestsTab({
                             className="w-48 p-1 rounded-xl shadow-xl border-gray-100"
                           >
                             <DropdownMenuItem
+                              onClick={() => handleNavigateContest(contest.id)}
+                              className="rounded-lg gap-2 cursor-pointer py-2"
+                            >
+                              <Eye className="w-4 h-4" /> View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
                               onClick={() => handleEdit(contest)}
                               className="rounded-lg gap-2 cursor-pointer py-2"
                             >
@@ -605,6 +632,13 @@ export default function ClassContestsTab({
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                      ) : (
+                        <Link
+                          href={`/dashboard/${classId}/contests/${contest.id}`}
+                          className="border border-gray-800 rounded-md p-2 bg-black text-white font-medium hover:bg-gray-800"
+                        >
+                          View Details
+                        </Link>
                       )}
                     </TableCell>
                   </TableRow>

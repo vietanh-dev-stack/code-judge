@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { RequestUser } from '../common/interfaces/request-user.interface';
@@ -82,8 +82,8 @@ export class ProblemsController {
   @Public()
   @ApiOperation({ summary: 'Lấy chi tiết problem theo id' })
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.problemsService.findById(id);
+  async findOne(@Param('id') id: string, @Req() req: any) {
+    return this.problemsService.findById(id, req);
   }
 
   @ApiBearerAuth('JWT')

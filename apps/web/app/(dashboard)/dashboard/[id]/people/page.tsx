@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 import InviteModal from '@/components/dashboard/class-detail/invite-modal';
 import PersonItem from '@/components/dashboard/class-detail/person-item';
+import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { toast } from 'sonner';
 
 import { authApi } from '@/services/auth.apis';
 import { getClassroomPeople, removeMember } from '@/services/classroom.apis';
@@ -15,29 +17,44 @@ export default function PeoplePage() {
 
   const [data, setData] = useState<any>(null);
   const [me, setMe] = useState<any>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
+
+  const router = useRouter();
 
   const load = async () => {
-    const [people, user] = await Promise.all([getClassroomPeople(classRoomId), authApi.me()]);
-    setData(people);
-    setMe(user);
+    try {
+      const [people, user] = await Promise.all([getClassroomPeople(classRoomId), authApi.me()]);
+      setData(people);
+      setMe(user);
+    } catch (error: any) {
+      if (error?.status === 403 || error?.status === 404) {
+        router.replace('/dashboard');
+      }
+    }
   };
 
   useEffect(() => {
     load();
   }, [classRoomId]);
 
-  const handleRemove = async (userId: string) => {
-    if (!confirm('Are you sure you want to remove this member?')) return;
+  const handleConfirmRemove = async () => {
+    if (!removingId) return;
 
     try {
-      await removeMember(classRoomId, userId);
+      setIsRemoving(true);
+      await removeMember(classRoomId, removingId);
+      toast.success('Member removed successfully');
+      setRemovingId(null);
       // reload data
       await load();
     } catch (error: any) {
       if (error?.status !== 400 && error?.status !== 403) {
         console.error('Failed to remove member:', error);
       }
-      alert(error?.message || 'Failed to remove member');
+      toast.error(error?.message || 'Failed to remove member');
+    } finally {
+      setIsRemoving(false);
     }
   };
 
@@ -80,11 +97,23 @@ export default function PeoplePage() {
               name={s.name}
               avatarUrl={s.image}
               showRemove={isOwner && s.id !== me?.id}
-              onRemove={() => handleRemove(s.id)}
+              onRemove={() => setRemovingId(s.id)}
             />
           ))}
         </div>
       </section>
+
+      <ConfirmDialog
+        isOpen={!!removingId}
+        onClose={() => setRemovingId(null)}
+        onConfirm={handleConfirmRemove}
+        loading={isRemoving}
+        title="Remove Member"
+        description="Are you sure you want to remove this member from the classroom? This action cannot be undone."
+        confirmText="Remove"
+        cancelText="Cancel"
+        variant="destructive"
+      />
     </div>
   );
 }
