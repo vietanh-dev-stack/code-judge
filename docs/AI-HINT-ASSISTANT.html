@@ -99,8 +99,8 @@
         <h2>Luồng</h2>
         <ol>
           <li>Học viên Run/Submit → worker chấm → Socket <code>submission:finished</code> / <code>submission:failed</code>.</li>
-          <li>Nếu status ≠ <code>Accepted</code>, frontend gọi <code>POST /problems/:problemId/hint</code> với <code>submissionId</code>.</li>
-          <li>Panel <strong>Gợi ý AI</strong> thu gọn; bấm để mở đọc chi tiết.</li>
+          <li>Nếu status ≠ <code>Accepted</code>, nút nổi góc dưới phải <strong>Bạn cần trợ giúp không ^^</strong> hiện lên — không gọi AI tự động.</li>
+          <li>Học viên bấm nút → <code>POST /problems/:problemId/hint</code> → drawer trượt từ bên phải hiển thị gợi ý.</li>
         </ol>
         <div class="callout">
           Gợi ý chỉ gồm hướng tiếp cận, ví dụ pattern generic và gợi ý syntax — không phải lời giải copy-paste.
@@ -122,7 +122,7 @@
   "examplePatterns": [{ "title": "…", "genericExample": "…" }],
   "encouragement": "…"
 }</code></pre>
-        <p>Mã nguồn: <code>apps/core-api/src/ai-hint/</code>, frontend: <code>apps/web/app/problem/[id]/components/AiHintPanel.tsx</code>.</p>
+        <p>Mã nguồn: <code>apps/core-api/src/ai-hint/</code>, frontend: <code>AiHintFab.tsx</code>, <code>AiHintDrawer.tsx</code>.</p>
       </section>
 
       <section id="env">

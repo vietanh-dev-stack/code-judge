@@ -3,9 +3,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Play, Send, Maximize2, Moon, Sun, Settings, ChevronDown, LayoutDashboard } from 'lucide-react';
+import { Play, Send, Moon, Sun, Settings, ChevronDown, LayoutDashboard } from 'lucide-react';
 import { Problem } from '@/services/problem.apis';
-import { cn } from '@/lib/utils';
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
 
@@ -20,8 +19,15 @@ type CodeEditorPanelProps = {
   toggleDarkMode: () => void;
 };
 
-export default function CodeEditorPanel({ 
-  problem, code, setCode, isRunning, isSubmitting = false, onSubmit, isDarkMode, toggleDarkMode 
+export default function CodeEditorPanel({
+  problem,
+  code,
+  setCode,
+  isRunning,
+  isSubmitting = false,
+  onSubmit,
+  isDarkMode,
+  toggleDarkMode,
 }: CodeEditorPanelProps) {
   
   const [language, setLanguage] = useState('PYTHON');
