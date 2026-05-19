@@ -122,11 +122,21 @@ export default function ProblemDescription({
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Tags</h3>
                 <div className="flex flex-wrap gap-2">
-                  {(problem as any).tags?.map((tag: any) => (
-                    <span key={typeof tag === 'string' ? tag : tag.name} className="rounded-full bg-blue-500/10 border border-blue-500/20 px-3 py-1 text-xs text-blue-400 font-medium">
-                      {typeof tag === 'string' ? tag : tag.name}
-                    </span>
-                  )) || <span className="text-xs text-muted-foreground">No tags</span>}
+                  {((problem as any).tags && (problem as any).tags.length > 0) ? (
+                    (problem as any).tags.map((t: any) => {
+                      const tagObj = t.tag || t;
+                      const tagName = typeof tagObj === 'string' ? tagObj : tagObj?.name;
+                      const tagId = typeof tagObj === 'object' ? (tagObj?.id || tagObj?.slug) : tagName;
+                      if (!tagName) return null;
+                      return (
+                        <span key={tagId} className="rounded-full bg-blue-500/10 border border-blue-500/20 px-3 py-1 text-xs text-blue-400 font-medium">
+                          {tagName}
+                        </span>
+                      );
+                    })
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No tags</span>
+                  )}
                 </div>
               </div>
             </div>

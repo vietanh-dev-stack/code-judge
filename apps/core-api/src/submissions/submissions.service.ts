@@ -45,13 +45,30 @@ export class SubmissionsService {
         },
       });
       if (!contest) {
-        throw new BadRequestException('Contest không tồn tại');
+        throw new BadRequestException('Contest not found');
       }
       if (contest.problems.length === 0) {
-        throw new BadRequestException('Problem không thuộc contest');
+        throw new BadRequestException('Problem does not belong to this contest');
       }
       contestId = dto.contestId;
       context = 'CONTEST';
+
+      // Validate maxSubmissionsPerProblem limit if it is a real submit (not dry run)
+      if (!dto.isDryRun && contest.maxSubmissionsPerProblem !== null && contest.maxSubmissionsPerProblem > 0) {
+        const count = await this.prisma.submission.count({
+          where: {
+            userId: dto.userId,
+            problemId: dto.problemId,
+            contestId: dto.contestId,
+            isDryRun: false,
+          },
+        });
+        if (count >= contest.maxSubmissionsPerProblem) {
+          throw new BadRequestException(
+            `You have reached the maximum submission limit (${contest.maxSubmissionsPerProblem} attempts) for this problem in this contest.`
+          );
+        }
+      }
     }
 
     const sourceCode = dto.sourceCode ?? null;

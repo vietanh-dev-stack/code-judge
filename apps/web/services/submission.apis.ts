@@ -19,6 +19,8 @@ export interface Submission {
   logs?: string | null;
   caseResults?: unknown;
   language?: string | null;
+  contestId?: string | null;
+  isDryRun?: boolean;
   createdAt: string;
   updatedAt: string;
 }

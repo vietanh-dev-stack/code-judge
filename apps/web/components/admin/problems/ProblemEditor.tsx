@@ -30,6 +30,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { CreateProblemDto, problemsApi, UpdateProblemDto } from '@/services/problem.apis';
 import { toast } from 'sonner';
+import { ProblemTagPicker } from '@/components/problems/ProblemTagPicker';
 
 export default function AdminProblemEditor({ problemId }: { problemId?: string }) {
   const router = useRouter();
@@ -49,6 +50,7 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
     supportedLanguages: ['PYTHON', 'JAVASCRIPT', 'CPP', 'JAVA'],
     maxTestCases: 100,
     testCases: [],
+    tagIds: [],
   });
 
   useEffect(() => {
@@ -75,6 +77,7 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
         testCases: (data.testCases ?? []).map(
           ({ id, problemId, orderIndex, createdAt, updatedAt, ...rest }: any) => rest,
         ),
+        tagIds: (data.tags ?? []).map((t: any) => t.tag.id),
       });
     } catch (error) {
       toast.error('Failed to load problem data');
@@ -359,6 +362,16 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                   <Switch
                     checked={formData.isPublished}
                     onCheckedChange={(checked) => setFormData({ ...formData, isPublished: checked })}
+                  />
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 space-y-3">
+                  <ProblemTagPicker
+                    value={formData.tagIds || []}
+                    onChange={(ids) => setFormData({ ...formData, tagIds: ids })}
+                    label="Problem Tags"
+                    hint="Select tags that match this problem type."
+                    locale="en"
                   />
                 </div>
 

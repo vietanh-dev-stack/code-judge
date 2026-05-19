@@ -17,6 +17,8 @@ type CodeEditorPanelProps = {
   onSubmit: (language: string, isDryRun?: boolean) => void;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
+  hasReachedSubmissionLimit?: boolean;
+  submissionLimitText?: string;
 };
 
 export default function CodeEditorPanel({
@@ -28,6 +30,8 @@ export default function CodeEditorPanel({
   onSubmit,
   isDarkMode,
   toggleDarkMode,
+  hasReachedSubmissionLimit = false,
+  submissionLimitText
 }: CodeEditorPanelProps) {
   
   const [language, setLanguage] = useState('PYTHON');
@@ -120,11 +124,22 @@ export default function CodeEditorPanel({
 
           <button 
             onClick={() => onSubmit(language, false)} 
-            disabled={isRunning} 
-            className="flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-500 px-5 py-2 text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 shadow-[0_0_15px_rgba(37,99,235,0.2)]"
+            disabled={isRunning || hasReachedSubmissionLimit} 
+            className={cn(
+              "flex items-center gap-2 rounded-lg px-5 py-2 text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 shadow-[0_0_15px_rgba(37,99,235,0.2)]",
+              hasReachedSubmissionLimit
+                ? "bg-rose-600 hover:bg-rose-500 cursor-not-allowed shadow-none"
+                : "bg-blue-600 hover:bg-blue-500"
+            )}
+            title={hasReachedSubmissionLimit ? 'You have reached the submission limit for this problem.' : undefined}
           >
             <Send size={16} />
-            {isRunning && isSubmitting ? 'Submitting...' : 'Submit'}
+            {hasReachedSubmissionLimit 
+              ? submissionLimitText || 'Limit Reached' 
+              : isRunning && isSubmitting 
+                ? 'Submitting...' 
+                : 'Submit'
+            }
           </button>
         </div>
       </div>

@@ -44,7 +44,9 @@ export class ProblemsController {
       limit: limit ? Number(limit) : undefined,
       classRoomId,
       difficulty,
-      mode
+      mode,
+      tagId,
+      tagSlug,
     });
   }
 
@@ -62,7 +64,9 @@ export class ProblemsController {
     return this.problemsService.findAllAdmin({
       search,
       page: page ? Number(page) : undefined,
-      limit: limit ? Number(limit) : undefined
+      limit: limit ? Number(limit) : undefined,
+      tagId,
+      tagSlug,
     });
   }
 

@@ -502,12 +502,27 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
           : 'Your code is being judged...',
       });
     } catch (error: any) {
-      console.error('Submission failed:', error);
+      console.warn('Submission failed:', error.message || error);
       toast.error('Submission Error', { description: error.message || 'Failed to submit code.' });
       setIsRunning(false);
       setIsSubmitting(false);
     }
   };
+
+  const contestSubmissionsCount = submissions.filter(
+    (sub) => sub.contestId === contestId && !sub.isDryRun
+  ).length;
+
+  const hasReachedSubmissionLimit =
+    contest !== null &&
+    contest.maxSubmissionsPerProblem !== null &&
+    contest.maxSubmissionsPerProblem > 0 &&
+    contestSubmissionsCount >= contest.maxSubmissionsPerProblem;
+
+  const submissionLimitText =
+    contest && contest.maxSubmissionsPerProblem
+      ? `Limit Reached (${contestSubmissionsCount}/${contest.maxSubmissionsPerProblem})`
+      : undefined;
 
   return (
     <div
@@ -730,6 +745,8 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
                 onSubmit={handleSubmit}
                 isDarkMode={isDarkMode}
                 toggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+                hasReachedSubmissionLimit={hasReachedSubmissionLimit}
+                submissionLimitText={submissionLimitText}
               />
               <ConsolePanel isRunning={isRunning || isSubmitting} result={result} problem={problem} />
             </div>

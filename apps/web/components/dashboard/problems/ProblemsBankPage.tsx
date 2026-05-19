@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/table';
 import { Search, Loader2, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { ProblemTagSlugFilter } from '@/components/problems/ProblemTagSlugFilter';
 
 const PAGE_SIZE = 12;
 
@@ -36,9 +37,10 @@ function parseFilters(sp: URLSearchParams) {
   const q = (sp.get('q') ?? '').trim();
   const d = sp.get('difficulty') ?? '';
   const m = sp.get('mode') ?? '';
+  const tagSlug = sp.get('tagSlug') ?? '';
   const difficulty = (['EASY', 'MEDIUM', 'HARD'].includes(d) ? d : '') as DifficultyFilter;
   const mode = (['ALGO', 'PROJECT'].includes(m) ? m : '') as ModeFilter;
-  return { page, q, difficulty, mode };
+  return { page, q, difficulty, mode, tagSlug };
 }
 
 export default function ProblemsBankPage() {
@@ -78,6 +80,7 @@ export default function ProblemsBankPage() {
           limit: PAGE_SIZE,
           difficulty: filters.difficulty || undefined,
           mode: filters.mode || undefined,
+          tagSlug: filters.tagSlug || undefined,
         });
         if (!cancelled) {
           setItems(res.items);
@@ -99,7 +102,7 @@ export default function ProblemsBankPage() {
     return () => {
       cancelled = true;
     };
-  }, [filters.q, filters.page, filters.difficulty, filters.mode]);
+  }, [filters.q, filters.page, filters.difficulty, filters.mode, filters.tagSlug]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -136,6 +139,14 @@ export default function ProblemsBankPage() {
     });
   };
 
+  const setTagSlug = (slug: string) => {
+    replaceQuery((p) => {
+      if (slug) p.set('tagSlug', slug);
+      else p.delete('tagSlug');
+      p.delete('page');
+    });
+  };
+
   const goPage = (nextPage: number) => {
     const p = Math.min(Math.max(1, nextPage), totalPages);
     replaceQuery((params) => {
@@ -154,6 +165,7 @@ export default function ProblemsBankPage() {
         limit: PAGE_SIZE,
         difficulty: f.difficulty || undefined,
         mode: f.mode || undefined,
+        tagSlug: f.tagSlug || undefined,
       })
       .then((res) => {
         setItems(res.items);
@@ -189,11 +201,11 @@ export default function ProblemsBankPage() {
             aria-label="Tìm kiếm đề"
           />
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1.5">
             <p className="text-muted-foreground text-xs font-medium">Độ khó</p>
             <Select value={filters.difficulty || 'all'} onValueChange={setDifficulty}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder="Tất cả" />
               </SelectTrigger>
               <SelectContent>
@@ -207,7 +219,7 @@ export default function ProblemsBankPage() {
           <div className="space-y-1.5">
             <p className="text-muted-foreground text-xs font-medium">Dạng</p>
             <Select value={filters.mode || 'all'} onValueChange={setMode}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[130px]">
                 <SelectValue placeholder="Tất cả" />
               </SelectTrigger>
               <SelectContent>
@@ -217,6 +229,13 @@ export default function ProblemsBankPage() {
               </SelectContent>
             </Select>
           </div>
+          <ProblemTagSlugFilter
+            value={filters.tagSlug}
+            onChange={setTagSlug}
+            label="Tag"
+            allLabel="Tất cả"
+            triggerClassName="w-[150px]"
+          />
           <Button
             type="button"
             variant="outline"
@@ -259,10 +278,24 @@ export default function ProblemsBankPage() {
               items.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>
-                    <div className="flex flex-col gap-0.5">
+                    <div className="flex flex-col gap-1">
                       <span className="font-medium">{p.title}</span>
+                      {p.tags && p.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {p.tags.map((t) => (
+                            <Badge
+                              key={t.tag.id}
+                              variant="secondary"
+                              className="text-[10px] py-0 px-1.5 h-4 bg-muted/60 text-muted-foreground hover:bg-muted font-normal cursor-pointer"
+                              onClick={() => setTagSlug(t.tag.slug)}
+                            >
+                              {t.tag.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                       {p.description ? (
-                        <span className="text-muted-foreground line-clamp-1 text-xs">
+                        <span className="text-muted-foreground line-clamp-1 text-xs mt-0.5">
                           {p.description}
                         </span>
                       ) : null}
