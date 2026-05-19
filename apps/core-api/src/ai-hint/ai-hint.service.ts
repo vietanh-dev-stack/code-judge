@@ -62,6 +62,15 @@ export class AiHintService {
     return flag !== 'false' && flag !== '0';
   }
 
+  /** Mặc định chặn gợi ý trong contest; set AI_HINT_DISABLED_IN_CONTEST=false để bật lại (dev/test). */
+  isHintBlockedForContest(submissionContestId: string | null | undefined): boolean {
+    const allowInContest =
+      (this.config.get<string>(EnvKeys.AI_HINT_DISABLED_IN_CONTEST) ?? 'true').toLowerCase() ===
+      'false';
+    if (allowInContest) return false;
+    return Boolean(submissionContestId);
+  }
+
   async requestHint(
     problemId: string,
     dto: RequestHintDto,
@@ -104,11 +113,8 @@ export class AiHintService {
       throw new BadRequestException('Gợi ý chỉ khả dụng khi submission chưa đạt Accepted');
     }
 
-    const disabledInContest =
-      (this.config.get<string>(EnvKeys.AI_HINT_DISABLED_IN_CONTEST) ?? 'false').toLowerCase() ===
-      'true';
-    if (disabledInContest && submission.contestId) {
-      throw new ForbiddenException('Gợi ý AI không khả dụng trong contest.');
+    if (this.isHintBlockedForContest(submission.contestId)) {
+      throw new ForbiddenException('Gợi ý AI không khả dụng khi làm bài trong contest.');
     }
 
     await this.rateLimit.assertWithinLimit(user.userId, problemId);

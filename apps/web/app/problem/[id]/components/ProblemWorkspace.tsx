@@ -374,8 +374,14 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
   );
 
   const hintAvailable = Boolean(
-    user && result && result.status !== 'Accepted' && lastSubmissionId,
+    user && !contestId && result && result.status !== 'Accepted' && lastSubmissionId,
   );
+
+  useEffect(() => {
+    if (!contestId) return;
+    setHintDrawerOpen(false);
+    setHintPulse(false);
+  }, [contestId]);
 
   useEffect(() => {
     if (!hintPulse) return;
@@ -384,13 +390,19 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
   }, [hintPulse, lastSubmissionId]);
 
   const handleRequestHint = useCallback(async () => {
+    if (contestId) {
+      toast.info('Gợi ý AI tắt trong contest', {
+        description: 'Khi thi contest bạn cần tự giải bài, không dùng gợi ý AI.',
+      });
+      return;
+    }
     if (!problem?.id || !lastSubmissionId) return;
     setHintDrawerOpen(true);
     setHintPulse(false);
     await fetchHint(problem.id, lastSubmissionId, {
       force: hintState === 'error',
     });
-  }, [problem?.id, lastSubmissionId, fetchHint, hintState]);
+  }, [contestId, problem?.id, lastSubmissionId, fetchHint, hintState]);
 
   // Initialize code from localStorage or default
   useEffect(() => {

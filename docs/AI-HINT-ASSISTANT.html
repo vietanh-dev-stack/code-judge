@@ -102,8 +102,8 @@
           <li>Nếu status ≠ <code>Accepted</code>, nút nổi góc dưới phải <strong>Bạn cần trợ giúp không ^^</strong> hiện lên — không gọi AI tự động.</li>
           <li>Học viên bấm nút → <code>POST /problems/:problemId/hint</code> → drawer trượt từ bên phải hiển thị gợi ý.</li>
         </ol>
-        <div class="callout">
-          Gợi ý chỉ gồm hướng tiếp cận, ví dụ pattern generic và gợi ý syntax — không phải lời giải copy-paste.
+        <div class="callout callout-ok" style="margin-top:0.75rem">
+          <strong>Contest:</strong> gợi ý AI bị tắt (submission có <code>contestId</code> hoặc URL <code>?contestId=</code>). FAB không hiển thị.
         </div>
       </section>
 
@@ -148,8 +148,8 @@
             </tr>
             <tr>
               <td><code>AI_HINT_DISABLED_IN_CONTEST</code></td>
-              <td><code>false</code></td>
-              <td><code>true</code> = không gợi ý khi submission có <code>contestId</code></td>
+              <td><code>true</code></td>
+              <td>Mặc định <strong>chặn</strong> gợi ý khi submission có <code>contestId</code>. Đặt <code>false</code> chỉ để dev/test.</td>
             </tr>
             <tr>
               <td><code>OPENAI_API_KEY</code> / <code>GOOGLE_GENERATIVE_AI_API_KEY</code></td>
