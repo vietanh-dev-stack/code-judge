@@ -3,11 +3,21 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { List, Calendar, Trophy, Zap, BarChart3 } from 'lucide-react';
+
+import { List, Calendar, Trophy, Zap, BarChart3, Users, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Contest, contestsApi } from '@/services/contest.apis';
+import { getClassroomPeople } from '@/services/classroom.apis';
 
 export default function ContestDetailPage() {
   const params = useParams();
@@ -19,6 +29,8 @@ export default function ContestDetailPage() {
   const [contest, setContest] = useState<Contest | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<{ submitted: number; total: number } | null>(null);
+  const [studentsStatus, setStudentsStatus] = useState<any[]>([]);
 
   useEffect(() => {
     if (!contestId) return;
@@ -28,10 +40,36 @@ export default function ContestDetailPage() {
       setError(null);
 
       try {
-        const data = await contestsApi.findById(contestId);
-        setContest(data);
+        const [contestData, peopleData, leaderboardData] = await Promise.all([
+          contestsApi.findById(contestId),
+          getClassroomPeople(classId as string).catch(() => null),
+          contestsApi.getLeaderboard(contestId).catch(() => null)
+        ]);
+
+        setContest(contestData);
+
+        if (peopleData && leaderboardData) {
+          const students = peopleData.students || [];
+          const leaderboardUsers = leaderboardData.leaderboard || [];
+          
+          const studentList = students.map((student) => {
+            const lbEntry = leaderboardUsers.find((lb: any) => lb.userId === student.id);
+            let hasSubmitted = false;
+            if (lbEntry) {
+              hasSubmitted = lbEntry.problems.some((p: any) => p.isSolved || p.attempts > 0);
+            }
+            return {
+              id: student.id,
+              name: student.name,
+              image: student.image,
+              hasSubmitted,
+            };
+          });
+          setStudentsStatus(studentList);
+          setStats({ submitted: studentList.filter(s => s.hasSubmitted).length, total: students.length });
+        }
       } catch (err) {
-        console.error('Failed to load contest:', err);
+        console.error('Failed to load contest data:', err);
         setError('Không thể tải thông tin contest. Vui lòng thử lại sau.');
       } finally {
         setLoading(false);
@@ -137,6 +175,22 @@ export default function ContestDetailPage() {
             </div>
           </div>
 
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="text-sm text-muted-foreground">Submission Status</p>
+              {stats ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant={stats.submitted === stats.total && stats.total > 0 ? "secondary" : "outline"} className="bg-blue-50 text-blue-600 border-blue-200">
+                    <Users className="w-3 h-3 mr-1" />
+                    {stats.submitted} / {stats.total} submitted
+                  </Badge>
+                </div>
+              ) : (
+                <p className="font-semibold text-gray-400">Loading stats...</p>
+              )}
+            </div>
+          </div>
+
           <div className="rounded-2xl border border-border bg-background p-5 text-sm text-muted-foreground">
             <div className="flex items-center gap-2 mb-3">
               <Calendar className="w-4 h-4" />
@@ -144,6 +198,43 @@ export default function ContestDetailPage() {
             </div>
             <p>{contest.description || 'No detailed description available for this contest.'}</p>
           </div>
+
+          {/* Student Submissions Table */}
+          {studentsStatus.length > 0 && (
+            <div className="mt-8 rounded-2xl border border-border bg-card overflow-hidden">
+              <div className="p-4 border-b border-border bg-muted/30 font-semibold">
+                Student Submissions
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Student</TableHead>
+                    <TableHead className="text-right">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {studentsStatus.map((student) => (
+                    <TableRow key={student.id}>
+                      <TableCell className="font-medium">{student.name}</TableCell>
+                      <TableCell className="text-right">
+                        {student.hasSubmitted ? (
+                          <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 border-emerald-200">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            Submitted
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-muted-foreground">
+                            <XCircle className="w-3 h-3 mr-1" />
+                            Not yet
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </section>
 
         <div className="space-y-6">
