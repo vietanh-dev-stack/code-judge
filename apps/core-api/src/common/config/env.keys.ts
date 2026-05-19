@@ -45,6 +45,12 @@ export const EnvKeys = {
   AI_MAX_TOKENS: 'AI_MAX_TOKENS',
   /** Sampling temperature for generation. */
   AI_TEMPERATURE: 'AI_TEMPERATURE',
+  /** Bật AI gợi ý cho học viên (`true` / `false`, mặc định true). */
+  AI_HINT_ENABLED: 'AI_HINT_ENABLED',
+  /** Số lần gợi ý tối đa mỗi user/problem trong 1 giờ (Redis counter). */
+  AI_HINT_MAX_PER_PROBLEM_PER_HOUR: 'AI_HINT_MAX_PER_PROBLEM_PER_HOUR',
+  /** Tắt gợi ý khi submission thuộc contest (`true` / `false`). */
+  AI_HINT_DISABLED_IN_CONTEST: 'AI_HINT_DISABLED_IN_CONTEST',
   /** MinIO/S3 endpoint host (không gồm protocol). */
   MINIO_ENDPOINT: 'MINIO_ENDPOINT',
   /** MinIO API port (mặc định 9000). */

@@ -56,6 +56,8 @@ export class BullMqEventsService implements OnModuleInit, OnModuleDestroy {
           testsTotal: true,
           language: true,
           isDryRun: true,
+          error: true,
+          compileLog: true,
           caseResults: true,
         },
       });
@@ -100,6 +102,8 @@ export class BullMqEventsService implements OnModuleInit, OnModuleDestroy {
         score: submission.score ?? null,
         runtimeMs: submission.runtimeMs ?? null,
         memoryMb: submission.memoryMb ?? null,
+        error: submission.error ?? null,
+        compileLog: submission.compileLog ?? null,
         contestId: submission.contestId ?? null,
         testsPassed: submission.testsPassed ?? 0,
         testsTotal: submission.testsTotal ?? 0,

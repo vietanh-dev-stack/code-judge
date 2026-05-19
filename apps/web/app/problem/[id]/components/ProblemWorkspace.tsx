@@ -1,14 +1,16 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '@/store/auth-store';
 import { Problem, problemsApi } from '@/services/problem.apis';
 import { submissionsApi, Submission } from '@/services/submission.apis';
 import { storageApi } from '@/services/storage.apis';
+import { aiHintApi, type RequestHintResult } from '@/services/ai-hint.apis';
 import ProblemDescription from './ProblemDescription';
 import CodeEditorPanel from './CodeEditorPanel';
 import ConsolePanel from './ConsolePanel';
+import AiHintDrawer, { type HintUiState } from './AiHintDrawer';
+import AiHintFab from './AiHintFab';
 import { useSocket } from '@/providers/socket-provider';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -75,6 +77,14 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<SubmissionResult | null>(null);
+  const [lastSubmissionId, setLastSubmissionId] = useState<string | null>(null);
+  const [hintState, setHintState] = useState<HintUiState>('idle');
+  const [hintData, setHintData] = useState<RequestHintResult | null>(null);
+  const [hintError, setHintError] = useState<string | null>(null);
+  const [hintDrawerOpen, setHintDrawerOpen] = useState(false);
+  const [hintPulse, setHintPulse] = useState(false);
+  const latestHintRequestRef = useRef<string | null>(null);
+  const hintCachedSubmissionRef = useRef<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const { socket } = useSocket();
 
@@ -263,6 +273,9 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
       const handleFinished = (data: any) => {
         setIsRunning(false);
         setIsSubmitting(false);
+        if (data.submissionId) {
+          setLastSubmissionId(data.submissionId);
+        }
         setResult({
           status: data.status,
           testsPassed: data.testsPassed ?? 0,
@@ -279,12 +292,17 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
         }
 
         if (data.status === 'Accepted') {
+          setHintDrawerOpen(false);
+          setHintPulse(false);
+          setHintState('idle');
+          setHintData(null);
           toast.success(data.isDryRun ? 'Run Code Success!' : 'Accepted!', {
             description: data.isDryRun
               ? `Passed all ${data.testsTotal} sample test cases.`
               : `All ${data.testsTotal} test cases passed.`,
           });
         } else {
+          setHintPulse(true);
           toast.error(data.status, { description: data.error || 'Some test cases failed.' });
         }
       };
@@ -292,6 +310,9 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
       const handleFailed = (data: any) => {
         setIsRunning(false);
         setIsSubmitting(false);
+        if (data.submissionId) {
+          setLastSubmissionId(data.submissionId);
+        }
         setResult({
           status: 'Error',
           testsPassed: data.testsPassed ?? 0,
@@ -303,6 +324,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
         if (!data.isDryRun) {
           loadSubmissions();
         }
+        setHintPulse(true);
         toast.error('Error', { description: data.error || 'Judging failed' });
       };
 
@@ -315,6 +337,60 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
       };
     }
   }, [socket, loadSubmissions]);
+
+  const fetchHint = useCallback(
+    async (problemId: string, submissionId: string, options?: { force?: boolean }) => {
+      if (!user) return;
+      if (
+        !options?.force &&
+        hintCachedSubmissionRef.current === submissionId &&
+        hintData?.submissionId === submissionId &&
+        hintState === 'ready'
+      ) {
+        return;
+      }
+
+      latestHintRequestRef.current = submissionId;
+      setHintState('loading');
+      setHintError(null);
+      if (hintData?.submissionId !== submissionId) {
+        setHintData(null);
+      }
+
+      try {
+        const response = await aiHintApi.requestHint(problemId, submissionId);
+        if (latestHintRequestRef.current !== submissionId) return;
+        setHintData(response);
+        setHintState('ready');
+        hintCachedSubmissionRef.current = submissionId;
+      } catch (err: unknown) {
+        if (latestHintRequestRef.current !== submissionId) return;
+        const message = err instanceof Error ? err.message : 'Không thể tải gợi ý AI';
+        setHintError(message);
+        setHintState('error');
+      }
+    },
+    [user, hintData, hintState],
+  );
+
+  const hintAvailable = Boolean(
+    user && result && result.status !== 'Accepted' && lastSubmissionId,
+  );
+
+  useEffect(() => {
+    if (!hintPulse) return;
+    const timer = setTimeout(() => setHintPulse(false), 2500);
+    return () => clearTimeout(timer);
+  }, [hintPulse, lastSubmissionId]);
+
+  const handleRequestHint = useCallback(async () => {
+    if (!problem?.id || !lastSubmissionId) return;
+    setHintDrawerOpen(true);
+    setHintPulse(false);
+    await fetchHint(problem.id, lastSubmissionId, {
+      force: hintState === 'error',
+    });
+  }, [problem?.id, lastSubmissionId, fetchHint, hintState]);
 
   // Initialize code from localStorage or default
   useEffect(() => {
@@ -368,6 +444,14 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
       setIsSubmitting(true);
     }
     setResult(null);
+    setLastSubmissionId(null);
+    setHintState('idle');
+    setHintData(null);
+    setHintError(null);
+    setHintDrawerOpen(false);
+    setHintPulse(false);
+    latestHintRequestRef.current = null;
+    hintCachedSubmissionRef.current = null;
 
     try {
       const submissionId = `sub-${Math.random().toString(36).slice(2, 10)}-${Date.now()}`;
@@ -401,7 +485,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
         body: code,
       });
 
-      await submissionsApi.create({
+      const created = await submissionsApi.create({
         userId: user.id,
         problemId: problem.id,
         contestId: (contestId || null) as string | undefined,
@@ -410,6 +494,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
         sourceCodeObjectKey: presign.objectKey,
         isDryRun,
       });
+      setLastSubmissionId(created.submissionId);
 
       toast.info(isDryRun ? 'Running Code' : 'Submission Received', {
         description: isDryRun
@@ -663,15 +748,29 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
                 hasReachedSubmissionLimit={hasReachedSubmissionLimit}
                 submissionLimitText={submissionLimitText}
               />
-              <ConsolePanel
-                isRunning={isRunning || isSubmitting}
-                result={result}
-                problem={problem}
-              />
+              <ConsolePanel isRunning={isRunning || isSubmitting} result={result} problem={problem} />
             </div>
           </>
         )}
       </div>
+      {problem && (
+        <>
+          <AiHintFab
+            visible={hintAvailable && !hintDrawerOpen}
+            loading={hintState === 'loading'}
+            ready={hintState === 'ready'}
+            pulse={hintPulse}
+            onClick={handleRequestHint}
+          />
+          <AiHintDrawer
+            open={hintDrawerOpen}
+            onClose={() => setHintDrawerOpen(false)}
+            state={hintState}
+            data={hintData}
+            errorMessage={hintError}
+          />
+        </>
+      )}
     </div>
   );
 }

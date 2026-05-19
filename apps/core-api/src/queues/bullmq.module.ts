@@ -54,7 +54,12 @@ import {
     },
     BullMqEventsService,
   ],
-  exports: [JUDGE_QUEUE, GOLDEN_VERIFY_QUEUE, GOLDEN_VERIFY_QUEUE_EVENTS],
+  exports: [
+    REDIS_CONNECTION,
+    JUDGE_QUEUE,
+    GOLDEN_VERIFY_QUEUE,
+    GOLDEN_VERIFY_QUEUE_EVENTS,
+  ],
 })
 export class BullMqModule {}
 

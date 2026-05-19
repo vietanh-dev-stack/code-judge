@@ -17,6 +17,7 @@ import { MailModule } from './mail/mail.module';
 import { GoldenSolutionsModule } from './golden-solutions/golden-solutions.module';
 import { AdminDashboardModule } from './admin-dashboard/admin-dashboard.module';
 import { TagsModule } from './tags/tags.module';
+import { AiHintModule } from './ai-hint/ai-hint.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { TagsModule } from './tags/tags.module';
     GoldenSolutionsModule,
     AdminDashboardModule,
     TagsModule,
+    AiHintModule,
   ],
 })
 export class AppModule {}

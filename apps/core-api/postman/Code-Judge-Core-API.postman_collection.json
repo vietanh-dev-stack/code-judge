@@ -334,6 +334,24 @@
             "description": "Public tạm thời. Lưu `lastSubmissionId`."
           },
           "response": []
+        },
+        {
+          "name": "Request AI hint (after failed run)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"submissionId\": \"{{lastSubmissionId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/problems/{{seedProblemAlgoId}}/hint",
+            "description": "JWT bắt buộc. Submission phải thuộc user hiện tại và chưa Accepted. Chạy sau Create submission khi đã có lastSubmissionId."
+          },
+          "response": []
         }
       ]
     },

@@ -10,5 +10,6 @@ import { ProblemVisibilityService } from './problem-visibility.service';
   imports: [PrismaModule, AiTestcaseModule],
   controllers: [ProblemsController],
   providers: [ProblemsService, AdminProblemsService, ProblemVisibilityService],
+  exports: [ProblemsService],
 })
 export class ProblemsModule {}

@@ -105,6 +105,10 @@ Mọi endpoint HTTP trả về (hoặc lỗi) cùng một **envelope**:
 - Stack: `docker-compose.production.yml` (Judge0 isolate thật trên Linux; dev Windows dùng `docker-compose.yml` + stub).
 - Hướng dẫn SSH/PM2 thay thế: [docs/DEPLOY-VPS.html](docs/DEPLOY-VPS.html).
 
+## AI gợi ý khi làm bài (học viên)
+- Sau Run/Submit thất bại trên `/problem/[id]`, panel **Gợi ý AI** tự tải (Socratic, không lộ đáp án).
+- Cấu hình: [docs/AI-HINT-ASSISTANT.html](docs/AI-HINT-ASSISTANT.html) (`AI_HINT_*`, Redis rate limit).
+
 ## Tài liệu cấu hình & utils
 - Xem: [docs/CAU-HINH-VA-UTILS.md](docs/CAU-HINH-VA-UTILS.md) (ESLint/Prettier, `common/`, `lib/`, cách import).
 - Phần **JWT / envelope JSON** ở trên bổ sung cho Core API; có thể đọc kèm comment trong `apps/core-api/src/auth/` và `apps/core-api/src/common/`.

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Hint Assistant — code-judge</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #58a6ff;
+      --accent-dim: #388bfd33;
+      --violet: #a371f7;
+      --violet-dim: #8957e533;
+      --ok: #3fb950;
+      --border: #30363d;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --sidebar-w: 260px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; font-size: 15px; }
+    a { color: var(--accent); }
+    a:hover { text-decoration: underline; }
+    .layout { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative !important; height: auto !important; }
+    }
+    .sidebar {
+      position: sticky; top: 0; height: 100vh; overflow-y: auto;
+      padding: 1.25rem 1rem; background: var(--surface); border-right: 1px solid var(--border);
+    }
+    .sidebar h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 0.75rem; }
+    .sidebar nav a { display: block; padding: 0.35rem 0.5rem; border-radius: 6px; color: var(--muted); font-size: 0.88rem; text-decoration: none; }
+    .sidebar nav a:hover { background: var(--surface2); color: var(--text); }
+    main { max-width: 820px; padding: 2rem 2.5rem 4rem; }
+    header.doc-header { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+    header.doc-header h1 { font-size: 1.7rem; margin: 0 0 0.5rem; }
+    .meta { font-size: 0.85rem; color: var(--muted); }
+    .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.72rem; font-weight: 600; background: var(--violet-dim); color: var(--violet); margin-right: 0.35rem; }
+    section { margin-bottom: 2.5rem; scroll-margin-top: 1rem; }
+    h2 { font-size: 1.3rem; margin: 0 0 1rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border); }
+    p { margin: 0 0 1rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.88rem; }
+    th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+    th { background: var(--surface2); }
+    tr:nth-child(even) td { background: #1a233260; }
+    pre, code { font-family: var(--mono); font-size: 0.84rem; }
+    pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; margin: 1rem 0; }
+    code { background: var(--surface2); padding: 0.15rem 0.35rem; border-radius: 4px; }
+    pre code { background: transparent; padding: 0; }
+    .callout { background: var(--violet-dim); border-left: 4px solid var(--violet); padding: 0.75rem 1rem; margin: 1rem 0; border-radius: 0 8px 8px 0; }
+    .callout-ok { background: #23863622; border-left-color: var(--ok); }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Mục lục</h2>
+      <nav>
+        <a href="#overview">Tổng quan</a>
+        <a href="#flow">Luồng</a>
+        <a href="#api">API</a>
+        <a href="#env">Biến môi trường</a>
+        <a href="#rate-limit">Rate limit</a>
+        <a href="#security">Bảo mật</a>
+      </nav>
+      <h2 style="margin-top:1.5rem">Docs khác</h2>
+      <nav>
+        <a href="DEPLOY-VPS.html">DEPLOY VPS</a>
+        <a href="MINIO.html">MINIO</a>
+        <a href="PRISMA-SEED.html">PRISMA SEED</a>
+      </nav>
+    </aside>
+
+    <main>
+      <header class="doc-header" id="overview">
+        <h1>AI Hint Assistant (học viên)</h1>
+        <p class="meta">
+          <span class="badge">Socratic hints</span>
+          <span>Redis rate limit</span>
+          <span>Cập nhật: 2026-05-19</span>
+        </p>
+        <p style="color:var(--muted);max-width:720px;margin-top:1rem">
+          Gợi ý theo phong cách Socratic sau khi <strong>Run</strong> hoặc <strong>Submit</strong> thất bại
+          trên màn <code>/problem/[id]</code>. Không chat tự do; không lộ đáp án hay code giải hoàn chỉnh.
+        </p>
+      </header>
+
+      <section id="flow">
+        <h2>Luồng</h2>
+        <ol>
+          <li>Học viên Run/Submit → worker chấm → Socket <code>submission:finished</code> / <code>submission:failed</code>.</li>
+          <li>Nếu status ≠ <code>Accepted</code>, nút nổi góc dưới phải <strong>Bạn cần trợ giúp không ^^</strong> hiện lên — không gọi AI tự động.</li>
+          <li>Học viên bấm nút → <code>POST /problems/:problemId/hint</code> → drawer trượt từ bên phải hiển thị gợi ý.</li>
+        </ol>
+        <div class="callout">
+          Gợi ý chỉ gồm hướng tiếp cận, ví dụ pattern generic và gợi ý syntax — không phải lời giải copy-paste.
+        </div>
+      </section>
+
+      <section id="api">
+        <h2>API</h2>
+        <ul>
+          <li><code>POST /problems/:problemId/hint</code> — yêu cầu JWT (cookie <code>accessToken</code>)</li>
+          <li>Body: <code>{ "submissionId": "uuid" }</code></li>
+          <li>Response (trong envelope chuẩn): <code>{ submissionId, hints, provider, model }</code></li>
+        </ul>
+        <p>Cấu trúc <code>hints</code>:</p>
+        <pre><code>{
+  "summary": "…",
+  "approachHints": ["…"],
+  "syntaxNotes": [{ "area": "…", "note": "…" }],
+  "examplePatterns": [{ "title": "…", "genericExample": "…" }],
+  "encouragement": "…"
+}</code></pre>
+        <p>Mã nguồn: <code>apps/core-api/src/ai-hint/</code>, frontend: <code>AiHintFab.tsx</code>, <code>AiHintDrawer.tsx</code>.</p>
+      </section>
+
+      <section id="env">
+        <h2>Biến môi trường (core-api)</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Biến</th>
+              <th>Mặc định</th>
+              <th>Mô tả</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>AI_HINT_ENABLED</code></td>
+              <td><code>true</code></td>
+              <td>Tắt toàn hệ thống: <code>false</code></td>
+            </tr>
+            <tr>
+              <td><code>AI_HINT_MAX_PER_PROBLEM_PER_HOUR</code></td>
+              <td><code>10</code></td>
+              <td>Rate limit Redis — key <code>ai-hint:{userId}:{problemId}</code></td>
+            </tr>
+            <tr>
+              <td><code>AI_HINT_DISABLED_IN_CONTEST</code></td>
+              <td><code>false</code></td>
+              <td><code>true</code> = không gợi ý khi submission có <code>contestId</code></td>
+            </tr>
+            <tr>
+              <td><code>OPENAI_API_KEY</code> / <code>GOOGLE_GENERATIVE_AI_API_KEY</code></td>
+              <td>—</td>
+              <td>Provider LLM (cùng stack với AI testcase); thêm <code>AI_DEFAULT_PROVIDER</code>, model keys</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>Xem thêm <code>apps/core-api/.env.example</code> và <code>apps/core-api/src/common/config/env.keys.ts</code>.</p>
+      </section>
+
+      <section id="rate-limit">
+        <h2>Rate limit</h2>
+        <p>
+          Dùng <strong>Redis</strong> (không bảng Postgres). Mỗi lần gọi hint thành công tăng counter;
+          cửa sổ 1 giờ (TTL 3600s).
+        </p>
+        <div class="callout callout-ok">
+          Nếu Redis lỗi, API vẫn trả hint (<strong>fail-open</strong>) và ghi log cảnh báo — tránh chặn học viên khi hạ tầng Redis tạm lỗi.
+        </div>
+      </section>
+
+      <section id="security">
+        <h2>Bảo mật</h2>
+        <ul>
+          <li>Chỉ chủ submission (<code>submission.userId</code>) được gợi ý.</li>
+          <li>Không gửi expected output (hidden hoặc public fail) vào LLM.</li>
+          <li>Post-filter redact nếu hint chứa output công khai hoặc block code quá dài.</li>
+          <li>Từ chối hint khi submission đã <code>Accepted</code>.</li>
+        </ul>
+      </section>
+
+      <footer>
+        <p>Postman: <strong>Request AI hint (after failed run)</strong> trong collection Core API.</p>
+        <p><a href="../README.md">README</a> · <a href="DEPLOY-VPS.html">Triển khai VPS</a></p>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>
