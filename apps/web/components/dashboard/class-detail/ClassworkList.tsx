@@ -72,9 +72,14 @@ export default function ClassworkList({
     }
   };
 
-  const filteredProblems = problems.filter((p) =>
-    p.title.toLowerCase().includes(debouncedSearch.toLowerCase()),
-  );
+  const filteredProblems = problems.filter((p) => {
+    if (!isOwner && p.visibility === 'CONTEST_ONLY') {
+      return false;
+    }
+    return p.title.toLowerCase().includes(debouncedSearch.toLowerCase());
+  });
+
+  console.log(filteredProblems);
 
   return (
     <div className="space-y-8">

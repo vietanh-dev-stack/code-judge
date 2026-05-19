@@ -6,9 +6,9 @@ import { UpdateProblemDto } from './dto/update-problem.dto';
 
 /**
  * ProblemVisibilityService — enforces visibility rules:
- * - Class problems (has classRoomId) → ALWAYS PRIVATE
+ * - Class problems (has classRoomId) → PRIVATE by default, or CONTEST_ONLY when requested
  * - Admin problems → can set PRIVATE, PUBLIC, CONTEST_ONLY
- * - Class owners cannot change class problem visibility to PUBLIC/CONTEST_ONLY
+ * - Class owners cannot change class problem visibility to PUBLIC
  */
 @Injectable()
 export class ProblemVisibilityService {
@@ -22,9 +22,11 @@ export class ProblemVisibilityService {
     dto: CreateProblemDto,
     classRoomId: string | undefined,
   ): ProblemVisibility {
-    // If creating in a class, always force PRIVATE
+    // If creating in a class, allow CONTEST_ONLY but keep PRIVATE as default.
     if (classRoomId) {
-      return ProblemVisibility.PRIVATE;
+      return dto.visibility === ProblemVisibility.CONTEST_ONLY
+        ? ProblemVisibility.CONTEST_ONLY
+        : ProblemVisibility.PRIVATE;
     }
 
     // Admin problems: use DTO value or default to PUBLIC
@@ -53,15 +55,14 @@ export class ProblemVisibilityService {
 
     // If this is a class problem
     if (classRoomIds.length > 0) {
-      // Only admin can change class problem visibility away from PRIVATE
-      if (updaterRole !== Role.ADMIN && dtoVisibility !== ProblemVisibility.PRIVATE) {
+      // Class problems can be PRIVATE or CONTEST_ONLY.
+      // Only admins or class owners can set CONTEST_ONLY, but PUBLIC is not allowed.
+      if (dtoVisibility === ProblemVisibility.PUBLIC) {
         throw new ForbiddenException(
-          'Class owners cannot change visibility of class problems to PUBLIC or CONTEST_ONLY. ' +
-            'Only admins can modify the visibility of classroom-assigned problems.',
+          'Class problems cannot be made PUBLIC. Only PRIVATE or CONTEST_ONLY are allowed for class-specific problems.',
         );
       }
-      // Even if admin tries to change, ensure it stays PRIVATE
-      return ProblemVisibility.PRIVATE;
+      return dtoVisibility;
     }
 
     // For admin problems (no class assignments), allow any visibility

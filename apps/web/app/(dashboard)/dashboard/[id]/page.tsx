@@ -38,7 +38,6 @@ export default async function ClassStreamPage({ params }: { params: Promise<{ id
     ]);
     classroom = classroomRes;
     contests = contestsRes.items;
-    console.log(contests);
     user = userRes;
   } catch (error: any) {
     // If not in class or class not found, redirect to dashboard
@@ -48,9 +47,14 @@ export default async function ClassStreamPage({ params }: { params: Promise<{ id
     throw error;
   }
 
-  const sortedAssignments = [...(classroom.assignments || [])].sort(
-    (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
-  );
+  const isOwner = classroom.ownerId === user?.id;
+
+  const sortedAssignments = [...(classroom.assignments || [])]
+    .filter((assignment) => {
+      if (!assignment.problem) return true;
+      return isOwner || assignment.problem.visibility !== 'CONTEST_ONLY';
+    })
+    .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
   const incomingContests = contests.filter((c) => new Date(c.endAt) > new Date());
 
@@ -86,7 +90,8 @@ export default async function ClassStreamPage({ params }: { params: Promise<{ id
               <p className="text-sm text-gray-500 mb-4">Great, there are no incoming test!</p>
             ) : (
               <p className="text-sm text-gray-500 mb-4">
-                You have {incomingContests.length} incoming test{incomingContests.length > 1 ? 's' : ''}.
+                You have {incomingContests.length} incoming test
+                {incomingContests.length > 1 ? 's' : ''}.
               </p>
             )}
 

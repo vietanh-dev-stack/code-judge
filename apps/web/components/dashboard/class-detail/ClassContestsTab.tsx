@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,7 +24,17 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
-import { Plus, Search, Calendar, Edit2, Trash2, Clock, Trophy, MoreVertical } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  Calendar,
+  Edit2,
+  Trash2,
+  Clock,
+  Trophy,
+  MoreVertical,
+  Eye,
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +66,7 @@ export default function ClassContestsTab({
   const [contestToDelete, setContestToDelete] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const debouncedSearch = useDebounce(search, 300);
+  const router = useRouter();
 
   const [formData, setFormData] = useState<CreateContestDto>({
     title: '',
@@ -247,8 +259,6 @@ export default function ClassContestsTab({
       contest.description?.toLowerCase().includes(debouncedSearch.toLowerCase()),
   );
 
-  console.log(filteredContests);
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'RUNNING':
@@ -264,6 +274,10 @@ export default function ClassContestsTab({
       default:
         return <Badge variant="destructive">{status}</Badge>;
     }
+  };
+
+  const handleNavigateContest = (contestId: string) => {
+    router.push(`/dashboard/${classId}/contests/${contestId}`);
   };
 
   if (loading && contests.length === 0) {
@@ -598,6 +612,12 @@ export default function ClassContestsTab({
                             align="end"
                             className="w-48 p-1 rounded-xl shadow-xl border-gray-100"
                           >
+                            <DropdownMenuItem
+                              onClick={() => handleNavigateContest(contest.id)}
+                              className="rounded-lg gap-2 cursor-pointer py-2"
+                            >
+                              <Eye className="w-4 h-4" /> View Details
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleEdit(contest)}
                               className="rounded-lg gap-2 cursor-pointer py-2"
