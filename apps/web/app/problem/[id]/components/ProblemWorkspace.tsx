@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Trophy, ChevronLeft, ChevronRight } from 'lucide-react';
 import { contestsApi, Contest } from '@/services/contest.apis';
+import { getClassroomDetail } from '@/services/classroom.apis';
 
 // 1. CHUẨN HÓA TYPE THEO SCHEMA
 export type ProblemType = {
@@ -129,6 +130,29 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
       try {
         setLoadingProblem(true);
         const data = await problemsApi.findById(activeProblemId);
+
+        // Validate classroom enrollment if this problem is assigned to a class
+        if (data.assignments && data.assignments.length > 0 && user?.role !== 'ADMIN') {
+          let hasAccess = false;
+          for (const assignment of data.assignments) {
+            try {
+              await getClassroomDetail(assignment.classRoomId);
+              hasAccess = true;
+              break;
+            } catch (err) {
+              // Not enrolled in this classroom
+            }
+          }
+
+          if (!hasAccess) {
+            toast.error('Unauthorized', {
+              description: 'This problem belongs to a class you are not enrolled in.',
+            });
+            router.push('/dashboard');
+            return;
+          }
+        }
+
         setProblem(data);
         setCode('');
         setResult(null);
@@ -143,7 +167,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
     };
 
     fetchProblem();
-  }, [activeProblemId]);
+  }, [activeProblemId, user, router]);
 
   useEffect(() => {
     if (!contestId) {
@@ -154,6 +178,21 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
     const fetchContest = async () => {
       try {
         const data = await contestsApi.findById(contestId);
+
+        // Validate classroom enrollment if this contest is assigned to a class
+        const classRoomId = (data as any).assignments?.[0]?.classRoomId;
+        if (classRoomId) {
+          try {
+            await getClassroomDetail(classRoomId);
+          } catch (classroomErr) {
+            toast.error('Unauthorized', {
+              description: 'You are not enrolled in the class hosting this contest.',
+            });
+            router.push('/dashboard');
+            return;
+          }
+        }
+
         setContest(data);
 
         // Validate contest accessibility
