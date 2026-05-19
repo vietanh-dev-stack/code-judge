@@ -669,6 +669,24 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                   </p>
                 </div>
 
+                <div className="flex items-center justify-between mt-4 border-t pt-4">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-semibold">For Contest Only</Label>
+                    <p className="text-xs text-gray-500">
+                      Hide this problem from students in the normal assignments list. It will only be accessible within contests.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formData.visibility === 'CONTEST_ONLY'}
+                    onCheckedChange={(checked) =>
+                      setFormData({
+                        ...formData,
+                        visibility: checked ? 'CONTEST_ONLY' : 'PRIVATE',
+                      })
+                    }
+                  />
+                </div>
+
                 <div className="space-y-3 pt-4 border-t">
                   <Label className="text-sm font-semibold flex items-center gap-2">
                     <Languages className="w-4 h-4 text-gray-400" /> Supported Languages
