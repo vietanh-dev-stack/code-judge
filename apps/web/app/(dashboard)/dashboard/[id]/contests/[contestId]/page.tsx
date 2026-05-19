@@ -37,6 +37,31 @@ export default function ContestDetailPage() {
   const [stats, setStats] = useState<{ submitted: number; total: number } | null>(null);
   const [studentsStatus, setStudentsStatus] = useState<any[]>([]);
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'RUNNING':
+        return <Badge className="bg-emerald-500 hover:bg-emerald-600">Running</Badge>;
+      case 'ENDED':
+        return (
+          <Badge variant="secondary" className="bg-red-500 hover:bg-red-500 text-white">
+            Ended
+          </Badge>
+        );
+      case 'PUBLISHED':
+        return (
+          <Badge variant="outline" className="border-blue-200 text-blue-600 bg-blue-50">
+            Published
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="destructive" className="">
+            {status}
+          </Badge>
+        );
+    }
+  };
+
   // Keep current time updated so contest start becomes active automatically
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -198,17 +223,7 @@ export default function ContestDetailPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <p className="text-sm text-muted-foreground">Status</p>
-              <Badge
-                variant={
-                  contest.status === 'RUNNING'
-                    ? 'secondary'
-                    : contest.status === 'ENDED'
-                      ? 'destructive'
-                      : 'default'
-                }
-              >
-                {contest.status}
-              </Badge>
+              {getStatusBadge(contest.status)}
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Start At</p>

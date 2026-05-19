@@ -17,19 +17,25 @@ export default async function ContestsPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'RUNNING':
-        return (
-          <Badge className="bg-emerald-500 hover:bg-emerald-600 animate-pulse">Live Now</Badge>
-        );
+        return <Badge className="bg-emerald-500 hover:bg-emerald-600">Running</Badge>;
       case 'ENDED':
-        return <Badge variant="secondary">Finished</Badge>;
+        return (
+          <Badge variant="secondary" className="bg-red-500 hover:bg-red-500 text-white">
+            Ended
+          </Badge>
+        );
       case 'PUBLISHED':
         return (
           <Badge variant="outline" className="border-blue-200 text-blue-600 bg-blue-50">
-            Upcoming
+            Published
           </Badge>
         );
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return (
+          <Badge variant="destructive" className="">
+            {status}
+          </Badge>
+        );
     }
   };
 
