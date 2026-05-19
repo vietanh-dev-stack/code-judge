@@ -1,0 +1,336 @@
+# Production stack — Ubuntu 24.04 LTS x64 (VPS).
+#
+# First time on VPS:
+#   ./deploy/ubuntu-24.04-setup.sh
+#   cp .env.production.example .env.production   # edit secrets
+#   ./deploy/production-up.sh
+#
+# Local dev (Windows/macOS): docker compose up -d  → docker-compose.yml (Judge0 stub)
+# Production (Ubuntu):       file này — Judge0 isolate thật, privileged, linux/amd64
+
+name: code-judge-prod
+
+x-platform: &linux_amd64
+  platform: linux/amd64
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "5"
+
+services:
+  # ─── Application data ───────────────────────────────────────────────
+  app-db:
+    image: pgvector/pgvector:pg16
+    container_name: cj-prod-app-db
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-codejudge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}
+      POSTGRES_DB: ${POSTGRES_DB:-codejudge}
+    volumes:
+      - app_postgres_data:/var/lib/postgresql/data
+    networks:
+      - cj-internal
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-codejudge} -d ${POSTGRES_DB:-codejudge}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app-redis:
+    image: redis:7-alpine
+    container_name: cj-prod-app-redis
+    restart: unless-stopped
+    logging: *default-logging
+    command: redis-server --appendonly yes
+    volumes:
+      - app_redis_data:/data
+    networks:
+      - cj-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: cj-prod-minio
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - cj-internal
+
+  # ─── Judge0 (Ubuntu 24.04 + cgroup v2 — isolate thật, không mount stub) ───
+  judge0-db:
+    <<: *linux_amd64
+    image: postgres:16-alpine
+    container_name: cj-prod-judge0-db
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      POSTGRES_USER: judge0
+      POSTGRES_PASSWORD: ${JUDGE0_DB_PASSWORD:-judge0}
+      POSTGRES_DB: judge0
+    volumes:
+      - judge0_postgres_data:/var/lib/postgresql/data
+    networks:
+      - cj-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U judge0 -d judge0"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  judge0-redis:
+    image: redis:7-alpine
+    container_name: cj-prod-judge0-redis
+    restart: unless-stopped
+    logging: *default-logging
+    command: redis-server --save 60 1 --loglevel warning
+    networks:
+      - cj-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  judge0-server:
+    <<: *linux_amd64
+    image: judge0/judge0:latest
+    container_name: cj-prod-judge0-server
+    restart: unless-stopped
+    privileged: true
+    # Ubuntu 24.04: cần quyền privileged cho isolate; không set JUDGE0_USE_CGROUP=false
+    logging: *default-logging
+    environment:
+      RAILS_ENV: production
+      DATABASE_URL: postgres://judge0:${JUDGE0_DB_PASSWORD:-judge0}@judge0-db:5432/judge0
+      REDIS_URL: redis://judge0-redis:6379/0
+      REDIS_HOST: judge0-redis
+      REDIS_PORT: 6379
+      SECRET_KEY_BASE: ${JUDGE0_SECRET_KEY_BASE:?Set JUDGE0_SECRET_KEY_BASE}
+      RAILS_MAX_THREADS: 5
+      RAILS_MIN_THREADS: 5
+    volumes:
+      - judge0_box:/box
+    networks:
+      - cj-internal
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_healthy
+
+  judge0-worker:
+    <<: *linux_amd64
+    image: judge0/judge0:latest
+    container_name: cj-prod-judge0-worker
+    restart: unless-stopped
+    privileged: true
+    logging: *default-logging
+    command: ["./scripts/workers"]
+    environment:
+      RAILS_ENV: production
+      DATABASE_URL: postgres://judge0:${JUDGE0_DB_PASSWORD:-judge0}@judge0-db:5432/judge0
+      REDIS_URL: redis://judge0-redis:6379/0
+      REDIS_HOST: judge0-redis
+      REDIS_PORT: 6379
+      SECRET_KEY_BASE: ${JUDGE0_SECRET_KEY_BASE:?Set JUDGE0_SECRET_KEY_BASE}
+      RAILS_MAX_THREADS: 5
+      RAILS_MIN_THREADS: 5
+    volumes:
+      - judge0_box:/box
+    networks:
+      - cj-internal
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_healthy
+
+  # ─── DB migrations (one-shot) ─────────────────────────────────────────
+  migrate:
+    <<: *linux_amd64
+    build:
+      context: .
+      dockerfile: apps/core-api/Dockerfile
+      target: migrate
+    container_name: cj-prod-migrate
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-codejudge}:${POSTGRES_PASSWORD}@app-db:5432/${POSTGRES_DB:-codejudge}
+    networks:
+      - cj-internal
+    depends_on:
+      app-db:
+        condition: service_healthy
+
+  # ─── Application services ─────────────────────────────────────────────
+  core-api:
+    <<: *linux_amd64
+    build:
+      context: .
+      dockerfile: apps/core-api/Dockerfile
+    container_name: cj-prod-core-api
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-codejudge}:${POSTGRES_PASSWORD}@app-db:5432/${POSTGRES_DB:-codejudge}
+      REDIS_URL: redis://app-redis:6379
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-900}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-604800}
+      FRONTEND_URL: ${FRONTEND_URL:?Set FRONTEND_URL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-}
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET:-codejudge}
+      MINIO_REGION: ${MINIO_REGION:-us-east-1}
+      MINIO_PUBLIC_BASE_URL: ${MINIO_PUBLIC_BASE_URL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GOOGLE_GENERATIVE_AI_API_KEY: ${GOOGLE_GENERATIVE_AI_API_KEY:-}
+      AI_DEFAULT_PROVIDER: ${AI_DEFAULT_PROVIDER:-google}
+      AI_DEFAULT_MODEL_OPENAI: ${AI_DEFAULT_MODEL_OPENAI:-gpt-4.1-mini}
+      AI_DEFAULT_MODEL_GOOGLE: ${AI_DEFAULT_MODEL_GOOGLE:-gemini-2.5-flash}
+      AI_PROJECT_PROMPT_VERSION: ${AI_PROJECT_PROMPT_VERSION:-ai-project-testcase-v1}
+      AI_MAX_TOKENS: ${AI_MAX_TOKENS:-10000}
+      AI_FAST_MODE: ${AI_FAST_MODE:-auto}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-0}
+    networks:
+      - cj-internal
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      app-db:
+        condition: service_healthy
+      app-redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"require('http').get('http://127.0.0.1:3000/tags',(r)=>{process.exit(r.statusCode<500?0:1)}).on('error',()=>process.exit(1))\"",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  worker:
+    <<: *linux_amd64
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    container_name: cj-prod-worker
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-codejudge}:${POSTGRES_PASSWORD}@app-db:5432/${POSTGRES_DB:-codejudge}
+      REDIS_URL: redis://app-redis:6379
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET:-codejudge}
+      MINIO_REGION: ${MINIO_REGION:-us-east-1}
+      JUDGE0_URL: http://judge0-server:2358
+      JUDGE_ENGINE: ${JUDGE_ENGINE:-judge0}
+      AWS_REGION: ${AWS_REGION:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_LAMBDA_FUNCTION_NAME: ${AWS_LAMBDA_FUNCTION_NAME:-}
+      JUDGE_LAMBDA_FUNCTION_NAME: ${JUDGE_LAMBDA_FUNCTION_NAME:-}
+    networks:
+      - cj-internal
+    depends_on:
+      core-api:
+        condition: service_healthy
+      judge0-server:
+        condition: service_started
+
+  web:
+    <<: *linux_amd64
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_CORE_URL: ${NEXT_PUBLIC_CORE_URL:?Set NEXT_PUBLIC_CORE_URL}
+    container_name: cj-prod-web
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      HOSTNAME: 0.0.0.0
+    networks:
+      - cj-internal
+    depends_on:
+      core-api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"require('http').get('http://127.0.0.1:3001',(r)=>{process.exit(r.statusCode<500?0:1)}).on('error',()=>process.exit(1))\"",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ─── Reverse proxy (khuyến nghị production) ───────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: cj-prod-nginx
+    restart: unless-stopped
+    logging: *default-logging
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${API_HTTP_PORT:-8080}:8080"
+    volumes:
+      - ./deploy/nginx/conf.d:/etc/nginx/conf.d:ro
+    networks:
+      - cj-internal
+    depends_on:
+      web:
+        condition: service_healthy
+      core-api:
+        condition: service_healthy
+
+networks:
+  cj-internal:
+    driver: bridge
+
+volumes:
+  app_postgres_data:
+  app_redis_data:
+  minio_data:
+  judge0_postgres_data:
+  judge0_box:
