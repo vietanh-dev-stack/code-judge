@@ -104,7 +104,7 @@ export class ProblemsService {
 
       console.log(`[ProblemsService] Found ${memberEmails.length} members to notify for problem "${problem.title}" in class "${assignment.classRoom.name}"`);
 
-      if (memberEmails.length > 0) {
+      if (memberEmails.length > 0 && problem.visibility !== 'CONTEST_ONLY') {
         const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3001';
         this.mailerService
           .sendAssignmentNotification({

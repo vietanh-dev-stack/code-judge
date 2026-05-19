@@ -13,6 +13,7 @@ import { useSocket } from '@/providers/socket-provider';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Trophy, ChevronLeft, ChevronRight } from 'lucide-react';
 import { contestsApi, Contest } from '@/services/contest.apis';
 
@@ -65,6 +66,7 @@ interface ProblemWorkspaceProps {
 }
 
 export default function ProblemWorkspace({ initialProblemId, contestId }: ProblemWorkspaceProps) {
+  const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const [activeProblemId, setActiveProblemId] = useState(initialProblemId);
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -148,6 +150,58 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
 
     fetchContest();
   }, [contestId]);
+
+  const [timeLeft, setTimeLeft] = useState<string>('');
+  const [isUrgent, setIsUrgent] = useState<boolean>(false);
+  const hasRedirectedRef = useRef(false);
+
+  useEffect(() => {
+    if (!contest?.endAt) return;
+
+    const updateTimer = () => {
+      const end = new Date(contest.endAt).getTime();
+      const now = new Date().getTime();
+      const diff = end - now;
+
+      if (diff <= 0) {
+        setTimeLeft('Contest Ended');
+        setIsUrgent(true);
+
+        if (!hasRedirectedRef.current) {
+          hasRedirectedRef.current = true;
+
+          const classRoomId = (contest as any).assignments?.[0]?.classRoomId || 'dc861a59-3d6b-4908-b7ce-c7527344650f';
+          const targetContestId = contest.id || '7b75bdf7-b067-4908-b768-6add8012d4cc';
+
+          toast.warning('Contest Ended!', {
+            description: 'The contest has ended. Redirecting you to the contest overview page...',
+            duration: 3000,
+          });
+
+          setTimeout(() => {
+            router.push(`/dashboard/${classRoomId}/contests/${targetContestId}`);
+          }, 2000);
+        }
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      const formattedHours = hours.toString().padStart(2, '0');
+      const formattedMinutes = minutes.toString().padStart(2, '0');
+      const formattedSeconds = seconds.toString().padStart(2, '0');
+
+      setTimeLeft(`${formattedHours}:${formattedMinutes}:${formattedSeconds}`);
+      setIsUrgent(diff < 10 * 60 * 1000);
+    };
+
+    updateTimer();
+    const timer = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(timer);
+  }, [contest?.endAt, contest, router]);
 
   const loadSubmissions = useCallback(async () => {
     if (!user || !problem?.id) return;
@@ -330,28 +384,49 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
           >
             {/* Sidebar Header */}
             <div className={cn(
-              "flex items-center justify-between border-b border-border/50 px-5 py-4 shrink-0",
+              "flex flex-col border-b border-border/50 px-5 py-4 shrink-0 gap-2.5",
               isDarkMode ? "bg-muted/10" : "bg-muted/30"
             )}>
-              <div className="flex items-center gap-3 overflow-hidden">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.15)] shrink-0">
-                  <Trophy size={16} />
+              <div className="flex items-center justify-between overflow-hidden w-full">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.15)] shrink-0">
+                    <Trophy size={16} />
+                  </div>
+                  <div className="overflow-hidden">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-0.5">Contest</p>
+                    <h3 className="truncate text-xs font-bold text-foreground" title={contest.title}>
+                      {contest.title}
+                    </h3>
+                  </div>
                 </div>
-                <div className="overflow-hidden">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-0.5">Contest</p>
-                  <h3 className="truncate text-xs font-bold text-foreground" title={contest.title}>
-                    {contest.title}
-                  </h3>
-                </div>
+
+                <button
+                  onClick={() => handleToggleSidebar(false)}
+                  className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0 cursor-pointer"
+                  title="Collapse Sidebar"
+                >
+                  <ChevronLeft size={16} />
+                </button>
               </div>
 
-              <button
-                onClick={() => handleToggleSidebar(false)}
-                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0 cursor-pointer"
-                title="Collapse Sidebar"
-              >
-                <ChevronLeft size={16} />
-              </button>
+              {/* Real-time Countdown Timer */}
+              {timeLeft && (
+                <div className={cn(
+                  "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-bold border transition-all duration-300 w-full shadow-sm",
+                  isUrgent 
+                    ? "bg-rose-500/10 border-rose-500/30 text-rose-500 animate-pulse" 
+                    : (isDarkMode ? "bg-amber-500/5 border-amber-500/20 text-amber-400" : "bg-amber-500/10 border-amber-500/25 text-amber-600")
+                )}>
+                  <div className={cn(
+                    "h-1.5 w-1.5 rounded-full shrink-0",
+                    isUrgent ? "bg-rose-500 animate-ping" : "bg-amber-500 animate-pulse"
+                  )} />
+                  <span className="font-mono text-xs">{timeLeft}</span>
+                  <span className="text-[9px] font-medium opacity-80 text-muted-foreground">
+                    {timeLeft === 'Contest Ended' ? '' : 'remaining'}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Problems List */}
