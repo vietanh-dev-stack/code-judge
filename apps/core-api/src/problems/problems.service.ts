@@ -10,6 +10,7 @@ import { CreateProblemDto } from './dto/create-problem.dto';
 import { UpdateProblemDto } from './dto/update-problem.dto';
 import { buildUniqueProblemSlug } from './problem-slug.util';
 import { ProblemVisibilityService } from './problem-visibility.service';
+import { replaceProblemTags } from './problem-tag-sync.util';
 
 import { MailerService } from '../mail/mail.service';
 import { ConfigService } from '@nestjs/config';
@@ -119,6 +120,10 @@ export class ProblemsService {
           .catch((err) => console.error('[ProblemsService] Failed to send assignment notification emails:', err));
       }
 
+      if (dto.tagIds !== undefined) {
+        await replaceProblemTags(tx, problem.id, dto.tagIds);
+      }
+
       return problem;
     });
   }
@@ -130,6 +135,8 @@ export class ProblemsService {
     classRoomId?: string;
     difficulty?: string;
     mode?: string;
+    tagId?: string;
+    tagSlug?: string;
   }) {
     const { page, limit, skip } = this.normalizeListPagination(query.page, query.limit);
     const search = query.search?.trim();
@@ -152,6 +159,8 @@ export class ProblemsService {
       ...difficultyFilter,
       ...modeFilter,
       ...(query.classRoomId ? { assignments: { some: { classRoomId: query.classRoomId } } } : {}),
+      ...(query.tagId ? { tags: { some: { tagId: query.tagId } } } : {}),
+      ...(query.tagSlug ? { tags: { some: { tag: { slug: query.tagSlug } } } } : {}),
       ...(search
         ? {
             OR: [
@@ -176,18 +185,28 @@ export class ProblemsService {
     return { items, total, page, limit };
   }
 
-  async findAllAdmin(query: { search?: string; page?: number; limit?: number }) {
+  async findAllAdmin(query: {
+    search?: string;
+    page?: number;
+    limit?: number;
+    tagId?: string;
+    tagSlug?: string;
+  }) {
     const { page, limit, skip } = this.normalizeListPagination(query.page, query.limit);
     const search = query.search?.trim();
-    const where: Prisma.ProblemWhereInput = search
-      ? {
-          OR: [
-            { title: { contains: search, mode: 'insensitive' as const } },
-            { description: { contains: search, mode: 'insensitive' as const } },
-            { slug: { contains: search, mode: 'insensitive' as const } },
-          ],
-        }
-      : {};
+    const where: Prisma.ProblemWhereInput = {
+      ...(query.tagId ? { tags: { some: { tagId: query.tagId } } } : {}),
+      ...(query.tagSlug ? { tags: { some: { tag: { slug: query.tagSlug } } } } : {}),
+      ...(search
+        ? {
+            OR: [
+              { title: { contains: search, mode: 'insensitive' as const } },
+              { description: { contains: search, mode: 'insensitive' as const } },
+              { slug: { contains: search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    };
 
     const [items, total] = await Promise.all([
       this.prisma.problem.findMany({
@@ -330,6 +349,10 @@ export class ProblemsService {
             ...(dto.dueAt !== undefined ? { dueAt: dto.dueAt ? new Date(dto.dueAt) : null } : {}),
           },
         });
+      }
+
+      if (dto.tagIds !== undefined) {
+        await replaceProblemTags(tx, problemId, dto.tagIds);
       }
 
       return updatedProblem;

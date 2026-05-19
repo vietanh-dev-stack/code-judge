@@ -14,17 +14,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Search, MoreHorizontal, Pencil, Trash2, Loader2, RefreshCw, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiRequestError } from '@/services/api-client';
+import { ProblemTagSlugFilter } from '@/components/problems/ProblemTagSlugFilter';
 
 export default function AdminProblemsTable() {
   const [items, setItems] = useState<Problem[]>([]);
@@ -35,6 +29,7 @@ export default function AdminProblemsTable() {
   const [listError, setListError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [tagSlug, setTagSlug] = useState('');
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -52,6 +47,7 @@ export default function AdminProblemsTable() {
         search: debouncedSearch || undefined,
         page,
         limit,
+        tagSlug: tagSlug || undefined,
       });
       setItems(res.items);
       setTotal(res.total);
@@ -66,7 +62,7 @@ export default function AdminProblemsTable() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, debouncedSearch]);
+  }, [page, limit, debouncedSearch, tagSlug]);
 
   useEffect(() => {
     fetchProblems();
@@ -100,13 +96,25 @@ export default function AdminProblemsTable() {
       ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative max-w-sm flex-1">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Tìm theo tiêu đề, mô tả, slug..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 bg-background"
+        <div className="flex flex-1 flex-wrap items-center gap-3 max-w-xl">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Tìm theo tiêu đề, mô tả, slug..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8 bg-background"
+            />
+          </div>
+          <ProblemTagSlugFilter
+            value={tagSlug}
+            onChange={(val) => {
+              setTagSlug(val);
+              setPage(1);
+            }}
+            label=""
+            allLabel="Tất cả tag"
+            triggerClassName="w-[160px] h-10"
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -155,10 +163,27 @@ export default function AdminProblemsTable() {
               items.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col gap-1">
                       <span className="font-medium">{p.title}</span>
+                      {p.tags && p.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {p.tags.map((t) => (
+                            <Badge
+                              key={t.tag.id}
+                              variant="secondary"
+                              className="text-[10px] py-0 px-1.5 h-4 bg-muted/60 text-muted-foreground hover:bg-muted font-normal cursor-pointer"
+                              onClick={() => {
+                                setTagSlug(t.tag.slug);
+                                setPage(1);
+                              }}
+                            >
+                              {t.tag.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                       {p.description ? (
-                        <span className="line-clamp-1 text-xs text-muted-foreground">
+                        <span className="line-clamp-1 text-xs text-muted-foreground mt-0.5">
                           {p.description}
                         </span>
                       ) : null}

@@ -36,6 +36,7 @@ import { ApiRequestError } from '@/services/api-client';
 import { toast } from 'sonner';
 import { AiTestCaseAdvancedOptions } from '@/components/problems/AiTestCaseAdvancedOptions';
 import { AiTestCaseDraftSheet } from '@/components/problems/AiTestCaseDraftSheet';
+import { ProblemTagPicker } from '@/components/problems/ProblemTagPicker';
 import {
   AiGenOptionsState,
   buildGenerateTestCasesDraftDto,
@@ -65,6 +66,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
     maxTestCases: 100,
     testCases: [],
     dueAt: undefined,
+    tagIds: [],
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -99,6 +101,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
           ({ id, problemId, orderIndex, createdAt, updatedAt, ...rest }: any) => rest,
         ),
         dueAt: data.assignments?.find((a) => a.classRoomId === classId)?.dueAt ?? undefined,
+        tagIds: (data.tags ?? []).map((t: any) => t.tag.id),
       });
     } catch (error) {
       console.error('Failed to load problem:', error);
@@ -684,6 +687,16 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                         visibility: checked ? 'CONTEST_ONLY' : 'PRIVATE',
                       })
                     }
+                  />
+                </div>
+
+                <div className="space-y-3 pt-4 border-t">
+                  <ProblemTagPicker
+                    value={formData.tagIds || []}
+                    onChange={(ids) => setFormData({ ...formData, tagIds: ids })}
+                    label="Problem Tags"
+                    hint="Select tags that match this problem type."
+                    locale="en"
                   />
                 </div>
 

@@ -67,6 +67,7 @@ export interface CreateProblemDto {
     isHidden?: boolean;
     weight?: number;
   }>;
+  tagIds?: string[];
 }
 
 /** POST /problems/admin — không `classRoomId`; backend không tạo ClassAssignment. */
@@ -88,6 +89,7 @@ export interface CreateAdminProblemDto {
     isHidden?: boolean;
     weight?: number;
   }>;
+  tagIds?: string[];
 }
 
 export interface GenerateTestCasesDraftDto {
@@ -148,6 +150,7 @@ export interface UpdateProblemDto {
     isHidden?: boolean;
     weight?: number;
   }>;
+  tagIds?: string[];
 }
 
 export type PaginatedProblems = {
@@ -158,20 +161,24 @@ export type PaginatedProblems = {
 };
 
 /** GET /problems — danh sách public / theo lớp. */
-export type ProblemsListQuery = {
+export interface ProblemsListQuery {
   search?: string;
   page?: number;
   limit?: number;
   classRoomId?: string;
   difficulty?: 'EASY' | 'MEDIUM' | 'HARD';
   mode?: 'ALGO' | 'PROJECT';
+  tagId?: string;
+  tagSlug?: string;
 };
 
 /** GET /problems/admin/all */
-export type AdminProblemsListQuery = {
+export interface AdminProblemsListQuery {
   search?: string;
   page?: number;
   limit?: number;
+  tagId?: string;
+  tagSlug?: string;
 };
 
 function appendProblemsListParams(params: URLSearchParams, query: ProblemsListQuery) {
@@ -181,6 +188,8 @@ function appendProblemsListParams(params: URLSearchParams, query: ProblemsListQu
   if (query.classRoomId) params.set('classRoomId', query.classRoomId);
   if (query.difficulty) params.set('difficulty', query.difficulty);
   if (query.mode) params.set('mode', query.mode);
+  if (query.tagId) params.set('tagId', query.tagId);
+  if (query.tagSlug) params.set('tagSlug', query.tagSlug);
 }
 
 export const problemsApi = {
@@ -196,6 +205,8 @@ export const problemsApi = {
     if (query?.search) params.set('search', query.search);
     if (query?.page != null) params.set('page', String(query.page));
     if (query?.limit != null) params.set('limit', String(query.limit));
+    if (query?.tagId) params.set('tagId', query.tagId);
+    if (query?.tagSlug) params.set('tagSlug', query.tagSlug);
     const queryString = params.toString();
     return apiFetch(`/problems/admin/all${queryString ? `?${queryString}` : ''}`, options);
   },
