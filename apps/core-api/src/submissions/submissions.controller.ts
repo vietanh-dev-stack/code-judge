@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
@@ -24,8 +24,8 @@ export class SubmissionsController {
 
   @ApiOperation({ summary: 'Lấy thông tin submission theo id' })
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.submissionsService.findById(id);
+  async findOne(@Param('id') id: string, @Req() req: any) {
+    return this.submissionsService.findById(id, req);
   }
 
   @ApiOperation({ summary: 'Lấy danh sách submission theo bộ lọc' })

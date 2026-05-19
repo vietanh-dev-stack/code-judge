@@ -197,6 +197,7 @@ export class ContestsService {
       where: { id: contestId },
       include: {
         problems: { include: { problem: true } },
+        assignments: true,
       },
     });
     if (!contest) {

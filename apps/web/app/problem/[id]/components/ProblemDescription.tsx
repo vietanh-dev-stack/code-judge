@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { Clock, HardDrive, BookOpen, History, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { Clock, HardDrive, BookOpen, History, CheckCircle2, XCircle, AlertCircle, Trophy } from 'lucide-react';
 import { Problem } from '@/services/problem.apis';
 import { Submission } from '@/services/submission.apis';
 import { cn } from '@/lib/utils';
@@ -16,10 +16,14 @@ interface ProblemDescriptionProps {
   setActiveTab: (tab: 'description' | 'submissions') => void;
   submissions: Submission[];
   isDarkMode: boolean;
+  contestId?: string;
+  isSidebarOpen?: boolean;
+  setIsSidebarOpen?: (open: boolean) => void;
 }
 
 export default function ProblemDescription({ 
-  problem, activeTab, setActiveTab, submissions, isDarkMode 
+  problem, activeTab, setActiveTab, submissions, isDarkMode,
+  contestId, isSidebarOpen, setIsSidebarOpen
 }: ProblemDescriptionProps) {
   
   const difficultyColor = 
@@ -30,7 +34,26 @@ export default function ProblemDescription({
   return (
     <div className="w-[45%] flex flex-col border-r border-border/50 bg-card/30 backdrop-blur-sm overflow-hidden">
       {/* Tab Switcher */}
-      <div className="flex items-center border-b border-border/50 bg-muted/20 px-4">
+      <div className="flex items-center border-b border-border/50 bg-muted/20 px-4 gap-2">
+        {contestId && setIsSidebarOpen && (
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className={cn(
+              "flex items-center justify-center p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all mr-1 relative cursor-pointer",
+              isSidebarOpen ? "text-amber-500 bg-amber-500/10 border-amber-500/20" : "border border-transparent"
+            )}
+            title={isSidebarOpen ? "Hide Contest Problems" : "Show Contest Problems"}
+          >
+            <Trophy size={16} className={cn(!isSidebarOpen && "animate-pulse text-amber-500")} />
+            {!isSidebarOpen && (
+              <span className="absolute top-1 right-1 flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+            )}
+          </button>
+        )}
+
         <button
           onClick={() => setActiveTab('description')}
           className={cn(

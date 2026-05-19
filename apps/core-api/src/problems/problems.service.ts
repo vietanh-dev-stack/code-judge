@@ -13,6 +13,7 @@ import { ProblemVisibilityService } from './problem-visibility.service';
 
 import { MailerService } from '../mail/mail.service';
 import { ConfigService } from '@nestjs/config';
+import * as jwt from 'jsonwebtoken';
 
 const PROBLEM_LIST_INCLUDE = {
   tags: { include: { tag: true } },
@@ -103,7 +104,7 @@ export class ProblemsService {
 
       console.log(`[ProblemsService] Found ${memberEmails.length} members to notify for problem "${problem.title}" in class "${assignment.classRoom.name}"`);
 
-      if (memberEmails.length > 0) {
+      if (memberEmails.length > 0 && problem.visibility !== 'CONTEST_ONLY') {
         const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3001';
         this.mailerService
           .sendAssignmentNotification({
@@ -201,7 +202,7 @@ export class ProblemsService {
     return { items, total, page, limit };
   }
 
-  async findById(problemId: string) {
+  async findById(problemId: string, req?: any) {
     const problem = await this.prisma.problem.findUnique({
       where: { id: problemId },
       include: PROBLEM_DETAIL_INCLUDE,
@@ -209,6 +210,39 @@ export class ProblemsService {
     if (!problem) {
       throw new NotFoundException('Problem not found');
     }
+
+    // Check if the user is authorized to view raw, unsanitized test cases (admin/creator/teacher)
+    let isAuthorized = false;
+    if (req) {
+      const token = req.cookies?.accessToken;
+      if (token) {
+        try {
+          const decoded: any = jwt.decode(token);
+          if (decoded && decoded.sub) {
+            const userId = decoded.sub;
+            const role = decoded.role;
+            isAuthorized = await this.canManageProblem(problem, userId, role);
+          }
+        } catch (err) {
+          // Token decode fail, treat as unauthorized (student)
+        }
+      }
+    }
+
+    if (!isAuthorized && problem.testCases) {
+      // Sanitize hidden test cases for students/guests!
+      problem.testCases = problem.testCases.map((tc) => {
+        if (tc.isHidden) {
+          return {
+            ...tc,
+            input: '',
+            expectedOutput: '',
+          };
+        }
+        return tc;
+      });
+    }
+
     return problem;
   }
 

@@ -8,6 +8,7 @@ export interface CreateSubmissionDto {
   language?: string;
   sourceCode?: string;
   sourceCodeObjectKey?: string;
+  isDryRun?: boolean;
 }
 
 export interface Submission {

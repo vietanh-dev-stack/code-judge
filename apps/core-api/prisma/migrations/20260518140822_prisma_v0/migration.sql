@@ -267,6 +267,7 @@ CREATE TABLE "Submission" (
     "problemId" TEXT NOT NULL,
     "mode" "ProblemMode" NOT NULL,
     "context" "SubmissionContext" NOT NULL,
+    "isDryRun" BOOLEAN NOT NULL DEFAULT false,
     "contestId" TEXT,
     "classRoomId" TEXT,
     "classAssignmentId" TEXT,
