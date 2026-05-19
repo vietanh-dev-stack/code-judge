@@ -124,7 +124,9 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
         setResult(null);
       } catch (err: any) {
         console.error('Failed to fetch problem:', err);
-        toast.error('Error loading problem', { description: err.message || 'Failed to load problem.' });
+        toast.error('Error loading problem', {
+          description: err.message || 'Failed to load problem.',
+        });
       } finally {
         setLoadingProblem(false);
       }
@@ -143,13 +145,50 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
       try {
         const data = await contestsApi.findById(contestId);
         setContest(data);
+
+        // Validate contest accessibility
+        const now = new Date();
+        const startAt = new Date(data.startAt);
+        const endAt = new Date(data.endAt);
+
+        if (now < startAt) {
+          // Contest hasn't started
+          toast.error('Contest Not Started', {
+            description: `This contest will start on ${startAt.toLocaleString()}. You cannot access problems yet.`,
+            duration: 4000,
+          });
+
+          const classRoomId = (data as any).assignments?.[0]?.classRoomId || '';
+          if (classRoomId) {
+            setTimeout(() => {
+              router.push(`/dashboard/${classRoomId}/contests/${contestId}`);
+            }, 2000);
+          }
+          return;
+        }
+
+        if (now > endAt) {
+          // Contest has ended
+          toast.warning('Contest Ended', {
+            description: `This contest ended on ${endAt.toLocaleString()}. You cannot submit solutions anymore.`,
+            duration: 4000,
+          });
+
+          const classRoomId = (data as any).assignments?.[0]?.classRoomId || '';
+          if (classRoomId) {
+            setTimeout(() => {
+              router.push(`/dashboard/${classRoomId}/contests/${contestId}`);
+            }, 2000);
+          }
+          return;
+        }
       } catch (error) {
         console.error('Failed to fetch contest details for sidebar:', error);
       }
     };
 
     fetchContest();
-  }, [contestId]);
+  }, [contestId, router]);
 
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [isUrgent, setIsUrgent] = useState<boolean>(false);
@@ -170,7 +209,9 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
         if (!hasRedirectedRef.current) {
           hasRedirectedRef.current = true;
 
-          const classRoomId = (contest as any).assignments?.[0]?.classRoomId || 'dc861a59-3d6b-4908-b7ce-c7527344650f';
+          const classRoomId =
+            (contest as any).assignments?.[0]?.classRoomId ||
+            'dc861a59-3d6b-4908-b7ce-c7527344650f';
           const targetContestId = contest.id || '7b75bdf7-b067-4908-b768-6add8012d4cc';
 
           toast.warning('Contest Ended!', {
@@ -275,7 +316,6 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
     }
   }, [socket, loadSubmissions]);
 
-
   // Initialize code from localStorage or default
   useEffect(() => {
     if (!problem) return;
@@ -286,8 +326,10 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
       const lang = problem.supportedLanguages?.[0]?.toLowerCase();
       if (lang === 'python') setCode('# Write your code here\n');
       else if (lang === 'javascript' || lang === 'typescript') setCode('// Write your code here\n');
-      else if (lang === 'cpp') setCode('#include <iostream>\nusing namespace std;\n\nint main() {\n  return 0;\n}\n');
-      else if (lang === 'go' || lang === 'golang') setCode('package main\nimport "fmt"\n\nfunc main() {\n  \n}\n');
+      else if (lang === 'cpp')
+        setCode('#include <iostream>\nusing namespace std;\n\nint main() {\n  return 0;\n}\n');
+      else if (lang === 'go' || lang === 'golang')
+        setCode('package main\nimport "fmt"\n\nfunc main() {\n  \n}\n');
       else if (lang === 'rust' || lang === 'rs') setCode('fn main() {\n    \n}\n');
       else setCode('');
     }
@@ -302,10 +344,11 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
   const [activeTab, setActiveTab] = useState<'description' | 'submissions'>('description');
   const [submissions, setSubmissions] = useState<Submission[]>([]);
 
-
   const handleSubmit = async (language: string, isDryRun: boolean = false) => {
     if (!problem) {
-      toast.error('Problem Not Loaded', { description: 'Please wait until the problem details are fully loaded.' });
+      toast.error('Problem Not Loaded', {
+        description: 'Please wait until the problem details are fully loaded.',
+      });
       return;
     }
 
@@ -329,13 +372,22 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
     try {
       const submissionId = `sub-${Math.random().toString(36).slice(2, 10)}-${Date.now()}`;
       const optionLang = language.toUpperCase();
-      const ext = optionLang === 'PYTHON' ? 'py' :
-        optionLang === 'JAVASCRIPT' ? 'js' :
-          optionLang === 'TYPESCRIPT' ? 'ts' :
-            optionLang === 'JAVA' ? 'java' :
-              optionLang === 'GO' ? 'go' :
-                optionLang === 'RUST' ? 'rs' :
-                  optionLang === 'CPP' ? 'cpp' : 'txt';
+      const ext =
+        optionLang === 'PYTHON'
+          ? 'py'
+          : optionLang === 'JAVASCRIPT'
+            ? 'js'
+            : optionLang === 'TYPESCRIPT'
+              ? 'ts'
+              : optionLang === 'JAVA'
+                ? 'java'
+                : optionLang === 'GO'
+                  ? 'go'
+                  : optionLang === 'RUST'
+                    ? 'rs'
+                    : optionLang === 'CPP'
+                      ? 'cpp'
+                      : 'txt';
 
       const presign = await storageApi.presignUpload({
         resourceKind: 'submission-source',
@@ -360,7 +412,9 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
       });
 
       toast.info(isDryRun ? 'Running Code' : 'Submission Received', {
-        description: isDryRun ? 'Running your code against sample test cases...' : 'Your code is being judged...',
+        description: isDryRun
+          ? 'Running your code against sample test cases...'
+          : 'Your code is being judged...',
       });
     } catch (error: any) {
       console.error('Submission failed:', error);
@@ -371,30 +425,44 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
   };
 
   return (
-    <div className={cn('h-screen flex flex-col bg-background text-foreground transition-colors duration-300', isDarkMode && 'dark')}>
+    <div
+      className={cn(
+        'h-screen flex flex-col bg-background text-foreground transition-colors duration-300',
+        isDarkMode && 'dark',
+      )}
+    >
       <div className="flex flex-1 overflow-hidden relative">
         {/* Contest Sidebar */}
         {contest && (
           <div
             className={cn(
-              "flex flex-col border-r border-border/50 transition-all duration-300 relative z-20 shrink-0",
-              isDarkMode ? "bg-[#0c0c0e]/95 backdrop-blur-md text-foreground" : "bg-[#f8fafc]/95 backdrop-blur-md text-foreground",
-              isSidebarOpen ? "w-[280px]" : "w-0 overflow-hidden border-r-0"
+              'flex flex-col border-r border-border/50 transition-all duration-300 relative z-20 shrink-0',
+              isDarkMode
+                ? 'bg-[#0c0c0e]/95 backdrop-blur-md text-foreground'
+                : 'bg-[#f8fafc]/95 backdrop-blur-md text-foreground',
+              isSidebarOpen ? 'w-[280px]' : 'w-0 overflow-hidden border-r-0',
             )}
           >
             {/* Sidebar Header */}
-            <div className={cn(
-              "flex flex-col border-b border-border/50 px-5 py-4 shrink-0 gap-2.5",
-              isDarkMode ? "bg-muted/10" : "bg-muted/30"
-            )}>
+            <div
+              className={cn(
+                'flex flex-col border-b border-border/50 px-5 py-4 shrink-0 gap-2.5',
+                isDarkMode ? 'bg-muted/10' : 'bg-muted/30',
+              )}
+            >
               <div className="flex items-center justify-between overflow-hidden w-full">
                 <div className="flex items-center gap-3 overflow-hidden">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.15)] shrink-0">
                     <Trophy size={16} />
                   </div>
                   <div className="overflow-hidden">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-0.5">Contest</p>
-                    <h3 className="truncate text-xs font-bold text-foreground" title={contest.title}>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-0.5">
+                      Contest
+                    </p>
+                    <h3
+                      className="truncate text-xs font-bold text-foreground"
+                      title={contest.title}
+                    >
                       {contest.title}
                     </h3>
                   </div>
@@ -411,16 +479,22 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
 
               {/* Real-time Countdown Timer */}
               {timeLeft && (
-                <div className={cn(
-                  "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-bold border transition-all duration-300 w-full shadow-sm",
-                  isUrgent 
-                    ? "bg-rose-500/10 border-rose-500/30 text-rose-500 animate-pulse" 
-                    : (isDarkMode ? "bg-amber-500/5 border-amber-500/20 text-amber-400" : "bg-amber-500/10 border-amber-500/25 text-amber-600")
-                )}>
-                  <div className={cn(
-                    "h-1.5 w-1.5 rounded-full shrink-0",
-                    isUrgent ? "bg-rose-500 animate-ping" : "bg-amber-500 animate-pulse"
-                  )} />
+                <div
+                  className={cn(
+                    'flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] font-bold border transition-all duration-300 w-full shadow-sm',
+                    isUrgent
+                      ? 'bg-rose-500/10 border-rose-500/30 text-rose-500 animate-pulse'
+                      : isDarkMode
+                        ? 'bg-amber-500/5 border-amber-500/20 text-amber-400'
+                        : 'bg-amber-500/10 border-amber-500/25 text-amber-600',
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'h-1.5 w-1.5 rounded-full shrink-0',
+                      isUrgent ? 'bg-rose-500 animate-ping' : 'bg-amber-500 animate-pulse',
+                    )}
+                  />
                   <span className="font-mono text-xs">{timeLeft}</span>
                   <span className="text-[9px] font-medium opacity-80 text-muted-foreground">
                     {timeLeft === 'Contest Ended' ? '' : 'remaining'}
@@ -434,9 +508,11 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
               {contest.problems?.map((cp, idx) => {
                 const isCurrent = cp.problem.id === problem?.id;
                 const difficultyColor =
-                  cp.problem.difficulty === 'EASY' ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' :
-                    cp.problem.difficulty === 'MEDIUM' ? 'text-amber-500 bg-amber-500/10 border-amber-500/20' :
-                      'text-rose-500 bg-rose-500/10 border-rose-500/20';
+                  cp.problem.difficulty === 'EASY'
+                    ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'
+                    : cp.problem.difficulty === 'MEDIUM'
+                      ? 'text-amber-500 bg-amber-500/10 border-amber-500/20'
+                      : 'text-rose-500 bg-rose-500/10 border-rose-500/20';
 
                 return (
                   <a
@@ -447,42 +523,50 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
                       handleProblemSwitch(cp.problem.id);
                     }}
                     className={cn(
-                      "flex items-start gap-3 rounded-xl p-3 text-left border transition-all duration-200 cursor-pointer active:scale-98 leading-relaxed",
+                      'flex items-start gap-3 rounded-xl p-3 text-left border transition-all duration-200 cursor-pointer active:scale-98 leading-relaxed',
                       isCurrent
-                        ? (isDarkMode 
-                            ? "bg-blue-600/15 border-blue-500/40 text-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.08)]" 
-                            : "bg-blue-50 border-blue-200 text-blue-600 shadow-sm")
-                        : (isDarkMode
-                            ? "bg-background border-border/50 hover:bg-muted/40 text-muted-foreground hover:text-foreground"
-                            : "bg-card border-border/40 hover:bg-muted/60 text-muted-foreground hover:text-foreground shadow-sm")
+                        ? isDarkMode
+                          ? 'bg-blue-600/15 border-blue-500/40 text-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.08)]'
+                          : 'bg-blue-50 border-blue-200 text-blue-600 shadow-sm'
+                        : isDarkMode
+                          ? 'bg-background border-border/50 hover:bg-muted/40 text-muted-foreground hover:text-foreground'
+                          : 'bg-card border-border/40 hover:bg-muted/60 text-muted-foreground hover:text-foreground shadow-sm',
                     )}
                   >
-                    <span className={cn(
-                      "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold border",
-                      isCurrent
-                        ? (isDarkMode 
-                            ? "bg-blue-500/20 border-blue-500/30 text-blue-400" 
-                            : "bg-blue-100 border-blue-300 text-blue-600")
-                        : "bg-muted/40 border-border text-muted-foreground"
-                    )}>
+                    <span
+                      className={cn(
+                        'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold border',
+                        isCurrent
+                          ? isDarkMode
+                            ? 'bg-blue-500/20 border-blue-500/30 text-blue-400'
+                            : 'bg-blue-100 border-blue-300 text-blue-600'
+                          : 'bg-muted/40 border-border text-muted-foreground',
+                      )}
+                    >
                       {idx + 1}
                     </span>
 
                     <div className="flex-1 min-w-0">
-                      <p className={cn(
-                        "truncate text-xs font-semibold leading-none mb-1",
-                        isCurrent 
-                          ? (isDarkMode ? "text-blue-400 font-bold" : "text-blue-600 font-bold") 
-                          : "text-foreground/90"
-                      )}>
+                      <p
+                        className={cn(
+                          'truncate text-xs font-semibold leading-none mb-1',
+                          isCurrent
+                            ? isDarkMode
+                              ? 'text-blue-400 font-bold'
+                              : 'text-blue-600 font-bold'
+                            : 'text-foreground/90',
+                        )}
+                      >
                         {cp.problem.title}
                       </p>
 
                       <div className="flex items-center gap-2 mt-1">
-                        <span className={cn(
-                          "rounded px-1.5 py-0.2 text-[8px] font-bold border uppercase tracking-wider scale-90 origin-left",
-                          difficultyColor
-                        )}>
+                        <span
+                          className={cn(
+                            'rounded px-1.5 py-0.2 text-[8px] font-bold border uppercase tracking-wider scale-90 origin-left',
+                            difficultyColor,
+                          )}
+                        >
                           {cp.problem.difficulty}
                         </span>
 
@@ -503,30 +587,40 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
           <button
             onClick={() => handleToggleSidebar(!isSidebarOpen)}
             className={cn(
-              "absolute top-1/2 -translate-y-1/2 h-20 w-4 border border-l-0 border-border/50 rounded-r-lg flex items-center justify-center transition-all duration-300 cursor-pointer z-30 active:scale-95 group shadow-lg",
-              isDarkMode 
-                ? "bg-[#0a0a0c] text-muted-foreground hover:text-foreground shadow-black/30" 
-                : "bg-white text-muted-foreground hover:text-foreground shadow-slate-200/50",
-              isSidebarOpen ? "left-[280px]" : "left-0"
+              'absolute top-1/2 -translate-y-1/2 h-20 w-4 border border-l-0 border-border/50 rounded-r-lg flex items-center justify-center transition-all duration-300 cursor-pointer z-30 active:scale-95 group shadow-lg',
+              isDarkMode
+                ? 'bg-[#0a0a0c] text-muted-foreground hover:text-foreground shadow-black/30'
+                : 'bg-white text-muted-foreground hover:text-foreground shadow-slate-200/50',
+              isSidebarOpen ? 'left-[280px]' : 'left-0',
             )}
-            title={isSidebarOpen ? "Collapse Contest Sidebar" : "Expand Contest Sidebar"}
+            title={isSidebarOpen ? 'Collapse Contest Sidebar' : 'Expand Contest Sidebar'}
           >
             {isSidebarOpen ? (
-              <ChevronLeft size={12} className="transition-transform group-hover:-translate-x-0.5" />
+              <ChevronLeft
+                size={12}
+                className="transition-transform group-hover:-translate-x-0.5"
+              />
             ) : (
-              <ChevronRight size={12} className="transition-transform group-hover:translate-x-0.5" />
+              <ChevronRight
+                size={12}
+                className="transition-transform group-hover:translate-x-0.5"
+              />
             )}
           </button>
         )}
 
         {loadingProblem || !problem ? (
-          <div className={cn(
-            "flex-1 flex flex-col items-center justify-center transition-colors duration-300",
-            isDarkMode ? "bg-[#0a0a0c]" : "bg-slate-50"
-          )}>
+          <div
+            className={cn(
+              'flex-1 flex flex-col items-center justify-center transition-colors duration-300',
+              isDarkMode ? 'bg-[#0a0a0c]' : 'bg-slate-50',
+            )}
+          >
             <div className="flex flex-col items-center gap-4">
               <div className="h-10 w-10 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
-              <p className="text-sm font-semibold text-muted-foreground animate-pulse">Loading workspace...</p>
+              <p className="text-sm font-semibold text-muted-foreground animate-pulse">
+                Loading workspace...
+              </p>
             </div>
           </div>
         ) : (
@@ -552,7 +646,11 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
                 isDarkMode={isDarkMode}
                 toggleDarkMode={() => setIsDarkMode(!isDarkMode)}
               />
-              <ConsolePanel isRunning={isRunning || isSubmitting} result={result} problem={problem} />
+              <ConsolePanel
+                isRunning={isRunning || isSubmitting}
+                result={result}
+                problem={problem}
+              />
             </div>
           </>
         )}
