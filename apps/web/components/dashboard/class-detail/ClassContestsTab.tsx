@@ -65,6 +65,7 @@ export default function ClassContestsTab({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [contestToDelete, setContestToDelete] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [problemSearch, setProblemSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
   const router = useRouter();
 
@@ -94,6 +95,7 @@ export default function ClassContestsTab({
       problems: [],
     });
     setErrors({});
+    setProblemSearch('');
   };
 
   const handleShowCreate = () => {
@@ -123,18 +125,35 @@ export default function ClassContestsTab({
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
+    const now = new Date();
+    now.setSeconds(0, 0);
 
-    if (!formData.title.trim()) newErrors.title = 'Title is required';
-    if (!formData.startAt) newErrors.startAt = 'Start time is required';
-    else if (new Date(formData.startAt) < new Date())
-      newErrors.startAt = 'Start time cannot be in the past';
+    if (!formData.title.trim()) {
+      newErrors.title = 'Title is required';
+    }
 
-    if (!formData.endAt) newErrors.endAt = 'End time is required';
-    else if (new Date(formData.endAt) < new Date())
-      newErrors.endAt = 'End time cannot be in the past';
+    if (!formData.startAt) {
+      newErrors.startAt = 'Start time is required';
+    } else {
+      const startDate = new Date(formData.startAt);
+      if (startDate < now) {
+        newErrors.startAt = 'Start time cannot be in the past';
+      }
+    }
+
+    if (!formData.endAt) {
+      newErrors.endAt = 'End time is required';
+    } else {
+      const endDate = new Date(formData.endAt);
+      if (endDate < now) {
+        newErrors.endAt = 'End time cannot be in the past';
+      }
+    }
 
     if (formData.startAt && formData.endAt) {
-      if (new Date(formData.endAt) <= new Date(formData.startAt)) {
+      const startDate = new Date(formData.startAt);
+      const endDate = new Date(formData.endAt);
+      if (endDate <= startDate) {
         newErrors.endAt = 'End time must be after start time';
       }
     }
@@ -257,6 +276,12 @@ export default function ClassContestsTab({
     (contest) =>
       contest.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
       contest.description?.toLowerCase().includes(debouncedSearch.toLowerCase()),
+  );
+
+  const filteredAvailableProblems = problems.filter(
+    (p) =>
+      p.title.toLowerCase().includes(problemSearch.toLowerCase()) &&
+      !formData.problems?.some((cp) => cp.problemId === p.id),
   );
 
   const getStatusBadge = (status: string) => {
@@ -472,57 +497,124 @@ export default function ClassContestsTab({
               </div>
             </div>
 
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-gray-400" /> Problems Included
-              </Label>
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <div>
+                <Label className="text-base font-bold flex items-center gap-2 text-gray-900">
+                  <Trophy className="w-4 h-4 text-amber-500" /> Contest Problems
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Select and configure problems for this contest
+                </p>
+              </div>
+
               <div
-                className={`border border-dashed rounded-xl p-4 space-y-4 bg-gray-50/30 ${errors.problems ? 'border-red-300 bg-red-50/30' : 'border-gray-300'}`}
+                className={`border rounded-xl p-6 bg-gray-50/20 space-y-6 ${errors.problems ? 'border-red-300 bg-red-50/20' : 'border-gray-200'}`}
               >
                 {errors.problems && (
-                  <p className="text-xs text-red-500 font-medium">{errors.problems}</p>
+                  <p className="text-sm text-red-500 font-medium">{errors.problems}</p>
                 )}
-                <div className="flex flex-wrap gap-2">
-                  {formData.problems?.length === 0 && (
-                    <p className="text-sm text-gray-400 italic">No problems added yet.</p>
-                  )}
-                  {formData.problems?.map((contestProblem) => {
-                    const problem = problems.find((p) => p.id === contestProblem.problemId);
-                    return (
-                      <Badge
-                        key={contestProblem.problemId}
-                        variant="secondary"
-                        className="pl-3 pr-1 py-1 gap-1 bg-white border border-gray-200 hover:bg-gray-50 cursor-default shadow-sm"
-                      >
-                        {problem?.title || 'Unknown Problem'}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-4 w-4 rounded-full p-0 hover:bg-red-100 hover:text-red-500"
-                          onClick={() => removeProblemFromContest(contestProblem.problemId)}
+
+                <div className="space-y-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      placeholder="Search available problems..."
+                      value={problemSearch}
+                      onChange={(e) => setProblemSearch(e.target.value)}
+                      className="pl-10 bg-white border-gray-200 focus-visible:ring-black"
+                    />
+                  </div>
+
+                  {filteredAvailableProblems.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto bg-white rounded-xl">
+                      {filteredAvailableProblems.map((problem) => (
+                        <div
+                          key={problem.id}
+                          className="flex items-center justify-between p-3 border border-gray-300 rounded-xl hover:bg-gray-50/80 group cursor-pointer transition-colors"
+                          onClick={() => addProblemToContest(problem.id)}
                         >
-                          <Plus className="h-3 w-3 rotate-45" />
-                        </Button>
-                      </Badge>
-                    );
-                  })}
-                </div>
-                <Select
-                  onValueChange={(value) => typeof value === 'string' && addProblemToContest(value)}
-                >
-                  <SelectTrigger className="rounded-lg bg-white border-gray-200">
-                    <SelectValue placeholder="Search and add problems..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {problems
-                      .filter((p) => !formData.problems?.find((cp) => cp.problemId === p.id))
-                      .map((problem) => (
-                        <SelectItem key={problem.id} value={problem.id}>
-                          {problem.title}
-                        </SelectItem>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-700 font-bold text-xs shrink-0">
+                              {problem.difficulty[0]}
+                            </div>
+                            <span className="text-sm font-medium text-gray-700 truncate">
+                              {problem.title}
+                            </span>
+                          </div>
+                          <Plus className="w-4 h-4 text-gray-400 group-hover:text-black shrink-0" />
+                        </div>
                       ))}
-                  </SelectContent>
-                </Select>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400 italic">
+                      {problems.length === 0
+                        ? 'No problems available in this classroom. Please create some problems first.'
+                        : 'All classroom problems have been added to this contest.'}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-3 pt-6 border-t border-gray-200">
+                  <Label className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    Included Problems ({formData.problems?.length || 0})
+                  </Label>
+                  <div className="space-y-2">
+                    {formData.problems?.length === 0 ? (
+                      <div className="text-center py-8 bg-white rounded-xl border border-dashed border-gray-200 text-gray-400 text-sm">
+                        No problems added yet
+                      </div>
+                    ) : (
+                      formData.problems?.map((cp, idx) => {
+                        const problem = problems.find((p) => p.id === cp.problemId);
+                        return (
+                          <div
+                            key={cp.problemId}
+                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:border-gray-300 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs font-bold text-gray-400 shrink-0">
+                                #{idx + 1}
+                              </span>
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-semibold text-gray-900 truncate">
+                                  {problem?.title || 'Unknown Problem'}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {problem?.difficulty} • {cp.points} points
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0">
+                              <div className="flex items-center gap-2">
+                                <Label className="text-xs font-bold text-gray-400">Points</Label>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={cp.points}
+                                  onChange={(e) => {
+                                    const next = [...(formData.problems || [])];
+                                    next[idx].points = Number(e.target.value);
+                                    setFormData({ ...formData, problems: next });
+                                  }}
+                                  className="w-20 h-8 rounded-lg text-center border-gray-200 focus-visible:ring-black focus-visible:ring-offset-0 focus:border-black"
+                                />
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeProblemFromContest(cp.problemId)}
+                                className="text-rose-500 bg-rose-100 hover:bg-rose-50 hover:text-rose-500 cursor-pointer rounded-full h-8 w-8"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 

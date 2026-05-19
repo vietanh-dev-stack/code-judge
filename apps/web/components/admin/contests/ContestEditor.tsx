@@ -37,6 +37,7 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
   const [initialLoading, setInitialLoading] = useState(!!contestId);
   const [availableProblems, setAvailableProblems] = useState<Problem[]>([]);
   const [problemSearch, setProblemSearch] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState<Partial<CreateContestDto>>({
     title: '',
@@ -93,6 +94,7 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
         { problemId, points: 100, orderIndex: (formData.problems?.length || 0) + 1 }
       ]
     });
+    if (errors.problems) setErrors({ ...errors, problems: '' });
   };
 
   const removeProblem = (problemId: string) => {
@@ -102,9 +104,52 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
     });
   };
 
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    const now = new Date();
+    now.setSeconds(0, 0);
+
+    if (!formData.title?.trim()) {
+      newErrors.title = 'Title is required';
+    }
+
+    if (!formData.startAt) {
+      newErrors.startAt = 'Start time is required';
+    } else {
+      const startDate = new Date(formData.startAt);
+      if (startDate < now) {
+        newErrors.startAt = 'Start time cannot be in the past';
+      }
+    }
+
+    if (!formData.endAt) {
+      newErrors.endAt = 'End time is required';
+    } else {
+      const endDate = new Date(formData.endAt);
+      if (endDate < now) {
+        newErrors.endAt = 'End time cannot be in the past';
+      }
+    }
+
+    if (formData.startAt && formData.endAt) {
+      const startDate = new Date(formData.startAt);
+      const endDate = new Date(formData.endAt);
+      if (endDate <= startDate) {
+        newErrors.endAt = 'End time must be after start time';
+      }
+    }
+
+    if (!formData.problems || formData.problems.length === 0) {
+      newErrors.problems = 'At least one problem is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSave = async () => {
-    if (!formData.title || !formData.startAt || !formData.endAt) {
-      toast.error('Please fill in all required fields');
+    if (!validate()) {
+      toast.error('Please fix the errors in the form');
       return;
     }
 
@@ -177,10 +222,16 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
                   <Label className="text-sm font-semibold">Title</Label>
                   <Input
                     value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, title: e.target.value });
+                      if (errors.title) setErrors({ ...errors, title: '' });
+                    }}
                     placeholder="Contest name..."
-                    className="h-11 border-slate-200 focus:ring-indigo-500"
+                    className={`h-11 border-slate-200 focus:ring-indigo-500 ${errors.title ? 'border-red-500 bg-red-50 focus:ring-red-500' : ''}`}
                   />
+                  {errors.title && (
+                    <p className="text-xs text-red-500 mt-1 font-medium">{errors.title}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold flex items-center gap-2">
@@ -213,10 +264,19 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
                   </Label>
                   <Input
                     type="datetime-local"
+                    min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000)
+                      .toISOString()
+                      .slice(0, 16)}
                     value={formData.startAt}
-                    onChange={(e) => setFormData({ ...formData, startAt: e.target.value })}
-                    className="border-slate-200"
+                    onChange={(e) => {
+                      setFormData({ ...formData, startAt: e.target.value });
+                      if (errors.startAt) setErrors({ ...errors, startAt: '' });
+                    }}
+                    className={`border-slate-200 ${errors.startAt ? 'border-red-500 bg-red-50 focus:ring-red-500' : ''}`}
                   />
+                  {errors.startAt && (
+                    <p className="text-xs text-red-500 mt-1 font-medium">{errors.startAt}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold flex items-center gap-2">
@@ -224,21 +284,33 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
                   </Label>
                   <Input
                     type="datetime-local"
+                    min={formData.startAt || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000)
+                      .toISOString()
+                      .slice(0, 16)}
                     value={formData.endAt}
-                    onChange={(e) => setFormData({ ...formData, endAt: e.target.value })}
-                    className="border-slate-200"
+                    onChange={(e) => {
+                      setFormData({ ...formData, endAt: e.target.value });
+                      if (errors.endAt) setErrors({ ...errors, endAt: '' });
+                    }}
+                    className={`border-slate-200 ${errors.endAt ? 'border-red-500 bg-red-50 focus:ring-red-500' : ''}`}
                   />
+                  {errors.endAt && (
+                    <p className="text-xs text-red-500 mt-1 font-medium">{errors.endAt}</p>
+                  )}
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 shadow-sm overflow-hidden">
+          <Card className={`border-slate-200 shadow-sm overflow-hidden ${errors.problems ? 'border-red-300 bg-red-50/5' : ''}`}>
             <CardHeader className="bg-slate-50/50 border-b border-slate-100">
               <CardTitle className="text-lg">Contest Problems</CardTitle>
               <CardDescription>Select problems for this contest</CardDescription>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
+              {errors.problems && (
+                <p className="text-sm text-red-500 font-medium">{errors.problems}</p>
+              )}
               <div className="space-y-4">
                 <div className="flex gap-2">
                   <div className="relative flex-1">

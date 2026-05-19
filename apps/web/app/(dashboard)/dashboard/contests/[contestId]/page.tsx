@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Contest, contestsApi } from '@/services/contest.apis';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function ContestDetailPage() {
   const params = useParams();
@@ -17,6 +19,78 @@ export default function ContestDetailPage() {
   const [contest, setContest] = useState<Contest | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
+  const [hasShownStartToast, setHasShownStartToast] = useState(false);
+
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'RUNNING':
+        return <Badge className="bg-emerald-500 hover:bg-emerald-600">Running</Badge>;
+      case 'ENDED':
+        return (
+          <Badge variant="secondary" className="bg-red-500 hover:bg-red-500 text-white">
+            Ended
+          </Badge>
+        );
+      case 'PUBLISHED':
+        return (
+          <Badge variant="outline" className="border-blue-200 text-blue-600 bg-blue-50">
+            Published
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="destructive" className="">
+            {status}
+          </Badge>
+        );
+    }
+  };
+  // Keep current time updated so contest start becomes active automatically
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!contest || hasShownStartToast) return;
+
+    const startAt = new Date(contest.startAt);
+    const endAt = new Date(contest.endAt);
+
+    if (currentTime >= startAt && currentTime <= endAt) {
+      toast.success(
+        'Contest has started! You can now access the problems and submit your solutions.',
+        { position: 'top-center' },
+      );
+      setHasShownStartToast(true);
+    }
+  }, [currentTime, contest, hasShownStartToast]);
+
+  // Helper function to check if contest is accessible
+  const isContestAccessible = (contest: Contest): boolean => {
+    const startAt = new Date(contest.startAt);
+    const endAt = new Date(contest.endAt);
+    return currentTime >= startAt && currentTime <= endAt;
+  };
+
+  // Helper function to get contest status message
+  const getContestStatusMessage = (contest: Contest): string => {
+    const startAt = new Date(contest.startAt);
+    const endAt = new Date(contest.endAt);
+
+    if (currentTime < startAt) {
+      return `Contest will start at ${startAt.toLocaleString()}`;
+    }
+    if (currentTime > endAt) {
+      return `Contest has ended at ${endAt.toLocaleString()}`;
+    }
+    return '';
+  };
 
   useEffect(() => {
     if (!contestId) return;
@@ -30,7 +104,7 @@ export default function ContestDetailPage() {
         setContest(data);
       } catch (err) {
         console.error('Failed to load contest:', err);
-        setError('Không thể tải thông tin contest. Vui lòng thử lại sau.');
+        setError('Failed to load contest. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -43,7 +117,7 @@ export default function ContestDetailPage() {
     return (
       <main className="max-w-6xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
         <div className="rounded-3xl border border-border bg-background/80 p-10 text-center text-lg text-destructive">
-          Contest ID không hợp lệ.
+          Contest ID invalid.
         </div>
       </main>
     );
@@ -53,7 +127,7 @@ export default function ContestDetailPage() {
     return (
       <main className="max-w-6xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
         <div className="rounded-3xl border border-border bg-background/80 p-10 text-center text-lg text-muted-foreground">
-          Đang tải contest...
+          Loading contest...
         </div>
       </main>
     );
@@ -63,14 +137,14 @@ export default function ContestDetailPage() {
     return (
       <main className="max-w-6xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
         <div className="rounded-3xl border border-border bg-background/80 p-10 text-center text-lg text-destructive">
-          {error ?? 'Contest không tồn tại hoặc đã xảy ra lỗi.'}
+          {error ?? 'Contest does not exist or an error has occurred.'}
         </div>
       </main>
     );
   }
 
-  const startAt = contest.startAt ? new Date(contest.startAt).toLocaleString() : 'Chưa khai báo';
-  const endAt = contest.endAt ? new Date(contest.endAt).toLocaleString() : 'Chưa khai báo';
+  const startAt = contest.startAt ? new Date(contest.startAt).toLocaleString() : 'Not declared';
+  const endAt = contest.endAt ? new Date(contest.endAt).toLocaleString() : 'Not declared';
 
   return (
     <main className="mx-auto max-w-5xl space-y-6">
@@ -88,11 +162,11 @@ export default function ContestDetailPage() {
           <Button variant="outline" size="lg" asChild className="border-2">
             <Link href={`/dashboard/contests/${contestId}/leaderboard`} className="flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-blue-600" />
-              Xem bảng xếp hạng
+              Leaderboard
             </Link>
           </Button>
           <Button variant="secondary" size="lg" asChild>
-            <Link href="/">Trở về trang chủ</Link>
+            <Link href="/">Back to Home</Link>
           </Button>
         </div>
       </div>
@@ -102,17 +176,7 @@ export default function ContestDetailPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <p className="text-sm text-muted-foreground">Status</p>
-              <Badge
-                variant={
-                  contest.status === 'RUNNING'
-                    ? 'secondary'
-                    : contest.status === 'ENDED'
-                      ? 'destructive'
-                      : 'default'
-                }
-              >
-                {contest.status}
-              </Badge>
+              {getStatusBadge(contest.status)}
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Start At</p>
@@ -132,7 +196,7 @@ export default function ContestDetailPage() {
             <div>
               <p className="text-sm text-muted-foreground">Max submissions/problem</p>
               <p className="font-semibold">
-                {contest.maxSubmissionsPerProblem ?? 'Không giới hạn'}
+                {contest.maxSubmissionsPerProblem ?? 'Unlimited'}
               </p>
             </div>
           </div>
@@ -142,7 +206,7 @@ export default function ContestDetailPage() {
               <Calendar className="w-4 h-4" />
               <span>Contest metadata</span>
             </div>
-            <p>{contest.description || 'Contest này chưa có nội dung mô tả chi tiết.'}</p>
+            <p>{contest.description || 'No description provided.'}</p>
           </div>
         </section>
 
@@ -150,48 +214,55 @@ export default function ContestDetailPage() {
           <Card className="border border-border shadow-sm">
             <CardHeader>
               <CardTitle className="text-xl flex items-center gap-2">
-                <List className="w-5 h-5" /> Danh sách bài toán
+                <List className="w-5 h-5" /> Problem List
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {!contest.problems || contest.problems.length === 0 ? (
                 <div className="rounded-xl border border-border bg-background/80 p-4 text-sm text-muted-foreground">
-                  Contest chưa có bài toán nào.
+                  Contest does not have any problems.
                 </div>
               ) : (
                 <div className="space-y-4">
+                  {!isContestAccessible(contest) && (
+                    <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-700 dark:text-yellow-600">
+                      <p className="font-semibold">{getContestStatusMessage(contest)}</p>
+                      <p className="mt-1">The problems will be locked until the contest opens or after the contest has ended.</p>
+                    </div>
+                  )}
                   {contest.problems.map((item) => (
                     <div
                       key={item.problemId}
-                      className="rounded-2xl border border-border bg-background p-4"
+                      className={cn(
+                        'rounded-2xl border border-border p-4',
+                        isContestAccessible(contest) ? 'bg-background' : 'bg-muted/30 opacity-60',
+                      )}
                     >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="space-y-2">
+                        <div className="space-y-2 flex-1">
                           <h3 className="text-lg font-semibold">
-                            <Link
-                              href={`/problem/${item.problemId}?contestId=${contestId}`}
-                              className="hover:text-primary"
-                            >
-                              {item.problem?.title ?? item.problemId}
-                            </Link>
+                            {isContestAccessible(contest) ? (
+                              <Link
+                                href={`/problem/${item.problemId}?contestId=${contestId}`}
+                                className="hover:text-primary"
+                              >
+                                {item.problem?.title ?? item.problemId}
+                              </Link>
+                            ) : (
+                              <span className="cursor-not-allowed text-muted-foreground">
+                                {item.problem?.title ?? item.problemId}
+                              </span>
+                            )}
                           </h3>
                           <p className="text-sm text-muted-foreground">
                             {item.problem?.description
                               ? item.problem.description.slice(0, 120) + '...'
-                              : 'Không có mô tả ngắn.'}
+                              : 'No brief description.'}
                           </p>
                         </div>
                         <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
                           <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/10 px-3 py-1">
                             <Trophy className="w-4 h-4" /> {item.points ?? '-'} pts
-                          </span>
-                          <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/10 px-3 py-1">
-                            <Zap className="w-4 h-4" />{' '}
-                            {item.timeLimitMsOverride ?? item.problem?.timeLimitMs ?? '-'} ms
-                          </span>
-                          <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/10 px-3 py-1">
-                            <BarChart3 className="w-4 h-4" />{' '}
-                            {item.memoryLimitMbOverride ?? item.problem?.memoryLimitMb ?? '-'} MB
                           </span>
                         </div>
                       </div>

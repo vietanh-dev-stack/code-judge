@@ -169,11 +169,13 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
           });
 
           const classRoomId = (data as any).assignments?.[0]?.classRoomId || '';
-          if (classRoomId) {
-            setTimeout(() => {
+          setTimeout(() => {
+            if (classRoomId) {
               router.push(`/dashboard/${classRoomId}/contests/${contestId}`);
-            }, 2000);
-          }
+            } else {
+              router.push(`/dashboard/contests/${contestId}`);
+            }
+          }, 2000);
           return;
         }
 
@@ -185,11 +187,13 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
           });
 
           const classRoomId = (data as any).assignments?.[0]?.classRoomId || '';
-          if (classRoomId) {
-            setTimeout(() => {
+          setTimeout(() => {
+            if (classRoomId) {
               router.push(`/dashboard/${classRoomId}/contests/${contestId}`);
-            }, 2000);
-          }
+            } else {
+              router.push(`/dashboard/contests/${contestId}`);
+            }
+          }, 2000);
           return;
         }
       } catch (error) {
@@ -219,9 +223,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
         if (!hasRedirectedRef.current) {
           hasRedirectedRef.current = true;
 
-          const classRoomId =
-            (contest as any).assignments?.[0]?.classRoomId ||
-            'dc861a59-3d6b-4908-b7ce-c7527344650f';
+          const classRoomId = (contest as any).assignments?.[0]?.classRoomId || '';
           const targetContestId = contest.id || '7b75bdf7-b067-4908-b768-6add8012d4cc';
 
           toast.warning('Contest Ended!', {
@@ -230,7 +232,11 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
           });
 
           setTimeout(() => {
-            router.push(`/dashboard/${classRoomId}/contests/${targetContestId}`);
+            if (classRoomId) {
+              router.push(`/dashboard/${classRoomId}/contests/${targetContestId}`);
+            } else {
+              router.push(`/dashboard/contests/${targetContestId}`);
+            }
           }, 2000);
         }
         return;
@@ -522,7 +528,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
   };
 
   const contestSubmissionsCount = submissions.filter(
-    (sub) => sub.contestId === contestId && !sub.isDryRun
+    (sub) => sub.contestId === contestId && !sub.isDryRun,
   ).length;
 
   const hasReachedSubmissionLimit =
@@ -760,7 +766,11 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
                 hasReachedSubmissionLimit={hasReachedSubmissionLimit}
                 submissionLimitText={submissionLimitText}
               />
-              <ConsolePanel isRunning={isRunning || isSubmitting} result={result} problem={problem} />
+              <ConsolePanel
+                isRunning={isRunning || isSubmitting}
+                result={result}
+                problem={problem}
+              />
             </div>
           </>
         )}
