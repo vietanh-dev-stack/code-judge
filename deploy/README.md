@@ -121,10 +121,64 @@ chmod +x /root/code-judge/deploy/*.sh
 
 ---
 
+## Redeploy sau conflict migration / đẩy code mới
+
+Repo hiện tại thường chỉ **một** thư mục migration hợp lệ, ví dụ `apps/core-api/prisma/migrations/20260520155227_db_v1/migration.sql`. Trên VPS **không** được giữ thư mục migration cũ/rỗng (gây **P3015**).
+
+### Luồng khuyến nghị
+
+**1. Windows — sync code (không gồm `.env.production`):**
+
+```powershell
+cd C:\Users\ADMIN\Documents\GitHub\code-judge
+.\deploy\sync-to-vps.ps1 -VpsHost VPS_IP -VpsUser root -RemoteDir /root/code-judge
+scp .env.production root@VPS_IP:/root/code-judge/.env.production
+```
+
+**2. VPS — nếu migrate conflict (đổi tên migration, schema đã có):**
+
+```bash
+cd /root/code-judge
+chmod +x deploy/fix-migration-rename-vps.sh
+./deploy/fix-migration-rename-vps.sh
+```
+
+**3. VPS — script redeploy (migrate + build + up):**
+
+```bash
+sed -i 's/\r$//' deploy/redeploy-vps.sh
+chmod +x deploy/redeploy-vps.sh
+RUN_SEED=0 BUILD_WEB_NOCACHE=1 ./deploy/redeploy-vps.sh
+# Sau khi đã chạy fix-migration-rename-vps.sh:
+RUN_SEED=0 BUILD_WEB_NOCACHE=1 SKIP_MIGRATE=1 ./deploy/redeploy-vps.sh
+```
+
+- `RUN_SEED=0` — DB production đã có dữ liệu, không chạy seed lại.
+- `BUILD_WEB_NOCACHE=1` — sau khi đổi `NEXT_PUBLIC_CORE_URL` (tránh Mixed Content `:8080`).
+
+### Nếu migrate báo schema đã tồn tại (đổi tên migration trên Git)
+
+DB có thể đã apply migration cũ (`20260519064259_migrate_v11`) trong khi repo chỉ còn `20260520155227_db_v1`:
+
+```bash
+# Xem lịch sử migration trong DB
+docker compose -f docker-compose.production.yml --env-file .env.production exec -T app-db \
+  psql -U codejudge -d codejudge -c 'SELECT migration_name FROM "_prisma_migrations";'
+```
+
+- **DB test, được xóa:** `docker compose ... down` rồi xóa volume `code-judge-prod_app_postgres_data` (mất dữ liệu) → chạy lại `./deploy/redeploy-vps.sh`.
+- **Giữ DB, schema đã đủ:** chỉ khi chắc schema khớp `schema.prisma`, có thể đánh dấu migration mới đã apply (cần chạy trong container migrate image): `npx prisma migrate resolve --applied 20260520155227_db_v1` — cẩn thận, chỉ dùng khi hiểu rõ drift.
+
+### Cgroup v1 + isolate thật (tuỳ chọn, sau khi stack ổn)
+
+Xem mục **Judge0: Internal Error, cgroup** bên dưới — reboot VPS + `JUDGE0_USE_CGROUP=true`. Không bắt buộc cho web/login/API.
+
+---
+
 ## Cập nhật phiên bản (vẫn không GitHub)
 
 1. Trên Windows: chạy lại `.\deploy\sync-to-vps.ps1`
-2. Trên VPS: `cd ~/code-judge && ./deploy/production-up.sh`
+2. Trên VPS: `cd ~/code-judge && ./deploy/redeploy-vps.sh` hoặc `./deploy/production-up.sh`
 
 Nếu chỉ đổi `.env.production` (không đổi code):
 
@@ -313,6 +367,8 @@ docker exec cj-prod-nginx nginx -s reload
 |------|--------|
 | `ubuntu-24.04-setup.sh` | Cài Docker + UFW (+ swap nếu RAM thấp) |
 | `production-up.sh` | `docker compose up -d --build` |
+| `redeploy-vps.sh` | Migrate + dọn thư mục migration + build/up (sau sync) |
+| `fix-migration-rename-vps.sh` | Sửa conflict migrate_v11 → db_v1 (giữ dữ liệu DB) |
 | `production-down.sh` | Dừng stack |
 | `sync-to-vps.ps1` | Đồng bộ code từ Windows → VPS (tar + scp) |
 | `rsync-exclude.txt` | Danh sách loại trừ cho rsync |

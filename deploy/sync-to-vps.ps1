@@ -65,7 +65,7 @@ $remoteLines = @(
     "mkdir -p '$rd'"
     "tar -xzf '$ra' -C '$rd'"
     "rm -f '$ra'"
-    "if [ -d '$rd/deploy' ]; then find '$rd/deploy' -maxdepth 1 -type f -name '*.sh' -exec sed -i 's/\r`$//' {} + || true; fi"
+    "if [ -d '$rd/deploy' ]; then find '$rd/deploy' -maxdepth 1 -type f -name '*.sh' -exec sed -i 's/\r`$//' {} + || true; chmod +x '$rd/deploy'/*.sh 2>/dev/null || true; fi"
     "if [ -d '$rd/scripts' ]; then find '$rd/scripts' -maxdepth 1 -type f -name '*.sh' -exec sed -i 's/\r`$//' {} + || true; fi"
     "chmod +x '$rd/deploy'/*.sh 2>/dev/null || true"
     "chmod +x '$rd/scripts'/*.sh 2>/dev/null || true"

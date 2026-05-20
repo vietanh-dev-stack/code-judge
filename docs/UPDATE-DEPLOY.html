@@ -92,6 +92,7 @@
         <a class="sub" href="#env-nginx">Cổng nginx</a>
         <a href="#code-update">Cập nhật code (không migration)</a>
         <a href="#migration-update">Cập nhật migrations</a>
+        <a class="sub" href="#redeploy-migration-conflict">Redeploy + conflict migration</a>
         <a href="#verify">Kiểm tra sau cập nhật</a>
         <a href="#errors">Lỗi &amp; lệnh sửa</a>
         <a href="#links">Liên kết</a>
@@ -460,6 +461,35 @@ RUN_SEED=0</code></pre>
           <h4><span class="tag tag-vps">VPS</span> production-up.sh (sau migrate OK)</h4>
           <p class="when"><strong>Khi nào:</strong> Migrate thành công — khởi động lại <code>core-api</code>, <code>worker</code> và các service phụ thuộc.</p>
           <pre><code>./deploy/production-up.sh</code></pre>
+        </div>
+
+        <h3 id="redeploy-migration-conflict">Redeploy sau conflict migration (khuyến nghị)</h3>
+        <div class="callout callout-warn">
+          <strong>Triệu chứng:</strong> <code>P3018</code> / <code>type "Role" already exists</code> — DB đã apply migration cũ (<code>migrate_v11</code>) nhưng repo chỉ còn <code>db_v1</code>; hoặc VPS còn thư mục migration cũ sau sync.
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-win">Windows</span> sync + scp env</h4>
+          <p class="when"><strong>Khi nào:</strong> Đẩy code mới và cập nhật <code>.env.production</code> lên VPS.</p>
+          <pre><code>cd C:\Users\ADMIN\Documents\GitHub\code-judge
+.\deploy\sync-to-vps.ps1 -VpsHost 129.212.237.24 -VpsUser root -RemoteDir /root/code-judge
+scp .env.production root@129.212.237.24:/root/code-judge/.env.production</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> fix-migration-rename-vps.sh (một lần khi conflict)</h4>
+          <p class="when"><strong>Khi nào:</strong> Migrate fail vì schema đã có từ migration cũ — sửa <code>_prisma_migrations</code>, rebuild image migrate.</p>
+          <pre><code>cd /root/code-judge
+chmod +x deploy/fix-migration-rename-vps.sh
+./deploy/fix-migration-rename-vps.sh</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> redeploy-vps.sh</h4>
+          <p class="when"><strong>Khi nào:</strong> Sau fix migration (hoặc migrate bình thường) — build web không cache nếu đổi <code>NEXT_PUBLIC_*</code>.</p>
+          <pre><code>RUN_SEED=0 BUILD_WEB_NOCACHE=1 ./deploy/redeploy-vps.sh
+# Nếu vừa chạy fix-migration-rename-vps.sh:
+RUN_SEED=0 BUILD_WEB_NOCACHE=1 SKIP_MIGRATE=1 ./deploy/redeploy-vps.sh</code></pre>
         </div>
       </section>
 
