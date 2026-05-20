@@ -68,7 +68,6 @@ export default function AdminProblemCreate() {
     timeLimitMs: 1000,
     memoryLimitMb: 256,
     isPublished: true,
-    visibility: 'PUBLIC',
     supportedLanguages: ['PYTHON', 'JAVASCRIPT', 'CPP', 'JAVA'],
     maxTestCases: 100,
     testCases: [],
@@ -103,7 +102,6 @@ export default function AdminProblemCreate() {
         timeLimitMs: data.timeLimitMs,
         memoryLimitMb: data.memoryLimitMb,
         isPublished: data.isPublished,
-        visibility: data.visibility,
         supportedLanguages: data.supportedLanguages ?? ['PYTHON', 'JAVASCRIPT', 'CPP', 'JAVA'],
         maxTestCases: data.maxTestCases,
         testCases: (data.testCases ?? []).map(
@@ -114,10 +112,7 @@ export default function AdminProblemCreate() {
       });
     } catch (error) {
       console.error('Failed to load problem:', error);
-      const msg =
-        error instanceof ApiRequestError
-          ? error.body.message
-          : 'Không tải được dữ liệu problem.';
+      const msg = error instanceof ApiRequestError ? error.body.message : 'Failed to load problem.';
       toast.error(msg, { position: 'top-center' });
     } finally {
       setInitialLoading(false);
@@ -144,19 +139,20 @@ export default function AdminProblemCreate() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.title.trim()) newErrors.title = 'Vui lòng nhập tiêu đề';
-    if (!formData.description?.trim()) newErrors.description = 'Vui lòng nhập mô tả ngắn';
-    if (!formData.statementMd?.trim()) newErrors.statementMd = 'Vui lòng nhập đề bài (markdown)';
+    if (!formData.title.trim()) newErrors.title = 'Please enter a title';
+    if (!formData.description?.trim()) newErrors.description = 'Please enter a short description';
+    if (!formData.statementMd?.trim())
+      newErrors.statementMd = 'Please enter the problem statement (markdown)';
 
     if (!formData.testCases || formData.testCases.length === 0) {
-      newErrors.testCases = 'Cần ít nhất một test case';
+      newErrors.testCases = 'At least one test case is required';
     } else {
       formData.testCases.forEach((tc, index) => {
-        if (!tc.input.trim()) newErrors[`testCase_${index}_input`] = 'Thiếu input';
-        if (!tc.expectedOutput.trim()) newErrors[`testCase_${index}_output`] = 'Thiếu output mong đợi';
+        if (!tc.input.trim()) newErrors[`testCase_${index}_input`] = 'Input is required';
+        if (!tc.expectedOutput.trim())
+          newErrors[`testCase_${index}_output`] = 'Expected output is required';
       });
     }
-
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -164,7 +160,7 @@ export default function AdminProblemCreate() {
 
   const handleSave = async () => {
     if (!validate()) {
-      toast.error('Vui lòng sửa các lỗi trong form.', { position: 'top-center' });
+      toast.error('Please fix the errors in the form.', { position: 'top-center' });
       return;
     }
 
@@ -186,7 +182,7 @@ export default function AdminProblemCreate() {
         const { dueAt: _due, ...forAdmin } = payload;
         await problemsApi.createAdmin(forAdmin as CreateAdminProblemDto);
       }
-      toast.success(editId ? 'Đã cập nhật problem.' : 'Đã tạo problem.', {
+      toast.success(editId ? 'Problem updated successfully.' : 'Problem created successfully.', {
         position: 'top-center',
       });
       router.push('/admin/problems');
@@ -195,7 +191,7 @@ export default function AdminProblemCreate() {
       const msg =
         error instanceof ApiRequestError
           ? error.body.message
-          : 'Không lưu được. Kiểm tra dữ liệu hoặc thử lại sau.';
+          : 'Failed to save problem. Please check your data or try again later.';
       toast.error(msg, { position: 'top-center' });
     } finally {
       setLoading(false);
@@ -208,10 +204,10 @@ export default function AdminProblemCreate() {
         className="flex flex-col items-center justify-center py-20 space-y-4"
         role="status"
         aria-busy="true"
-        aria-label="Đang tải"
+        aria-label="Loading problem data"
       >
         <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin" />
-        <p className="text-gray-500 font-medium">Đang tải dữ liệu problem...</p>
+        <p className="text-gray-500 font-medium">Loading problem data...</p>
       </div>
     );
   }
@@ -237,17 +233,19 @@ export default function AdminProblemCreate() {
     });
   };
 
-  const previewMappedCases = aiDraftResult
-    ? mapAiDraftToFormTestCases(aiDraftResult.parsed)
-    : [];
+  const previewMappedCases = aiDraftResult ? mapAiDraftToFormTestCases(aiDraftResult.parsed) : [];
 
   const handleGenerateAiDraft = async () => {
     if (!formData.title.trim()) {
-      toast.error('Nhập tiêu đề problem trước khi gọi AI.', { position: 'top-center' });
+      toast.error('Please enter a title for the problem before calling AI.', {
+        position: 'top-center',
+      });
       return;
     }
     if (!formData.statementMd?.trim()) {
-      toast.error('Nhập đề bài (markdown) trước khi gọi AI.', { position: 'top-center' });
+      toast.error('Please enter the problem statement (markdown) before calling AI.', {
+        position: 'top-center',
+      });
       return;
     }
     const previousDraft = aiDraftResult;
@@ -271,18 +269,21 @@ export default function AdminProblemCreate() {
       setAiSheetOpen(true);
       const mapped = mapAiDraftToFormTestCases(res.parsed);
       if (res.parseError && mapped.length === 0) {
-        toast.warning('AI trả lời nhưng chưa parse được test case. Xem chi tiết trong panel.', {
-          position: 'top-center',
-        });
+        toast.warning(
+          'AI returned a response but failed to parse the test cases. Please check the details in the panel.',
+          {
+            position: 'top-center',
+          },
+        );
       } else if (mapped.length === 0) {
-        toast.warning('Không có test case hợp lệ trong phản hồi AI.', { position: 'top-center' });
+        toast.warning('No valid test cases found in the AI response.', { position: 'top-center' });
       }
     } catch (error) {
       console.error(error);
       const msg =
         error instanceof ApiRequestError
           ? error.body.message
-          : 'Không gọi được AI. Kiểm tra đăng nhập và cấu hình máy chủ.';
+          : 'Failed to call AI. Please check your login and server configuration.';
       toast.error(msg, { position: 'top-center' });
     } finally {
       setAiDraftLoading(false);
@@ -293,22 +294,19 @@ export default function AdminProblemCreate() {
     if (!aiDraftResult) return;
     const mapped = mapAiDraftToFormTestCases(aiDraftResult.parsed);
     if (mapped.length === 0) {
-      toast.error('Không có test case để áp dụng.', { position: 'top-center' });
+      toast.error('No test cases available to apply.', { position: 'top-center' });
       return;
     }
     clearTestCaseFieldErrors();
     setFormData((prev) => ({
       ...prev,
-      testCases:
-        mode === 'replace'
-          ? mapped
-          : [...(prev.testCases ?? []), ...mapped],
+      testCases: mode === 'replace' ? mapped : [...(prev.testCases ?? []), ...mapped],
     }));
     setAiSheetOpen(false);
     toast.success(
       mode === 'replace'
-        ? `Đã thay thế bằng ${mapped.length} test case từ AI.`
-        : `Đã thêm ${mapped.length} test case từ AI.`,
+        ? `Successfully replaced with ${mapped.length} test cases from AI.`
+        : `Successfully added ${mapped.length} test cases from AI.`,
       { position: 'top-center' },
     );
   };
@@ -320,17 +318,17 @@ export default function AdminProblemCreate() {
           <Button variant="outline" size="sm" className="w-fit cursor-pointer" asChild>
             <Link href="/admin/problems">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Về danh sách
+              Back to List
             </Link>
           </Button>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              {editId ? 'Admin — Sửa problem' : 'Admin — Tạo problem'}
+              {editId ? 'Admin — Edit Problem' : 'Admin — Create Problem'}
             </h1>
             <p className="text-muted-foreground text-lg">
               {editId
-                ? 'Cập nhật đề và test case. Hạn nộp (nếu có) đồng bộ với bài gán lớp hiện tại.'
-                : 'Tạo đề trong kho (chỉ lưu problem, không tạo bài giao trên lớp).'}
+                ? 'Update the problem and test cases. Submission deadline (if any) will be synchronized with the current class assignment.'
+                : 'Create a problem in the repository (only saves the problem, does not create an assignment for a class).'}
             </p>
           </div>
         </div>
@@ -341,7 +339,7 @@ export default function AdminProblemCreate() {
             disabled={loading}
             className="cursor-pointer"
           >
-            Hủy
+            Cancel
           </Button>
           <Button
             onClick={handleSave}
@@ -353,7 +351,7 @@ export default function AdminProblemCreate() {
             ) : (
               <>
                 <Save className="w-4 h-4 mr-2" />
-                {editId ? 'Cập nhật' : 'Lưu'}
+                {editId ? 'Update' : 'Save'}
               </>
             )}
           </Button>
@@ -432,8 +430,8 @@ export default function AdminProblemCreate() {
               <div>
                 <CardTitle className="text-xl">Test Cases</CardTitle>
                 <CardDescription>
-                  Thêm thủ công hoặc dùng AI sinh bản nháp từ tiêu đề + đề bài (luôn xem trước trước khi
-                  áp dụng).
+                  Add manually or use AI to generate draft test cases from the title and problem
+                  statement (always preview before applying).
                 </CardDescription>
               </div>
               <div className="flex flex-wrap gap-2 shrink-0">
@@ -451,7 +449,7 @@ export default function AdminProblemCreate() {
                   ) : (
                     <Sparkles className="w-4 h-4 mr-2" />
                   )}
-                  Gợi ý AI
+                  AI Suggestions
                 </Button>
                 <Button
                   type="button"
@@ -604,9 +602,9 @@ export default function AdminProblemCreate() {
             <CardHeader className="border-b">
               <CardTitle className="text-xl">Configuration</CardTitle>
               <CardDescription className="text-xs text-muted-foreground pt-1">
-                Tạo admin không gán lớp (không cần <span className="font-mono">classRoomId</span>). Để mọi
-                người thấy trong kho đề: bật Published, chọn visibility Công khai — khớp{' '}
-                <span className="font-mono">GET /problems</span> (đã publish, không PRIVATE).
+                Create problem without assigning to a class (no need for{' '}
+                <span className="font-mono">classRoomId</span>
+                ). To make the problem appear in the public problem bank, please enable Published.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
@@ -659,31 +657,6 @@ export default function AdminProblemCreate() {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Hiển thị (visibility)</Label>
-                  <Select
-                    value={formData.visibility}
-                    onValueChange={(value) => {
-                      if (value === 'PRIVATE' || value === 'PUBLIC' || value === 'CONTEST_ONLY') {
-                        setFormData({ ...formData, visibility: value });
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="rounded-xl border-gray-200 h-10">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PUBLIC">Công khai (kho đề)</SelectItem>
-                      <SelectItem value="PRIVATE">Riêng tư</SelectItem>
-                      <SelectItem value="CONTEST_ONLY">Chỉ contest</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-[11px] text-muted-foreground leading-snug">
-                    PRIVATE: không vào kho đề. CONTEST_ONLY: dùng cho contest; kho đề chung thường chọn
-                    PUBLIC.
-                  </p>
-                </div>
-
                 <div className="grid grid-cols-2 gap-4 pt-2">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-gray-500 flex items-center gap-1.5">
@@ -713,8 +686,6 @@ export default function AdminProblemCreate() {
                   </div>
                 </div>
 
-
-
                 <div className="space-y-3 pt-4 border-t">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
@@ -736,7 +707,7 @@ export default function AdminProblemCreate() {
                     value={formData.tagIds || []}
                     onChange={(ids) => setFormData({ ...formData, tagIds: ids })}
                     label="Từ khóa (Tags)"
-                    hint="Chọn các tag liên quan đến bài tập này."
+                    hint="Choose relevant tags for this problem."
                     locale="vi"
                   />
                 </div>

@@ -13,23 +13,23 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Search, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Globe, 
-  Lock, 
+import {
+  Search,
+  Plus,
+  Edit,
+  Trash2,
+  Globe,
+  Lock,
   MoreVertical,
   ChevronLeft,
   ChevronRight,
-  Code2
+  Code2,
 } from 'lucide-react';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
@@ -65,17 +65,6 @@ export default function AdminProblemsPage() {
     loadProblems();
   };
 
-  const toggleVisibility = async (problemId: string, currentVisibility: string) => {
-    const newVisibility = currentVisibility === 'PUBLIC' ? 'PRIVATE' : 'PUBLIC';
-    try {
-      await problemsApi.update(problemId, { visibility: newVisibility });
-      toast.success(`Problem is now ${newVisibility.toLowerCase()}`);
-      loadProblems();
-    } catch (error) {
-      toast.error('Failed to update visibility');
-    }
-  };
-
   const togglePublished = async (problemId: string, currentStatus: boolean) => {
     try {
       await problemsApi.update(problemId, { isPublished: !currentStatus });
@@ -99,10 +88,14 @@ export default function AdminProblemsPage() {
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'EASY': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      case 'MEDIUM': return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'HARD': return 'bg-rose-100 text-rose-700 border-rose-200';
-      default: return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'EASY':
+        return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      case 'MEDIUM':
+        return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'HARD':
+        return 'bg-rose-100 text-rose-700 border-rose-200';
+      default:
+        return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
 
@@ -113,7 +106,10 @@ export default function AdminProblemsPage() {
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Problems Management</h1>
           <p className="text-slate-500 mt-1">Manage public and private coding challenges</p>
         </div>
-        <Button asChild className="bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all hover:scale-105">
+        <Button
+          asChild
+          className="bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all hover:scale-105"
+        >
           <Link href="/admin/problems/create">
             <Plus className="w-4 h-4 mr-2" />
             New Problem
@@ -133,7 +129,9 @@ export default function AdminProblemsPage() {
                 className="pl-10 bg-white border-slate-200 focus:ring-indigo-500"
               />
             </div>
-            <Button type="submit" variant="secondary">Search</Button>
+            <Button type="submit" variant="secondary">
+              Search
+            </Button>
           </form>
         </div>
 
@@ -142,7 +140,6 @@ export default function AdminProblemsPage() {
             <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
               <TableHead className="w-[300px]">Problem</TableHead>
               <TableHead>Difficulty</TableHead>
-              <TableHead>Visibility</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Creator</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -182,24 +179,18 @@ export default function AdminProblemsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Switch 
-                        checked={problem.visibility === 'PUBLIC'} 
-                        onCheckedChange={() => toggleVisibility(problem.id, problem.visibility)}
-                      />
-                      {problem.visibility === 'PUBLIC' ? (
-                        <Globe className="w-4 h-4 text-emerald-500" />
-                      ) : (
-                        <Lock className="w-4 h-4 text-slate-400" />
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                     <div className="flex items-center gap-2">
-                      <Switch 
-                        checked={problem.isPublished} 
+                      <Switch
+                        checked={problem.isPublished}
                         onCheckedChange={() => togglePublished(problem.id, problem.isPublished)}
                       />
-                      <Badge variant={problem.isPublished ? "default" : "secondary"} className={problem.isPublished ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-100 border-indigo-200" : ""}>
+                      <Badge
+                        variant={problem.isPublished ? 'default' : 'secondary'}
+                        className={
+                          problem.isPublished
+                            ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-100 border-indigo-200'
+                            : ''
+                        }
+                      >
                         {problem.isPublished ? 'Published' : 'Draft'}
                       </Badge>
                     </div>
@@ -218,12 +209,18 @@ export default function AdminProblemsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-40">
                         <DropdownMenuItem asChild>
-                          <Link href={`/admin/problems/${problem.id}`} className="flex items-center">
+                          <Link
+                            href={`/admin/problems/${problem.id}`}
+                            className="flex items-center"
+                          >
                             <Edit className="w-4 h-4 mr-2" />
                             Edit
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-rose-600 focus:text-rose-600 focus:bg-rose-50" onClick={() => handleDelete(problem.id)}>
+                        <DropdownMenuItem
+                          className="text-rose-600 focus:text-rose-600 focus:bg-rose-50"
+                          onClick={() => handleDelete(problem.id)}
+                        >
                           <Trash2 className="w-4 h-4 mr-2" />
                           Delete
                         </DropdownMenuItem>
@@ -245,7 +242,7 @@ export default function AdminProblemsPage() {
               variant="outline"
               size="sm"
               disabled={page === 1 || loading}
-              onClick={() => setPage(p => p - 1)}
+              onClick={() => setPage((p) => p - 1)}
               className="rounded-lg"
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
@@ -255,7 +252,7 @@ export default function AdminProblemsPage() {
               variant="outline"
               size="sm"
               disabled={page * 10 >= total || loading}
-              onClick={() => setPage(p => p + 1)}
+              onClick={() => setPage((p) => p + 1)}
               className="rounded-lg"
             >
               Next

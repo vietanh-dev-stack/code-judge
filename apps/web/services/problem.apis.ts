@@ -83,7 +83,6 @@ export interface CreateAdminProblemDto {
   timeLimitMs?: number;
   memoryLimitMb?: number;
   isPublished?: boolean;
-  visibility?: 'PRIVATE' | 'PUBLIC' | 'CONTEST_ONLY';
   supportedLanguages?: string[];
   maxTestCases?: number;
   testCases?: Array<{
