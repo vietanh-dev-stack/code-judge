@@ -86,6 +86,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
   const [hintPulse, setHintPulse] = useState(false);
   const latestHintRequestRef = useRef<string | null>(null);
   const hintCachedSubmissionRef = useRef<string | null>(null);
+  const processedSubmissionsRef = useRef<Set<string>>(new Set());
   const [isDarkMode, setIsDarkMode] = useState(true);
   const { socket } = useSocket();
 
@@ -316,6 +317,12 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
   useEffect(() => {
     if (socket) {
       const handleFinished = (data: any) => {
+        if (data.submissionId) {
+          if (processedSubmissionsRef.current.has(data.submissionId)) {
+            return;
+          }
+          processedSubmissionsRef.current.add(data.submissionId);
+        }
         setIsRunning(false);
         setIsSubmitting(false);
         if (data.submissionId) {
@@ -353,6 +360,12 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
       };
 
       const handleFailed = (data: any) => {
+        if (data.submissionId) {
+          if (processedSubmissionsRef.current.has(data.submissionId)) {
+            return;
+          }
+          processedSubmissionsRef.current.add(data.submissionId);
+        }
         setIsRunning(false);
         setIsSubmitting(false);
         if (data.submissionId) {
