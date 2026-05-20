@@ -104,7 +104,7 @@ export default function ArchivedDashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {archived.map((item) => {
           const bannerColors = getClassroomBannerColor(item.id);
-          const isOwner = item.ownerId === user?.id;
+          const isOwner = item.owner.id === user?.id;
           
           return (
             <ClassCard

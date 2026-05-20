@@ -99,11 +99,15 @@ Mọi endpoint HTTP trả về (hoặc lỗi) cùng một **envelope**:
 - Nhập `userId/problemId/mode`, bấm `Submit` và xem realtime logs.
 
 ## Triển khai lên VPS (Ubuntu 24.04 LTS x64)
-1. Trên VPS: `./deploy/ubuntu-24.04-setup.sh` (Docker, UFW, swap tuỳ RAM).
-2. `cp .env.production.example .env.production` — sửa mật khẩu và URL.
-3. `./deploy/production-up.sh`
-- Stack: `docker-compose.production.yml` (Judge0 isolate thật trên Linux; dev Windows dùng `docker-compose.yml` + stub).
-- Hướng dẫn SSH/PM2 thay thế: [docs/DEPLOY-VPS.html](docs/DEPLOY-VPS.html).
+
+**Sẵn sàng deploy test** qua Docker production (`docker-compose.production.yml`). Không cần kéo code từ GitHub.
+
+1. **Windows:** đồng bộ mã nguồn lên VPS — `.\deploy\sync-to-vps.ps1 -VpsHost <IP>` (hoặc WinSCP / rsync, xem [deploy/README.md](deploy/README.md)).
+2. **VPS (SSH):** `./deploy/ubuntu-24.04-setup.sh` → `cp .env.production.example .env.production` → chỉnh secret/URL → `./deploy/production-up.sh`.
+3. Mở `http://<VPS_IP>/` (web), API `http://<VPS_IP>:8080/` khi test bằng IP.
+
+- Stack: Judge0 isolate thật trên Linux; dev Windows dùng `docker-compose.yml` + stub.
+- Chi tiết SSH, env, HTTPS: [docs/DEPLOY-VPS.html](docs/DEPLOY-VPS.html).
 
 ## AI gợi ý khi làm bài (học viên)
 - Sau Run/Submit thất bại trên `/problem/[id]`, panel **Gợi ý AI** tự tải (Socratic, không lộ đáp án).

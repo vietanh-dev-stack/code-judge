@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Metadata } from 'next';
 import ClassProblemCreate from '@/components/dashboard/class-detail/ClassProblemCreate';
 import { getClassroomDetail } from '@/services/classroom.apis';
@@ -38,7 +39,9 @@ export default async function CreateProblemPage({ params }: { params: Promise<{ 
 
   return (
     <div className="py-8">
-      <ClassProblemCreate classId={id} />
+      <Suspense fallback={<div className="h-32 animate-pulse rounded-md bg-muted" />}>
+        <ClassProblemCreate classId={id} />
+      </Suspense>
     </div>
   );
 }

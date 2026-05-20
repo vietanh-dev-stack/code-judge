@@ -1,4 +1,3 @@
-// @ts-ignore
 import './globals.css';
 import 'katex/dist/katex.min.css';
 import { Geist } from 'next/font/google';

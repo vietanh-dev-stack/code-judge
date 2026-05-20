@@ -845,7 +845,6 @@ export default function TestPage() {
                 <div className={cn('space-y-2')}>
                   <div className={cn('text-xs font-medium text-muted-foreground')}>Preview</div>
                   <div className={cn('overflow-hidden rounded-lg border')}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={imagePreviewUrl} alt="preview" className={cn('max-h-[240px] w-full object-contain bg-muted/20')} />
                   </div>
                 </div>

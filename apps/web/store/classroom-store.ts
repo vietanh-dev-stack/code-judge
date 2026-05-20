@@ -1,14 +1,14 @@
 import { create } from 'zustand';
-import { Classroom, getMyClassrooms } from '@/services/classroom.apis';
+import { ClassroomListItem, getMyClassrooms } from '@/services/classroom.apis';
 
 interface ClassroomState {
-    teaching: Classroom[];
-    enrolled: Classroom[];
-    archived: Classroom[];
+    teaching: ClassroomListItem[];
+    enrolled: ClassroomListItem[];
+    archived: ClassroomListItem[];
     loading: boolean;
 
     fetchClassrooms: () => Promise<void>;
-    addClassroom: (classroom: Classroom, role: 'OWNER' | 'MEMBER') => void;
+    addClassroom: (classroom: ClassroomListItem, role: 'OWNER' | 'MEMBER') => void;
     reset: () => void;
 }
 

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import { EnvKeys } from '../common';
 import { classInviteTemplate } from './templates/class-invite.template';
 import { assignmentNotificationTemplate } from './templates/assignment-notification.template';
 
@@ -12,8 +13,8 @@ export class MailerService {
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: this.configService.get<string>('MAIL_ACCOUNT'),
-        pass: this.configService.get<string>('MAIL_PASSWORD'),
+        user: this.configService.get<string>(EnvKeys.MAIL_ACCOUNT),
+        pass: this.configService.get<string>(EnvKeys.MAIL_PASSWORD),
       },
     });
   }
@@ -27,7 +28,7 @@ export class MailerService {
     const html = classInviteTemplate(params);
 
     await this.transporter.sendMail({
-      from: `CodeJudge <${this.configService.get('MAIL_ACCOUNT')}>`,
+      from: `CodeJudge <${this.configService.get(EnvKeys.MAIL_ACCOUNT)}>`,
       to: params.to,
       subject: `Invitation to join ${params.classroomName}`,
       html,
@@ -45,7 +46,7 @@ export class MailerService {
   }) {
     if (params.to.length === 0) return;
 
-    const fromEmail = this.configService.get<string>('MAIL_ACCOUNT');
+    const fromEmail = this.configService.get<string>(EnvKeys.MAIL_ACCOUNT);
     if (!fromEmail) {
       console.warn('[MailerService] MAIL_ACCOUNT not configured, skipping assignment notification');
       return;

@@ -2,17 +2,14 @@ import { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { getClassroomDetail } from '@/services/classroom.apis';
-import { getPublicCoreUrl } from '@/lib/public-config';
-import { BellRing, Copy } from 'lucide-react';
+import { Classroom, getClassroomDetail } from '@/services/classroom.apis';
+import { Copy } from 'lucide-react';
 import { AssignmentPost } from '@/components/dashboard/class-detail/assignment-post';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getClassroomBannerColor } from '@/lib/classroom-banner';
 import { Contest, contestsApi } from '@/services/contest.apis';
 import { authApi } from '@/services/auth.apis';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-
 export const metadata: Metadata = {
   title: 'Class Stream | CodeJudge',
   description: 'View class announcements and stream',
@@ -20,13 +17,12 @@ export const metadata: Metadata = {
 
 export default async function ClassStreamPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const BASE_URL = getPublicCoreUrl();
   const bannerBg = getClassroomBannerColor(id);
 
   const cookieStore = await cookies();
   const cookieHeader = cookieStore.toString();
 
-  let classroom;
+  let classroom: Classroom;
   let contests: Contest[] = [];
   let user;
 

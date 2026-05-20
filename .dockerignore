@@ -1,0 +1,17 @@
+# Giảm context khi `docker compose build` trên VPS (sau khi sync qua SSH).
+.git
+.github
+**/.next
+**/dist
+**/node_modules
+**/coverage
+**/.turbo
+**/.eslintcache
+.env
+.env.*
+!.env.production.example
+apps/**/.env
+apps/**/.env.*
+docs
+*.md
+!apps/**/README.md

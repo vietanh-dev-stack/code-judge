@@ -20,8 +20,6 @@ import {
   Trash2, 
   Globe, 
   Lock, 
-  Eye, 
-  EyeOff,
   MoreVertical,
   ChevronLeft,
   ChevronRight,

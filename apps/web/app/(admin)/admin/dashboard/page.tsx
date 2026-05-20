@@ -7,7 +7,7 @@ import { VerdictDistribution } from '@/components/admin/dashboard/verdict-distri
 import { LanguageDistribution } from '@/components/admin/dashboard/language-distribution';
 import { TopProblems } from '@/components/admin/dashboard/top-problems';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Download } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { getDashboardAnalytics, type DashboardAnalytics } from '@/services/admin-dashboard.apis';
 

@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Debug container — xác định lỗi nằm ở đâu — code-judge</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #58a6ff;
+      --accent-dim: #388bfd33;
+      --ok: #3fb950;
+      --err: #f85149;
+      --partial: #d29922;
+      --border: #30363d;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --sidebar-w: 300px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; font-size: 15px; }
+    a { color: var(--accent); }
+    a:hover { text-decoration: underline; }
+    .layout { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative !important; height: auto !important; }
+    }
+    .sidebar {
+      position: sticky; top: 0; height: 100vh; overflow-y: auto;
+      padding: 1.25rem 1rem; background: var(--surface); border-right: 1px solid var(--border);
+    }
+    .sidebar h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 0.75rem; }
+    .sidebar nav a { display: block; padding: 0.35rem 0.5rem; border-radius: 6px; color: var(--muted); font-size: 0.88rem; text-decoration: none; }
+    .sidebar nav a:hover { background: var(--surface2); color: var(--text); }
+    .sidebar nav .sub { padding-left: 1rem; font-size: 0.82rem; }
+    main { max-width: 980px; padding: 2rem 2.5rem 4rem; }
+    header.doc-header { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+    header.doc-header h1 { font-size: 1.55rem; margin: 0 0 0.5rem; }
+    .meta { font-size: 0.85rem; color: var(--muted); }
+    section { margin-bottom: 2.5rem; scroll-margin-top: 1rem; }
+    h2 { font-size: 1.25rem; margin: 0 0 1rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1.05rem; margin: 1.5rem 0 0.75rem; }
+    h4 { font-size: 0.95rem; margin: 1rem 0 0.5rem; color: var(--muted); }
+    p { margin: 0 0 1rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.86rem; }
+    th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+    th { background: var(--surface2); }
+    tr:nth-child(even) td { background: #1a233260; }
+    pre, code { font-family: var(--mono); font-size: 0.84rem; }
+    pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; margin: 0.5rem 0 0; }
+    code { background: var(--surface2); padding: 0.15rem 0.35rem; border-radius: 4px; }
+    pre code { background: transparent; padding: 0; }
+    .callout { background: var(--accent-dim); border-left: 4px solid var(--accent); padding: 0.75rem 1rem; margin: 1rem 0; border-radius: 0 8px 8px 0; }
+    .callout-warn { background: #9e6a0322; border-left-color: var(--partial); }
+    .callout-ok { background: #23863622; border-left-color: var(--ok); }
+    .callout-err { background: #f8514922; border-left-color: var(--err); }
+    .cmd { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.15rem; margin: 1rem 0; }
+    .cmd h4 { margin: 0 0 0.5rem; color: var(--accent); font-size: 0.9rem; }
+    .cmd .when { font-size: 0.88rem; color: var(--muted); margin: 0 0 0.75rem; }
+    .cmd .when strong { color: var(--text); }
+    .svc { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .svc h3 { margin: 0 0 0.5rem; font-size: 1rem; color: var(--accent); }
+    .svc .cn { font-family: var(--mono); font-size: 0.82rem; color: var(--muted); }
+    .flow { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; font-family: var(--mono); font-size: 0.78rem; line-height: 1.5; overflow-x: auto; white-space: pre; }
+    .st-ok { color: var(--ok); }
+    .st-bad { color: var(--err); }
+    .st-warn { color: var(--partial); }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Mục lục</h2>
+      <nav>
+        <a href="#start">Bắt đầu debug</a>
+        <a href="#map">Sơ đồ container</a>
+        <a href="#deps">Thứ tự phụ thuộc</a>
+        <a href="#symptoms">Triệu chứng → container</a>
+        <a href="#prefix">Prefix lệnh</a>
+        <a href="#commands">Lệnh chung</a>
+        <a href="#per-service">Từng container</a>
+        <a class="sub" href="#svc-migrate">migrate</a>
+        <a class="sub" href="#svc-app-db">app-db</a>
+        <a class="sub" href="#svc-core-api">core-api</a>
+        <a class="sub" href="#svc-web">web</a>
+        <a class="sub" href="#svc-nginx">nginx</a>
+        <a class="sub" href="#svc-worker">worker</a>
+        <a class="sub" href="#svc-judge0">judge0-*</a>
+        <a class="sub" href="#svc-minio">minio</a>
+        <a href="#browser">Lỗi trình duyệt</a>
+        <a href="#links">Liên kết</a>
+      </nav>
+    </aside>
+    <main>
+      <header class="doc-header">
+        <h1>Debug &amp; xác định lỗi theo container</h1>
+        <p class="meta">Stack production: <code>docker-compose.production.yml</code>. Mục tiêu: biết <strong>container nào</strong> gây lỗi và <strong>lệnh nào</strong> để kiểm tra.</p>
+      </header>
+
+      <section id="start">
+        <h2>Bắt đầu debug (3 bước)</h2>
+        <ol>
+          <li>SSH vào VPS, vào thư mục repo: <code>cd /root/code-judge</code></li>
+          <li>Chạy lệnh <code>docker compose ... ps</code> (xem <a href="#prefix">prefix</a>) — tìm container <strong>Exit</strong>, <strong>unhealthy</strong>, hoặc <strong>không có</strong> trong danh sách</li>
+          <li>Đối chiếu triệu chứng với <a href="#symptoms">bảng triệu chứng</a> hoặc mở <a href="#per-service">mục container</a> tương ứng</li>
+        </ol>
+        <div class="callout callout-warn">
+          Container <code>migrate</code> là <strong>one-shot</strong>: trạng thái <code>Exited (0)</code> là bình thường sau khi thành công. <code>Exited (1)</code> = lỗi — thường chặn <code>core-api</code> khởi động.
+        </div>
+      </section>
+
+      <section id="map">
+        <h2>Sơ đồ container (tên Docker)</h2>
+        <table>
+          <thead>
+            <tr><th>Service (compose)</th><th>Container name</th><th>Vai trò ngắn</th><th>Cổng ra host</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>nginx</code></td><td><code>cj-prod-nginx</code></td><td>Reverse proxy web + API + HTTPS</td><td>80, 8080, 443</td></tr>
+            <tr><td><code>web</code></td><td><code>cj-prod-web</code></td><td>Next.js frontend</td><td>Chỉ nội bộ :3001</td></tr>
+            <tr><td><code>core-api</code></td><td><code>cj-prod-core-api</code></td><td>NestJS API + Socket.io</td><td>Chỉ nội bộ :3000</td></tr>
+            <tr><td><code>worker</code></td><td><code>cj-prod-worker</code></td><td>Chấm bài / queue</td><td>Không publish</td></tr>
+            <tr><td><code>migrate</code></td><td><code>cj-prod-migrate</code></td><td>Prisma migrate + seed (1 lần)</td><td>Không publish</td></tr>
+            <tr><td><code>app-db</code></td><td><code>cj-prod-app-db</code></td><td>Postgres ứng dụng</td><td>Không publish</td></tr>
+            <tr><td><code>app-redis</code></td><td><code>cj-prod-app-redis</code></td><td>Redis app / BullMQ</td><td>Không publish</td></tr>
+            <tr><td><code>minio</code></td><td><code>cj-prod-minio</code></td><td>Object storage</td><td>9000 (mặc định)</td></tr>
+            <tr><td><code>judge0-server</code></td><td><code>cj-prod-judge0-server</code></td><td>Judge0 API</td><td>Không publish</td></tr>
+            <tr><td><code>judge0-worker</code></td><td><code>cj-prod-judge0-worker</code></td><td>Judge0 worker</td><td>Không publish</td></tr>
+            <tr><td><code>judge0-db</code></td><td><code>cj-prod-judge0-db</code></td><td>Postgres Judge0</td><td>Không publish</td></tr>
+            <tr><td><code>judge0-redis</code></td><td><code>cj-prod-judge0-redis</code></td><td>Redis Judge0</td><td>Không publish</td></tr>
+          </tbody>
+        </table>
+        <p>User truy cập từ internet: <strong>nginx</strong> → <strong>web</strong> hoặc <strong>core-api</strong>. Không gọi trực tiếp <code>core-api:3000</code> từ trình duyệt (trừ qua nginx :8080 / :443 api.*).</p>
+      </section>
+
+      <section id="deps">
+        <h2>Thứ tự phụ thuộc (container nào chặn container nào)</h2>
+        <div class="flow">app-db (healthy) ──┬──► migrate (phải <span class="st-ok">completed</span>) ──► core-api (healthy)
+app-redis (healthy) ─┘                              │
+minio (started) ────────────────────────────────────┘
+                                                    ├──► web (healthy) ──► nginx
+                                                    └──► worker (cần judge0-server started)
+
+judge0-db + judge0-redis (healthy) ──► judge0-server + judge0-worker</div>
+        <div class="callout">
+          Nếu <code>core-api</code> không lên → kiểm tra <strong>migrate</strong> trước, rồi <strong>app-db</strong> / <strong>app-redis</strong>.<br>
+          Nếu <code>nginx</code> không lên → thường do <strong>web</strong> hoặc <strong>core-api</strong> chưa healthy, hoặc nginx thiếu cert SSL.<br>
+          Nếu submit ALGO không chấm → <strong>worker</strong> + <strong>judge0-server</strong>, không phải nginx.
+        </div>
+      </section>
+
+      <section id="symptoms">
+        <h2>Triệu chứng → container nghi ngờ</h2>
+        <table>
+          <thead>
+            <tr><th>Triệu chứng / thông báo</th><th>Container / lớp</th><th>Gợi ý kiểm tra</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>service "migrate" didn't complete successfully: exit 1</code></td>
+              <td><strong>migrate</strong> (+ <strong>app-db</strong> nếu P1000)</td>
+              <td><code>logs migrate</code>, <code>run --rm migrate</code></td>
+            </tr>
+            <tr>
+              <td><code>P1000</code> / authentication failed</td>
+              <td><strong>migrate</strong>, <strong>core-api</strong>, <strong>worker</strong> → <strong>app-db</strong></td>
+              <td>Mật khẩu <code>POSTGRES_*</code> vs volume; <code>exec app-db psql</code></td>
+            </tr>
+            <tr>
+              <td><code>P3015</code> / migration.sql</td>
+              <td><strong>migrate</strong></td>
+              <td>Thư mục <code>prisma/migrations</code> trên VPS</td>
+            </tr>
+            <tr>
+              <td>Trang web 502 / Bad Gateway</td>
+              <td><strong>nginx</strong> → <strong>web</strong> hoặc <strong>core-api</strong> down</td>
+              <td><code>ps</code>, <code>logs nginx</code>, <code>logs web</code></td>
+            </tr>
+            <tr>
+              <td>HTTPS connection refused / không có :443</td>
+              <td><strong>nginx</strong></td>
+              <td><code>docker ps</code> cột PORTS; thiếu cert → <code>logs nginx</code></td>
+            </tr>
+            <tr>
+              <td>API 502 qua :8080 hoặc api.*</td>
+              <td><strong>nginx</strong> → <strong>core-api</strong></td>
+              <td><code>curl http://127.0.0.1:8080/tags</code>; <code>logs core-api</code></td>
+            </tr>
+            <tr>
+              <td>CORS / Access-Control-Allow-Origin</td>
+              <td><strong>core-api</strong> (env <code>FRONTEND_URL</code>)</td>
+              <td>Env + restart <code>core-api</code> — không phải nginx</td>
+            </tr>
+            <tr>
+              <td>Mixed Content <code>http://...:9000</code> hoặc <code>:8080</code></td>
+              <td><strong>core-api</strong> + <strong>nginx</strong> (<code>MINIO_PUBLIC_BASE_URL</code>)</td>
+              <td><code>MINIO_PUBLIC_BASE_URL=https://domain</code> (không :9000) + reload nginx</td>
+            </tr>
+            <tr>
+              <td>Login OK nhưng <code>/auth/me</code> 401 / redirect login loop</td>
+              <td><strong>core-api</strong> (<code>COOKIE_DOMAIN</code>, <code>FRONTEND_URL</code>)</td>
+              <td><code>force-recreate core-api</code>; cookie <code>Domain=.domain</code>; xem <a href="#svc-core-api">core-api</a></td>
+            </tr>
+            <tr>
+              <td>Upload / <code>minio:9000</code> / ERR_NAME_NOT_RESOLVED</td>
+              <td><strong>core-api</strong> (<code>MINIO_PUBLIC_BASE_URL</code>) + <strong>minio</strong></td>
+              <td>Env HTTPS URL + nginx <code>/codejudge/</code></td>
+            </tr>
+            <tr>
+              <td>Submit ALGO — Internal Error, stdout null</td>
+              <td><strong>worker</strong>, <strong>judge0-worker</strong></td>
+              <td>Stub isolate: <code>chmod +x scripts/*.sh</code> + recreate judge0-*</td>
+            </tr>
+            <tr>
+              <td><code>sudo: Permission denied</code> / <code>No such file - isolate</code></td>
+              <td><strong>judge0-worker</strong></td>
+              <td><code>sed</code> CRLF + <code>chmod +x</code> stub scripts trên VPS</td>
+            </tr>
+            <tr>
+              <td>Không gửi được email mời lớp</td>
+              <td><strong>core-api</strong> (<code>MAIL_*</code>)</td>
+              <td>Gmail App Password + <code>force-recreate core-api</code></td>
+            </tr>
+            <tr>
+              <td>Socket connected nhưng không realtime</td>
+              <td><strong>nginx</strong> (proxy <code>/socket.io/</code>) hoặc <strong>core-api</strong></td>
+              <td>WebSocket qua HTTPS api.* ; <code>logs core-api</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="prefix">
+        <h2>Prefix — chạy trước mọi lệnh trên VPS</h2>
+        <div class="callout callout-warn">
+          <strong>Không dùng</strong> biến <code>$COMPOSE</code> rồi gõ <code>$COMPOSE ps</code> — trên một số shell biến trống sẽ gọi nhầm lệnh <code>ps</code> hệ thống và báo lỗi <em>unsupported option</em>. Luôn gõ <strong>đầy đủ</strong> lệnh <code>docker compose -f ...</code> như các khối bên dưới.
+        </div>
+        <pre><code>cd /root/code-judge</code></pre>
+        <p>Đổi <code>/root/code-judge</code> thành <code>/home/ubuntu/code-judge</code> nếu bạn deploy với user <code>ubuntu</code>.</p>
+        <p><strong>Lưu ý env:</strong> <code>docker compose restart</code> <strong>không</strong> đọc lại <code>.env.production</code> mới. Sau khi sửa env dùng <code>up -d --force-recreate &lt;service&gt;</code>.</p>
+      </section>
+
+      <section id="commands">
+        <h2>Lệnh chung (chạy trên VPS)</h2>
+
+        <div class="cmd">
+          <h4>docker compose ps</h4>
+          <p class="when"><strong>Khi nào:</strong> Bước đầu — xem container nào running / healthy / exited.</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production ps</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4>docker compose ps -a</h4>
+          <p class="when"><strong>Khi nào:</strong> Cần thấy cả container đã exit (đặc biệt <code>migrate</code> exit 1).</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production ps -a</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4>logs &lt;service&gt; --tail N</h4>
+          <p class="when"><strong>Khi nào:</strong> Đã biết service nghi ngờ — xem lỗi gần nhất.</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production logs migrate --tail 80
+docker compose -f docker-compose.production.yml --env-file .env.production logs core-api --tail 80
+docker compose -f docker-compose.production.yml --env-file .env.production logs nginx --tail 50
+docker compose -f docker-compose.production.yml --env-file .env.production logs worker --tail 80
+docker compose -f docker-compose.production.yml --env-file .env.production logs judge0-worker --tail 80
+docker compose -f docker-compose.production.yml --env-file .env.production logs judge0-server --tail 80</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4>docker logs cj-prod-&lt;tên&gt;</h4>
+          <p class="when"><strong>Khi nào:</strong> Tương đương <code>compose logs</code> khi bạn nhớ tên container (bảng trên).</p>
+          <pre><code>docker logs cj-prod-migrate 2>&1 | tail -50</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4>docker inspect — health</h4>
+          <p class="when"><strong>Khi nào:</strong> Container running nhưng <code>unhealthy</code> — xem healthcheck fail vì sao.</p>
+          <pre><code>docker inspect cj-prod-core-api --format '{{.State.Health.Status}}'
+docker inspect cj-prod-core-api --format '{{json .State.Health}}' | head -c 2000</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4>curl từ trong VPS (bỏ qua nginx / qua nginx)</h4>
+          <p class="when"><strong>Khi nào:</strong> Phân tách lỗi nginx vs app — gọi trực tiếp service nội bộ hoặc qua proxy.</p>
+          <pre><code># API qua nginx (localhost)
+curl -s http://127.0.0.1:8080/tags | head
+curl -sI https://api.code-judge.io.vn/tags | head -5
+
+# Web qua nginx
+curl -sI http://127.0.0.1/ | head -5
+curl -sI https://code-judge.io.vn/ | head -5
+
+# MinIO (host port)
+curl -sI http://127.0.0.1:9000/minio/health/live | head -5</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4>exec vào container (tùy chọn)</h4>
+          <p class="when"><strong>Khi nào:</strong> Kiểm tra sâu — psql, redis-cli, cấu hình nginx trong container.</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production exec app-db psql -U codejudge -d codejudge -c 'SELECT 1;'
+docker compose -f docker-compose.production.yml --env-file .env.production exec app-redis redis-cli ping
+docker compose -f docker-compose.production.yml --env-file .env.production exec nginx nginx -t</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4>Kiểm tra env trong container (sau khi đổi .env)</h4>
+          <p class="when"><strong>Khi nào:</strong> Login/cookie/mail/MinIO vẫn sai sau khi sửa <code>.env.production</code> — xác nhận container đã nhận biến mới (cần <code>force-recreate</code>, không chỉ <code>restart</code>).</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production config | grep -E 'COOKIE_DOMAIN|MINIO_PUBLIC|MAIL_ACCOUNT'
+docker compose -f docker-compose.production.yml --env-file .env.production exec core-api printenv COOKIE_DOMAIN MINIO_PUBLIC_BASE_URL MAIL_ACCOUNT</code></pre>
+        </div>
+      </section>
+
+      <section id="per-service">
+        <h2>Debug từng container</h2>
+
+        <div class="svc" id="svc-migrate">
+          <h3>migrate — <span class="cn">cj-prod-migrate</span></h3>
+          <p><strong>Vai trò:</strong> Chạy <code>prisma migrate deploy</code> (+ seed nếu không <code>RUN_SEED=0</code>). One-shot; <strong>exit 1</strong> chặn <code>core-api</code>.</p>
+          <p><strong>Dấu hiệu lỗi ở đây:</strong> Compose báo migrate failed; P1000, P3015 trong log.</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production logs migrate --tail 120
+docker compose -f docker-compose.production.yml --env-file .env.production run --rm migrate</code></pre>
+          <p><strong>Không phải lỗi migrate nếu:</strong> Trang web load được và API <code>/tags</code> 200 — migrate có thể đã chạy xong trước đó (container exited 0).</p>
+        </div>
+
+        <div class="svc" id="svc-app-db">
+          <h3>app-db — <span class="cn">cj-prod-app-db</span></h3>
+          <p><strong>Vai trò:</strong> Postgres cho Prisma / API / worker.</p>
+          <p><strong>Dấu hiệu:</strong> migrate P1000; core-api crash kết nối DB; unhealthy nếu pg không ready.</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production ps app-db
+docker compose -f docker-compose.production.yml --env-file .env.production logs app-db --tail 40
+docker compose -f docker-compose.production.yml --env-file .env.production exec -T app-db psql -U codejudge -d codejudge -c 'SELECT 1;'</code></pre>
+        </div>
+
+        <div class="svc" id="svc-core-api">
+          <h3>core-api — <span class="cn">cj-prod-core-api</span></h3>
+          <p><strong>Vai trò:</strong> REST API, auth, Socket.io, presigned MinIO URL.</p>
+          <p><strong>Dấu hiệu:</strong> 502 trên api.*; CORS; <code>/auth/me</code> 401 sau login; cookie không có <code>Domain=.your-domain</code>; API JSON lỗi; healthcheck fail (<code>/tags</code>).</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production ps core-api
+docker compose -f docker-compose.production.yml --env-file .env.production logs core-api --tail 80
+docker inspect cj-prod-core-api --format '{{.State.Health.Status}}'
+docker compose -f docker-compose.production.yml --env-file .env.production exec core-api printenv COOKIE_DOMAIN FRONTEND_URL MINIO_PUBLIC_BASE_URL</code></pre>
+          <p><strong>Env quan trọng:</strong> <code>COOKIE_DOMAIN=.code-judge.io.vn</code> (dấu chấm đầu = cookie dùng chung web + api subdomain); <code>FRONTEND_URL</code> gồm <code>https://domain</code> và <code>https://www.domain</code> nếu dùng www; <code>MINIO_PUBLIC_BASE_URL=https://code-judge.io.vn</code> (không <code>:9000</code>).</p>
+          <p><strong>Sau khi sửa env:</strong></p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production up -d --force-recreate core-api</code></pre>
+          <p>Xóa cookie cũ trên trình duyệt (hoặc tab ẩn danh), đăng nhập lại. DevTools → Application → Cookies: phải thấy <code>Domain=.code-judge.io.vn</code>.</p>
+          <p><strong>Phụ thuộc:</strong> migrate success, app-db, app-redis healthy, minio started.</p>
+        </div>
+
+        <div class="svc" id="svc-web">
+          <h3>web — <span class="cn">cj-prod-web</span></h3>
+          <p><strong>Vai trò:</strong> Next.js; URL API nhúng lúc build (<code>NEXT_PUBLIC_CORE_URL</code>).</p>
+          <p><strong>Dấu hiệu:</strong> Trang trắng / 502 qua nginx; Mixed Content gọi <code>:8080</code>; UI cũ sau đổi env API.</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production ps web
+docker compose -f docker-compose.production.yml --env-file .env.production logs web --tail 50</code></pre>
+          <p><strong>Phụ thuộc:</strong> core-api healthy. Sửa URL API → <strong>rebuild web</strong>, không chỉ restart.</p>
+        </div>
+
+        <div class="svc" id="svc-nginx">
+          <h3>nginx — <span class="cn">cj-prod-nginx</span></h3>
+          <p><strong>Vai trò:</strong> Cổng 80/443 (web), 8080/443 api.*, SSL, redirect HTTP→HTTPS.</p>
+          <p><strong>Dấu hiệu:</strong> Không vào được domain; thiếu :443 trong <code>docker ps</code>; SSL certificate error; 502 (upstream web/core-api down).</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production ps nginx
+docker ps --filter name=cj-prod-nginx
+docker compose -f docker-compose.production.yml --env-file .env.production logs nginx --tail 50
+docker compose -f docker-compose.production.yml --env-file .env.production exec nginx nginx -t
+ls -la /etc/letsencrypt/live/code-judge.io.vn/</code></pre>
+          <p>MinIO qua HTTPS: nginx proxy <code>/codejudge/</code> → <code>minio:9000</code> (xem <code>deploy/nginx/conf.d/code-judge.conf</code>). Sau sửa conf:</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production up -d --force-recreate nginx
+docker compose -f docker-compose.production.yml --env-file .env.production exec nginx nginx -s reload</code></pre>
+          <p><strong>Phụ thuộc:</strong> web + core-api healthy. Cert thiếu → container có thể không start listen 443.</p>
+        </div>
+
+        <div class="svc" id="svc-worker">
+          <h3>worker — <span class="cn">cj-prod-worker</span></h3>
+          <p><strong>Vai trò:</strong> Queue chấm bài, gọi Judge0 / Lambda.</p>
+          <p><strong>Dấu hiệu:</strong> Submit ALGO pending mãi; web/API OK nhưng không có kết quả chấm.</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production ps worker
+docker compose -f docker-compose.production.yml --env-file .env.production logs worker --tail 100</code></pre>
+          <p><strong>Phụ thuộc:</strong> core-api healthy, judge0-server started, app-db, app-redis, minio.</p>
+        </div>
+
+        <div class="svc" id="svc-judge0">
+          <h3>judge0-* — <span class="cn">cj-prod-judge0-server / worker / db / redis</span></h3>
+          <p><strong>Vai trò:</strong> Chấm code ALGO. Production mặc định <code>JUDGE0_USE_CGROUP=false</code> + mount <code>scripts/isolate_stub.sh</code> (Ubuntu 24.04 cgroup v2 thường không chạy isolate thật).</p>
+          <p><strong>Dấu hiệu:</strong> Internal Error, stdout null; <code>Cannot write /sys/fs/cgroup/memory/box-*</code>; <code>sudo: Permission denied</code>; <code>No such file - isolate</code>.</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production ps judge0-server judge0-worker judge0-db judge0-redis
+docker compose -f docker-compose.production.yml --env-file .env.production logs judge0-server --tail 80
+docker compose -f docker-compose.production.yml --env-file .env.production logs judge0-worker --tail 80
+curl -s http://127.0.0.1:2358/languages | head</code></pre>
+          <p><strong>Sau sync từ Windows</strong> (CRLF / quyền thực thi stub):</p>
+          <pre><code>cd /root/code-judge
+sed -i 's/\r$//' scripts/isolate_stub.sh scripts/sudo_stub.sh
+chmod +x scripts/isolate_stub.sh scripts/sudo_stub.sh
+docker compose -f docker-compose.production.yml --env-file .env.production up -d --force-recreate judge0-server judge0-worker</code></pre>
+          <p><strong>Test stub trong container worker:</strong></p>
+          <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production exec judge0-worker /usr/local/bin/isolate --init
+docker compose -f docker-compose.production.yml --env-file .env.production exec judge0-worker ls -la /usr/local/bin/isolate /usr/bin/isolate</code></pre>
+          <p><strong>Env:</strong> <code>JUDGE0_SECRET_KEY_BASE</code>, <code>JUDGE0_DB_PASSWORD</code> — không ảnh hưởng migrate app-db.</p>
+        </div>
+
+        <div class="svc" id="svc-minio">
+          <h3>minio — <span class="cn">cj-prod-minio</span></h3>
+          <p><strong>Vai trò:</strong> Lưu file upload; presigned URL do core-api tạo với <code>MINIO_PUBLIC_BASE_URL</code>.</p>
+          <p><strong>Dấu hiệu:</strong> Upload fail; browser gọi <code>minio:9000</code>; mixed content HTTP MinIO trên trang HTTPS.</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production ps minio
+curl -sI http://127.0.0.1:9000/minio/health/live | head -5
+curl -sI https://code-judge.io.vn/codejudge/minio/health/live | head -5
+docker compose -f docker-compose.production.yml --env-file .env.production logs minio --tail 40</code></pre>
+        </div>
+
+        <div class="svc">
+          <h3>app-redis — <span class="cn">cj-prod-app-redis</span></h3>
+          <p><strong>Vai trò:</strong> Redis cho API queue / cache.</p>
+          <p><strong>Dấu hiệu:</strong> core-api không healthy; worker không xử lý job.</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production exec app-redis redis-cli ping</code></pre>
+        </div>
+      </section>
+
+      <section id="browser">
+        <h2>Đọc lỗi DevTools (trình duyệt) → container</h2>
+        <table>
+          <thead>
+            <tr><th>Console / Network</th><th>Nghi ngờ</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Request tới <code>https://api....</code> 502</td><td><strong>nginx</strong> hoặc <strong>core-api</strong></td></tr>
+            <tr><td>Request tới <code>http://...:8080</code> blocked (Mixed Content)</td><td><strong>web</strong> — rebuild <code>NEXT_PUBLIC_CORE_URL=https://api...</code></td></tr>
+            <tr><td>Request tới <code>http://...:9000</code> blocked</td><td><strong>core-api</strong> — <code>MINIO_PUBLIC_BASE_URL=https://domain</code> + nginx <code>/codejudge/</code></td></tr>
+            <tr><td>CORS header không khớp origin</td><td><strong>core-api</strong> — <code>FRONTEND_URL</code></td></tr>
+            <tr><td><code>/auth/me</code> 401 sau login 200</td><td><strong>core-api</strong> — <code>COOKIE_DOMAIN</code>; xóa cookie cũ</td></tr>
+            <tr><td><code>minio:9000</code> ERR_NAME_NOT_RESOLVED</td><td><strong>core-api</strong> — <code>MINIO_PUBLIC_BASE_URL</code> phải là URL trình duyệt mở được</td></tr>
+            <tr><td>Web load, API 200, submit Internal Error</td><td><strong>judge0-worker</strong> — stub chmod/CRLF</td></tr>
+            <tr><td>Socket connected nhưng không update</td><td><strong>core-api</strong> + nginx <code>/socket.io/</code></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="flowchart">
+        <h2>Quy trình khoanh vùng nhanh</h2>
+        <ol>
+          <li><code>docker compose -f docker-compose.production.yml --env-file .env.production ps -a</code> — ai exit / unhealthy?</li>
+          <li>Nếu <strong>migrate exit 1</strong> → <code>logs migrate</code> (dừng ở đây, sửa DB/migration trước)</li>
+          <li>Nếu <strong>core-api unhealthy</strong> → <code>logs core-api</code>; kiểm migrate đã OK chưa</li>
+          <li>Nếu <strong>web unhealthy</strong> → <code>logs web</code>; core-api phải healthy trước</li>
+          <li>Nếu <strong>nginx</strong> không có 443 → cert + <code>logs nginx</code></li>
+          <li>Login/dashboard → <code>printenv COOKIE_DOMAIN</code> trong core-api; cookie trình duyệt</li>
+          <li>Upload/ảnh Mixed Content → <code>MINIO_PUBLIC_BASE_URL</code> + <code>force-recreate core-api</code></li>
+          <li>Nếu <strong>ps</strong> đều OK nhưng user lỗi → <code>curl</code> + DevTools → bảng <a href="#browser">trình duyệt</a></li>
+          <li>Chỉ lỗi chấm bài → <code>chmod</code> stub scripts → <code>logs worker</code> + <code>logs judge0-worker</code></li>
+        </ol>
+      </section>
+
+      <section id="links">
+        <h2>Liên kết</h2>
+        <ul>
+          <li><a href="UPDATE-DEPLOY.html">UPDATE-DEPLOY.html</a> — cập nhật env / code / migration</li>
+          <li><a href="DEPLOY-VPS.html">DEPLOY-VPS.html</a> — deploy lần đầu</li>
+          <li><a href="../deploy/README.md">deploy/README.md</a></li>
+        </ul>
+      </section>
+
+      <footer>
+        <p>code-judge — <code>docs/DEBUG-CONTAINERS.html</code>. Luôn chạy lệnh trong <code>/root/code-judge</code> (hoặc thư mục repo trên VPS).</p>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

@@ -20,6 +20,18 @@ import { parseJudge0MemoryMb, parseJudge0RuntimeMs } from './lib/judge0-metrics'
 
 const log = createWorkerLogger('worker');
 
+/** Judge0 trả `memory` theo kilobyte; DB/UI dùng MB (làm tròn lên để tránh 0MB với bài nhẹ). */
+function judge0MemoryKbToMb(memoryKb: number | null | undefined): number {
+  if (memoryKb == null || memoryKb <= 0) return 0;
+  return Math.max(1, Math.ceil(memoryKb / 1024));
+}
+
+/** Judge0 trả `time` theo giây (float). */
+function judge0TimeSecToMs(timeSec: number | null | undefined): number {
+  if (timeSec == null || timeSec < 0) return 0;
+  return Math.round(timeSec * 1000);
+}
+
 // Redis: BullMQ yêu cầu `maxRetriesPerRequest: null` khi dùng làm connection.
 const redisUrl = getOptionalEnv(process.env.REDIS_URL, 'redis://localhost:6379');
 const connection = new IORedis(redisUrl, {
@@ -199,7 +211,9 @@ async function processSubmission(job: any) {
     throw new Error(`Problem not found: ${existingSubmission.problemId}`);
   }
 
-  let testCasesToRun = problem.testCases;
+  const testCasesToRun = existingSubmission.isDryRun
+    ? problem.testCases.filter((tc) => !tc.isHidden)
+    : problem.testCases;
 
   await prisma.submission.update({
     where: { id: submissionId },
@@ -263,7 +277,7 @@ async function processSubmission(job: any) {
     let maxMemory = 0;
     let combinedLogs = '';
     let finalStatus: SubmissionStatus = SubmissionStatus.Accepted;
-    let stopEarly = false;
+    const stopEarly = false;
 
     const languageId = getJudge0LanguageId(existingSubmission.language as string);
     job.updateProgress({ pct: 20, log: `Judging with Judge0 (ID: ${languageId})...` });
