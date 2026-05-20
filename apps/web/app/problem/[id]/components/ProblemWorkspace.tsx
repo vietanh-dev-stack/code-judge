@@ -348,14 +348,8 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
           setHintPulse(false);
           setHintState('idle');
           setHintData(null);
-          toast.success(data.isDryRun ? 'Run Code Success!' : 'Accepted!', {
-            description: data.isDryRun
-              ? `Passed all ${data.testsTotal} sample test cases.`
-              : `All ${data.testsTotal} test cases passed.`,
-          });
         } else {
           setHintPulse(true);
-          toast.error(data.status, { description: data.error || 'Some test cases failed.' });
         }
       };
 
@@ -383,7 +377,6 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
           loadSubmissions();
         }
         setHintPulse(true);
-        toast.error('Error', { description: data.error || 'Judging failed' });
       };
 
       socket.on('submission:finished', handleFinished);
@@ -566,11 +559,6 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
       });
       setLastSubmissionId(created.submissionId);
 
-      toast.info(isDryRun ? 'Running Code' : 'Submission Received', {
-        description: isDryRun
-          ? 'Running your code against sample test cases...'
-          : 'Your code is being judged...',
-      });
     } catch (error: any) {
       console.warn('Submission failed:', error.message || error);
       toast.error('Submission Error', { description: error.message || 'Failed to submit code.' });
