@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
-import InviteModal from '@/components/dashboard/class-detail/invite-modal';
 import PersonItem from '@/components/dashboard/class-detail/person-item';
 import { useClassDetail } from '@/components/dashboard/class-detail/class-detail-context';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
@@ -83,8 +82,6 @@ export default function PeoplePage() {
 
           <div className="flex gap-4 items-center">
             <span className="text-sm text-[#1967d2]">{data.students.length} students</span>
-
-            {canManage && <InviteModal classRoomId={classRoomId} />}
           </div>
         </div>
 
