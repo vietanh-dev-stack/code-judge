@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth-store';
-import { LogOut, User, Settings, LayoutDashboard } from 'lucide-react';
+import { LogOut, User, LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';
 
 export function UserNav() {
@@ -54,12 +54,6 @@ export function UserNav() {
             <Link href="/dashboard/profile" className="cursor-pointer">
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/settings" className="cursor-pointer">
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
             </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
