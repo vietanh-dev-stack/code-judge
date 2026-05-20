@@ -1,0 +1,263 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CAU HINH VA UTILS — code-judge docs</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #58a6ff;
+      --accent-dim: #388bfd66;
+      --ok: #3fb950;
+      --partial: #d29922;
+      --missing: #f85149;
+      --border: #30363d;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --sidebar-w: 280px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      min-height: 100vh;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative !important; height: auto !important; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 1.25rem 1rem;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+    }
+    .sidebar h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin: 0 0 0.75rem;
+    }
+    .sidebar nav a {
+      display: block;
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .sidebar nav a:hover { background: var(--surface2); color: var(--text); text-decoration: none; }
+    .sidebar nav a.active { background: var(--surface2); color: var(--accent); font-weight: 600; }
+    
+    main {
+      max-width: 920px;
+      padding: 2rem 2.5rem 4rem;
+    }
+    header.doc-header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    header.doc-header h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      line-height: 1.3;
+    }
+    section {
+      margin-bottom: 2.5rem;
+      scroll-margin-top: 1rem;
+    }
+    h1, h2, h3, h4, h5, h6 { color: var(--text); }
+    h2 {
+      font-size: 1.35rem;
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.75rem; }
+    p { margin: 0 0 1rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--surface2); font-weight: 600; }
+    tr:nth-child(even) td { background: #1a233280; }
+    pre, code {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    code {
+        background: var(--surface2);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+    }
+    pre code {
+        background: transparent;
+        padding: 0;
+    }
+    blockquote {
+      border-left: 4px solid var(--border);
+      padding-left: 1rem;
+      margin: 1rem 0;
+      color: var(--muted);
+    }
+</style>
+</head>
+<body>
+  <div class="layout">
+    <div class="sidebar"><h2>Documentation</h2><nav><a href="AI-TESTCASE-GENERATION.html">AI TESTCASE GENERATION</a><a href="AWS-LAMBDA-INTEGRATION.html">AWS LAMBDA INTEGRATION</a><a href="BUILD-LEVEL-PLAN.html">BUILD LEVEL PLAN</a><a href="CAU-HINH-VA-UTILS.html" class="active">CAU HINH VA UTILS</a><a href="DEPLOY-VPS.html">DEPLOY VPS</a><a href="FEATURE-IMPLEMENTATION-TASKLIST.html">FEATURE IMPLEMENTATION TASKLIST</a><a href="JUDGE0-WINDOWS-WSL.html">JUDGE0 WINDOWS WSL</a><a href="LAMBDA-CONFIG.html">LAMBDA CONFIG</a><a href="MINIO.html">MINIO</a><a href="postman-testapi.html">postman testapi</a><a href="PRISMA-SEED.html">PRISMA SEED</a><a href="USER-STORIES-TASKLIST.html">USER STORIES TASKLIST</a></nav></div>
+    <main>
+      <header class="doc-header">
+        <h1>CAU HINH VA UTILS</h1>
+      </header>
+      <div class="content">
+        <h1>Cấu hình chung &amp; tiện ích (monorepo <code>code-judge</code>)</h1>
+<p>Tài liệu này mô tả <strong>tác dụng từng file config ở root</strong> và <strong>các thư mục common/lib</strong> trong từng app. Phần “giải thích từng dòng” chi tiết nhất nằm trong comment trực tiếp trong source và trong <code>apps/core-api/src/common/README.md</code>.</p>
+<hr>
+<h2>Root — file cấu hình</h2>
+<h3><code>eslint.config.mjs</code></h3>
+<ul>
+<li><strong>Mục đích</strong>: ESLint 9 (flat config) cho toàn repo.</li>
+<li><strong>Nội dung chính</strong>:<ul>
+<li><code>ignores</code>: bỏ qua <code>node_modules</code>, <code>dist</code>, <code>.next</code>, <code>coverage</code>, và một số file do framework tự sinh / CommonJS config (<code>next.config.js</code>, <code>postcss.config.js</code>, <code>next-env.d.ts</code>).</li>
+<li><code>eslint.configs.recommended</code>: rule cơ bản JS.</li>
+<li><code>typescript-eslint</code> recommended: rule khuyến nghị cho TS (phiên bản không bật type-aware để đơn giản monorepo).</li>
+<li><code>eslint-config-prettier</code>: tắt rule xung đột với Prettier.</li>
+<li><code>rules</code>: nới <code>no-explicit-any</code>, cảnh báo unused vars có ignore <code>_</code> prefix.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Lưu ý Next.js</strong>: <code>next build</code> có thể cảnh báo “Next.js plugin was not detected” vì cấu hình ESLint hiện tại ưu tiên monorepo đơn giản; có thể bổ sung <code>eslint-config-next</code> ở bước sau nếu cần rule chuyên biệt App Router.</p>
+<h3><code>.prettierrc</code></h3>
+<ul>
+<li><strong>Mục đích</strong>: định dạng code thống nhất (semicolon, singleQuote, printWidth, …).</li>
+</ul>
+<h3><code>.prettierignore</code></h3>
+<ul>
+<li><strong>Mục đích</strong>: không format <code>node_modules</code>, artifact build, lockfile.</li>
+</ul>
+<h3><code>.editorconfig</code></h3>
+<ul>
+<li><strong>Mục đích</strong>: IDE tự chỉnh indent / newline / charset nhất quán.</li>
+</ul>
+<h3><code>package.json</code> (scripts)</h3>
+<ul>
+<li><strong><code>lint</code> / <code>lint:fix</code></strong>: chạy ESLint toàn repo.</li>
+<li><strong><code>format</code> / <code>format:check</code></strong>: chạy Prettier.</li>
+</ul>
+<hr>
+<h2><code>apps/core-api/src/common/</code></h2>
+<p>Xem chi tiết: <a href="../apps/core-api/src/common/README.md">apps/core-api/src/common/README.md</a>.</p>
+<p>Tóm tắt:</p>
+<ul>
+<li>Hằng số queue + socket room.</li>
+<li>Key env thống nhất.</li>
+<li><code>sleep</code>, <code>requireEnv</code>.</li>
+</ul>
+<p><strong>Điểm tích hợp hiện tại</strong>:</p>
+<ul>
+<li><code>src/queues/bullmq.module.ts</code> dùng <code>JUDGE_SUBMISSIONS_QUEUE_NAME</code>.</li>
+<li><code>src/realtime/submission.gateway.ts</code> dùng <code>socketUserRoom</code>.</li>
+<li><code>src/prisma/prisma.service.ts</code> dùng <code>EnvKeys</code> + <code>requireEnv</code>.</li>
+</ul>
+<hr>
+<h2><code>apps/worker/src/lib/</code></h2>
+<p>Xem: <a href="../apps/worker/src/lib/README.md">apps/worker/src/lib/README.md</a>.</p>
+<ul>
+<li>Logger có prefix, đọc env, <code>sleep</code>, hằng số queue (phải khớp Core API).</li>
+</ul>
+<p><strong>Điểm tích hợp</strong>: <code>src/index.ts</code> dùng toàn bộ helper thay vì rải logic thô.</p>
+<hr>
+<h2><code>apps/web/lib/</code></h2>
+<p>Xem: <a href="../apps/web/lib/README.md">apps/web/lib/README.md</a>.</p>
+<ul>
+<li><code>cn()</code> cho Tailwind/shadcn.</li>
+<li><code>getPublicCoreUrl()</code> cho REST + Socket.io.</li>
+</ul>
+<h2><code>apps/web/components/ui/</code> (shadcn/ui)</h2>
+<p>Xem: <a href="../apps/web/components/ui/README.md">apps/web/components/ui/README.md</a>.</p>
+<ul>
+<li>Component UI copy từ registry shadcn (preset <strong>base-nova</strong>, Tailwind v4).</li>
+<li><code>components.json</code> cấu hình alias và theme; thêm component: <code>npx shadcn@latest add &lt;tên&gt; -y</code> trong <code>apps/web</code>.</li>
+</ul>
+<p><strong>Cấu hình path alias</strong>: <code>apps/web/tsconfig.json</code> có <code>baseUrl</code> + <code>paths[&quot;@/*&quot;]</code> để import <code>@/lib/...</code>.</p>
+<p><strong>Điểm tích hợp</strong>: <code>app/page.tsx</code> dùng <code>getPublicCoreUrl</code>, <code>cn</code>, và các component <code>@/components/ui/*</code>.</p>
+<h3><code>app/page.tsx</code> — giải thích theo khối (khuyến nghị)</h3>
+<p>File này khá dài; ta mô tả theo <strong>khối</strong> để dễ bảo trì:</p>
+<ol>
+<li><strong><code>&#39;use client&#39;</code></strong>: đánh dấu Client Component (cần hooks + Socket.io trên trình duyệt).</li>
+<li><strong>Import</strong>:<ul>
+<li>React hooks: quản lý state + lifecycle.</li>
+<li><code>socket.io-client</code>: kết nối realtime.</li>
+<li><code>@/lib/public-config</code> + <code>@/lib/utils</code>: helper dùng chung.</li>
+</ul>
+</li>
+<li><strong>Types</strong> (<code>Submission*Payload</code>): mô tả hình dạng payload từ server (giảm <code>any</code>).</li>
+<li><strong><code>coreUrl</code></strong>: base URL Core API; dùng cho <code>fetch</code> và <code>io(coreUrl, ...)</code>.</li>
+<li><strong>State</strong>: input form + trạng thái hiển thị (status, logs, submissionId).</li>
+<li><strong><code>submissionIdRef</code></strong>: ref để lọc event realtime theo submission hiện tại (tránh race khi user submit liên tiếp).</li>
+<li><strong><code>useEffect</code> (socket)</strong>:<ul>
+<li>tạo socket, subscribe events, cleanup <code>disconnect</code> khi <code>userId</code> đổi/unmount.</li>
+</ul>
+</li>
+<li><strong><code>onSubmit</code></strong>:<ul>
+<li><code>POST /submissions</code>, xử lý lỗi HTTP, parse JSON.</li>
+</ul>
+</li>
+<li><strong>JSX</strong>:<ul>
+<li>form nhập liệu + panel hiển thị submission/logs; <code>cn(...)</code> gom className.</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>Ghi chú về “giải thích từng dòng code”</h2>
+<ul>
+<li>Với file ngắn (utils/constants): README + comment trong file đã đủ chi tiết.</li>
+<li>Với file dài (vd <code>page.tsx</code>): nên mô tả theo <strong>khối chức năng</strong> (state, effect socket, submit handler, JSX sections) để tránh tài liệu trùng lặp và khó bảo trì; phần khối đã được comment ở đầu file.</li>
+</ul>
+
+
+      </div>
+    </main>
+  </div>
+</body>
+</html>

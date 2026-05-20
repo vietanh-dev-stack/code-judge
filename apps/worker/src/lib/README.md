@@ -19,3 +19,13 @@ Các module dùng chung cho worker (không phụ thuộc NestJS).
 ## `sleep.ts`
 
 - **`sleep(ms)`**: `Promise` chờ async; dùng trong stub judge hoặc backoff đơn giản.
+
+## `storage.ts`
+
+- MinIO/S3-compatible helper cho worker:
+  - **`ensureBucketExists()`**: tự tạo bucket nếu chưa có.
+  - **`putArtifactObject(objectKey, body, metadata?)`**: ghi artifact/testcase output.
+- Biến môi trường liên quan:
+  - `MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_USE_SSL`
+  - `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`
+  - `MINIO_BUCKET`, `MINIO_REGION`

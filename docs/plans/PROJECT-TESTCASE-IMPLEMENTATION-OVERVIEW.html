@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tổng quan triển khai PROJECT testcase — code-judge</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #58a6ff;
+      --accent-dim: #388bfd33;
+      --ok: #3fb950;
+      --partial: #d29922;
+      --missing: #f85149;
+      --border: #30363d;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --sidebar-w: 300px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; font-size: 15px; }
+    a { color: var(--accent); }
+    a:hover { text-decoration: underline; }
+    .layout { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative !important; height: auto !important; }
+    }
+    .sidebar {
+      position: sticky; top: 0; height: 100vh; overflow-y: auto;
+      padding: 1.25rem 1rem; background: var(--surface); border-right: 1px solid var(--border);
+    }
+    .sidebar h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 0.75rem; }
+    .sidebar nav a { display: block; padding: 0.35rem 0.5rem; border-radius: 6px; color: var(--muted); font-size: 0.88rem; text-decoration: none; }
+    .sidebar nav a:hover { background: var(--surface2); color: var(--text); }
+    .sidebar nav .sub { padding-left: 1rem; font-size: 0.82rem; }
+    main { max-width: 960px; padding: 2rem 2.5rem 4rem; }
+    header.doc-header { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+    header.doc-header h1 { font-size: 1.7rem; margin: 0 0 0.5rem; line-height: 1.3; }
+    .meta { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; font-size: 0.85rem; color: var(--muted); }
+    .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.72rem; font-weight: 600; }
+    .badge-done { background: #23863633; color: var(--ok); border: 1px solid #3fb95055; }
+    .badge-plan { background: #388bfd33; color: #79c0ff; }
+    .badge-todo { background: #9e6a0333; color: var(--partial); }
+    section { margin-bottom: 2.5rem; scroll-margin-top: 1rem; }
+    section h2 { font-size: 1.3rem; margin: 0 0 1rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border); }
+    section h3 { font-size: 1.05rem; margin: 1.25rem 0 0.6rem; }
+    p { margin: 0 0 1rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.88rem; }
+    th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+    th { background: var(--surface2); }
+    tr:nth-child(even) td { background: #1a233260; }
+    pre, code { font-family: var(--mono); font-size: 0.84rem; }
+    pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; }
+    .callout { background: var(--accent-dim); border-left: 4px solid var(--accent); padding: 0.75rem 1rem; margin: 1rem 0; border-radius: 0 8px 8px 0; }
+    .callout-warn { background: #9e6a0322; border-left-color: var(--partial); }
+    .file-tree { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; font-size: 0.85rem; }
+    .file-tree ul { list-style: none; padding-left: 1rem; margin: 0; }
+    .file-tree > ul { padding-left: 0; }
+    .timeline { border-left: 2px solid var(--border); padding-left: 1.25rem; margin: 1rem 0; }
+    .timeline li { margin-bottom: 1rem; }
+    details { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 1rem; margin: 0.75rem 0; }
+    details summary { cursor: pointer; font-weight: 600; }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--muted); }
+    .mermaid-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin: 1rem 0; overflow-x: auto; }
+  </style>
+  <script>
+    document.documentElement.classList.add('no-mermaid');
+    window.addEventListener('load', function () {
+      if (typeof mermaid !== 'undefined') {
+        document.documentElement.classList.remove('no-mermaid');
+        mermaid.initialize({ startOnLoad: true, theme: 'dark', securityLevel: 'loose' });
+      }
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js" async
+    onload="document.documentElement.classList.remove('no-mermaid'); if (typeof mermaid !== 'undefined') { mermaid.initialize({ startOnLoad: true, theme: 'dark' }); mermaid.run(); }"></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Mục lục</h2>
+      <nav>
+        <a href="#summary">Tóm tắt</a>
+        <a href="#context">Bối cảnh &amp; mục tiêu</a>
+        <a href="#deliverables">Sản phẩm đã tạo</a>
+        <a class="sub" href="#docs">Tài liệu HTML</a>
+        <a class="sub" href="#backend">Core API</a>
+        <a class="sub" href="#frontend">Web /test</a>
+        <a href="#flow">Luồng hoạt động</a>
+        <a href="#prompt">Prompt &amp; validator</a>
+        <a href="#api">API endpoints</a>
+        <a href="#samples">3 sample test</a>
+        <a href="#env">Cấu hình</a>
+        <a href="#done-vs-todo">Đã làm / Chưa làm</a>
+        <a href="#howto">Hướng dẫn thử</a>
+        <a href="#refs">Tham chiếu file</a>
+      </nav>
+    </aside>
+
+    <main>
+      <header class="doc-header">
+        <h1>Tổng quan triển khai: Sinh testcase PROJECT</h1>
+        <div class="meta">
+          <span>Dự án: <strong>code-judge</strong></span>
+          <span>Phiên bản: <strong>1.0</strong></span>
+          <span>Cập nhật: <strong>2026-05-18</strong></span>
+          <span class="badge badge-done">As-built overview</span>
+        </div>
+        <p style="margin-top:1rem;color:var(--muted);max-width:720px;">
+          Tài liệu này mô tả <strong>những gì đã được triển khai</strong> trong repo để hỗ trợ sinh hidden tests
+          cho bài <code>ProblemMode.PROJECT</code> (backend / frontend / fullstack), từ kế hoạch HTML ban đầu
+          đến prompt AI, validator, API test và tab UI trên <code>/test</code>.
+        </p>
+      </header>
+
+      <section id="summary">
+        <h2>Tóm tắt</h2>
+        <table>
+          <thead>
+            <tr><th>Hạng mục</th><th>Trạng thái</th><th>Ghi chú ngắn</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Kế hoạch kiến trúc (HTML blueprint)</td>
+              <td><span class="badge badge-done">Xong</span></td>
+              <td><code>PROJECT-TESTCASE-GENERATION-PLAN.html</code></td>
+            </tr>
+            <tr>
+              <td>Prompt AI 2 phase (phân tích đề + sinh file test)</td>
+              <td><span class="badge badge-done">Xong</span></td>
+              <td><code>ai-project-testcase.prompt.ts</code></td>
+            </tr>
+            <tr>
+              <td>Validator tĩnh (FR coverage, path, testName trong file)</td>
+              <td><span class="badge badge-done">Xong</span></td>
+              <td>+ unit test Jest/Vitest spec</td>
+            </tr>
+            <tr>
+              <td>API generate draft + generate-and-save PROJECT</td>
+              <td><span class="badge badge-done">Xong</span></td>
+              <td>Thay stub cũ (chỉ plannedObjectKeys)</td>
+            </tr>
+            <tr>
+              <td>API test 3 sample + endpoint shortcuts</td>
+              <td><span class="badge badge-done">Xong</span></td>
+              <td>backend / frontend / fullstack</td>
+            </tr>
+            <tr>
+              <td>Tab UI <code>/test</code> — PROJECT testcase</td>
+              <td><span class="badge badge-done">Xong</span></td>
+              <td><code>ProjectTestcaseGenerateTab.tsx</code></td>
+            </tr>
+            <tr>
+              <td>Docker validate golden trước publish</td>
+              <td><span class="badge badge-todo">Chưa</span></td>
+              <td>Phase 3 trong kế hoạch gốc</td>
+            </tr>
+            <tr>
+              <td>Worker chấm submission zip (JUDGE-PROJ-WK-*)</td>
+              <td><span class="badge badge-todo">Chưa</span></td>
+              <td>Chấm bài học viên thật</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="context">
+        <h2>Bối cảnh và mục tiêu</h2>
+        <p>
+          Hệ auto-grader PROJECT dự kiến: học viên nộp <strong>zip</strong> → MinIO → BullMQ → Worker mount
+          <code>student_code</code> + <code>hidden_tests</code> (read-only) → chạy <code>npm test</code> / e2e →
+          trả JSON điểm (<code>score</code>, <code>stats</code>, <code>details[]</code>).
+        </p>
+        <p>
+          Phần đã làm tập trung vào <strong>chuẩn bị hidden tests</strong> cho giảng viên:
+        </p>
+        <ul>
+          <li>LLM phải <strong>hiểu đề bài</strong> trước (output <code>problemBrief</code> với <code>FR-1</code>, <code>FR-2</code>, …).</li>
+          <li>Sinh <strong>bundle file</strong> có thể <code>npm ci</code> và chạy test (Jest/supertest hoặc Playwright).</li>
+          <li>Mỗi test trong <code>testManifest</code> gắn requirement, file path, tên test khớp source.</li>
+          <li>Validator từ chối output thiếu coverage hoặc không nhất quán trước khi coi là hợp lệ.</li>
+        </ul>
+        <div class="callout">
+          Khác với bài <strong>ALGO</strong> (đã có sẵn): ALGO dùng <code>TestCase.input</code> / <code>expectedOutput</code> text + Judge0.
+          PROJECT dùng cây file <code>tests/**/*.spec.ts</code> lưu trong job / DB meta.
+        </div>
+      </section>
+
+      <section id="deliverables">
+        <h2>Sản phẩm đã tạo</h2>
+
+        <h3 id="docs">1. Tài liệu HTML</h3>
+        <table>
+          <thead>
+            <tr><th>File</th><th>Mục đích</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>docs/plans/PROJECT-TESTCASE-GENERATION-PLAN.html</code></td>
+              <td>Blueprint kỹ thuật &amp; sản phẩm (8 phần): kiến trúc auto-grader, 6 bước pipeline, API đề xuất, lộ trình 5 phase.</td>
+            </tr>
+            <tr>
+              <td><code>docs/plans/PROJECT-TESTCASE-IMPLEMENTATION-OVERVIEW.html</code></td>
+              <td>Tài liệu hiện tại — tổng quan as-built những gì đã code.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3 id="backend">2. Core API (<code>apps/core-api</code>)</h3>
+        <div class="file-tree">
+          <strong>apps/core-api/src/ai-testcase/</strong>
+          <ul>
+            <li><code>ai-project-testcase.prompt.ts</code> — system prompt, Zod schema, <code>buildAiProjectTestcaseMessages()</code></li>
+            <li><code>project-testcase-output.validator.ts</code> — validate FR, path, testName, package.json</li>
+            <li><code>project-testcase-output.validator.spec.ts</code> — unit tests validator</li>
+            <li><code>project-testcase-samples.ts</code> — 3 đề mẫu backend / frontend / fullstack</li>
+            <li><code>dto/generate-ai-project-testcase.dto.ts</code> — body generate draft</li>
+            <li><code>dto/test-generate-project-sample.dto.ts</code> — body test sample</li>
+            <li><code>dto/generate-and-save-ai-testcase.dto.ts</code> — thêm stack, framework, rubric, goldenSummary</li>
+            <li><code>ai-testcase.service.ts</code> — <code>generateProjectDraft()</code>, <code>testGenerateProjectSample()</code>, PROJECT branch trong <code>generateAndSave()</code></li>
+            <li><code>ai-testcase.controller.ts</code> — routes mới (xem mục API)</li>
+            <li><code>problems.controller.ts</code> — <code>POST generate-project-test-cases-draft</code></li>
+          </ul>
+          <strong>apps/core-api/src/common/config/env.keys.ts</strong>
+          <ul>
+            <li><code>AI_PROJECT_PROMPT_VERSION</code> (mặc định <code>ai-project-testcase-v1</code>)</li>
+          </ul>
+        </div>
+
+        <h3 id="frontend">3. Web app (<code>apps/web</code>)</h3>
+        <div class="file-tree">
+          <ul>
+            <li><code>app/(main)/test/page.tsx</code> — thêm tab <strong>PROJECT testcase</strong></li>
+            <li><code>components/test/ProjectTestcaseGenerateTab.tsx</code> — UI test đầy đủ</li>
+            <li><code>services/ai-testcase.apis.ts</code> — client: list samples, generate draft, test sample</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="flow">
+        <h2>Luồng hoạt động (đã triển khai)</h2>
+        <div class="mermaid-wrap">
+          <pre class="mermaid">
+flowchart TB
+  subgraph ui [Web_test_tab]
+    Tab[ProjectTestcaseGenerateTab]
+    Samples[3_sample_buttons]
+    Form[Custom_form]
+  end
+  subgraph api [Core_API]
+    ListGET[GET_project-testcase-samples]
+    DraftPOST[POST_generate-project-draft]
+    TestPOST[POST_test-generate-project-sample]
+    SavePOST[POST_generate-and-save]
+  end
+  subgraph ai [AI_Layer]
+    Prompt[buildAiProjectTestcaseMessages]
+    LLM[OpenAI_or_Google]
+    Zod[Zod_parse]
+    Val[validateGeneratedProjectTestcase]
+  end
+  subgraph db [PostgreSQL]
+    Job[AiGenerationJob]
+    TC[TestCase_meta_rows]
+  end
+  Tab --> ListGET
+  Tab --> DraftPOST
+  Tab --> TestPOST
+  Samples --> TestPOST
+  Form --> DraftPOST
+  DraftPOST --> Prompt --> LLM --> Zod --> Val
+  TestPOST --> DraftPOST
+  SavePOST --> DraftPOST
+  Val -->|ok| Job
+  SavePOST --> TC
+          </pre>
+        </div>
+        <ol>
+          <li>User (ADMIN) mở <code>/test</code> → tab PROJECT testcase.</li>
+          <li>Chọn sample hoặc điền form → gọi API.</li>
+          <li>Service build prompt → gọi LLM (JSON mode) → parse Zod → validator.</li>
+          <li>Nếu hợp lệ: trả <code>parsed</code> (problemBrief, testManifest, files, runConfig).</li>
+          <li><code>generate-and-save</code> thêm: ghi <code>TestCase</code> (meta) + <code>AiGenerationJob.structuredOutput</code> đầy đủ file tree.</li>
+        </ol>
+      </section>
+
+      <section id="prompt">
+        <h2>Prompt AI và validator</h2>
+
+        <h3>Hai phase trong một JSON response</h3>
+        <table>
+          <thead>
+            <tr><th>Phase</th><th>Output</th><th>Mục đích</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1 — Phân tích đề</td>
+              <td><code>problemBrief</code></td>
+              <td>summary, stack, <code>functionalRequirements[]</code> (FR-*), assumptions, outOfScope</td>
+            </tr>
+            <tr>
+              <td>2 — Sinh test</td>
+              <td><code>files[]</code>, <code>testManifest[]</code>, <code>runConfig</code></td>
+              <td>Bundle chạy được; mỗi test map tới FR; tên test có trong file</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Schema output (rút gọn)</h3>
+        <pre>{
+  "problemBrief": {
+    "title": "...",
+    "summary": "...",
+    "stack": "backend" | "frontend" | "fullstack",
+    "functionalRequirements": [
+      { "id": "FR-1", "description": "...", "priority": "must" }
+    ],
+    "assumptions": [], "outOfScope": []
+  },
+  "testManifest": [
+    {
+      "testName": "Login API",
+      "requirementIds": ["FR-1"],
+      "suite": "api",
+      "filePath": "tests/api/auth.spec.ts",
+      "weight": 5,
+      "isHidden": true,
+      "rationale": "..."
+    }
+  ],
+  "files": [{ "path": "package.json", "content": "..." }],
+  "runConfig": {
+    "installCommand": "npm ci",
+    "testCommand": "npm test -- --json --outputFile=result.json",
+    "resultParser": "jest-json",
+    "dockerImage": "node:18-alpine"
+  }
+}</pre>
+
+        <h3>Validator kiểm tra gì?</h3>
+        <ul>
+          <li>Mọi <code>FR</code> priority <code>must</code> có ít nhất 1 test trong manifest.</li>
+          <li><code>testManifest.filePath</code> tồn tại trong <code>files[]</code>.</li>
+          <li><code>testName</code> xuất hiện trong nội dung file (describe/it/test).</li>
+          <li>Path an toàn (không <code>..</code>, không absolute).</li>
+          <li>Có <code>package.json</code> và ít nhất một file <code>*.spec.*</code> / <code>*.test.*</code> / e2e.</li>
+          <li>Gợi ý parser: backend → <code>jest-json</code>; frontend → Playwright config.</li>
+        </ul>
+        <p>Nếu validator fail → <code>parseError</code> gồm danh sách mã lỗi; có thể gửi lại với <code>revision</code> trong DTO.</p>
+      </section>
+
+      <section id="api">
+        <h2>API endpoints</h2>
+        <table>
+          <thead>
+            <tr><th>Method</th><th>Path</th><th>Auth</th><th>Mô tả</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>GET</td>
+              <td><code>/ai-testcase/project-testcase-samples</code></td>
+              <td>ADMIN</td>
+              <td>Trả 3 sample DTO (không gọi LLM)</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/ai-testcase/generate-project-draft</code></td>
+              <td>ADMIN</td>
+              <td>Sinh draft; trả parsed + validation</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/problems/generate-project-test-cases-draft</code></td>
+              <td>ADMIN</td>
+              <td>Alias cùng hành vi generate-project-draft</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/ai-testcase/test-generate-project-sample</code></td>
+              <td>ADMIN</td>
+              <td>Body: <code>{ sample?: "backend"|"frontend"|"fullstack" }</code> — bỏ sample = chạy cả 3</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/ai-testcase/test-generate-project-sample/backend</code></td>
+              <td>ADMIN</td>
+              <td>Shortcut test backend</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>.../frontend</code>, <code>.../fullstack</code></td>
+              <td>ADMIN</td>
+              <td>Shortcut tương ứng</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/ai-testcase/generate-and-save</code></td>
+              <td>Creator / ADMIN</td>
+              <td>PROJECT: ghi TestCase meta + job; ALGO: như cũ</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Lưu TestCase khi generate-and-save (PROJECT)</h3>
+        <ul>
+          <li><code>input</code> = <code>testName</code></li>
+          <li><code>expectedOutput</code> = JSON meta (<code>filePath</code>, <code>requirementIds</code>, <code>suite</code>, …)</li>
+          <li><code>isHidden</code> = true (mặc định từ manifest)</li>
+          <li>Full file tree nằm trong <code>AiGenerationJob.structuredOutput.files</code></li>
+        </ul>
+      </section>
+
+      <section id="samples">
+        <h2>3 sample tích hợp sẵn</h2>
+        <table>
+          <thead>
+            <tr><th>Key</th><th>Đề mẫu</th><th>Stack / công cụ</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>backend</code></td>
+              <td>REST API Quản lý thư viện (NestJS) — JWT, CRUD books/authors</td>
+              <td>Jest + supertest, <code>jest-json</code></td>
+            </tr>
+            <tr>
+              <td><code>frontend</code></td>
+              <td>React Todo (Vite) — data-testid, filter All/Active/Done</td>
+              <td>Playwright e2e, <code>playwright-json</code></td>
+            </tr>
+            <tr>
+              <td><code>fullstack</code></td>
+              <td>Express shop API + React checkout</td>
+              <td>API tests + e2e (manifest hỗn hợp)</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>Định nghĩa: <code>apps/core-api/src/ai-testcase/project-testcase-samples.ts</code></p>
+      </section>
+
+      <section id="env">
+        <h2>Cấu hình môi trường</h2>
+        <table>
+          <thead>
+            <tr><th>Biến</th><th>Bắt buộc</th><th>Ghi chú</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>OPENAI_API_KEY</code></td><td>Một trong hai</td><td>Khi dùng provider openai</td></tr>
+            <tr><td><code>GOOGLE_GENERATIVE_AI_API_KEY</code></td><td>Một trong hai</td><td>Khi dùng google (mặc định UI thường chọn google)</td></tr>
+            <tr><td><code>AI_PROJECT_PROMPT_VERSION</code></td><td>Không</td><td>Audit prompt; default <code>ai-project-testcase-v1</code></td></tr>
+            <tr><td><code>AI_MAX_TOKENS</code></td><td>Không</td><td>PROJECT dùng floor cao hơn ALGO (file content)</td></tr>
+            <tr><td><code>AI_FAST_MODE</code></td><td>Không</td><td>Giảm số test / token khi bật</td></tr>
+            <tr><td><code>NEXT_PUBLIC_CORE_URL</code></td><td>Web</td><td>URL core-api cho tab /test</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="done-vs-todo">
+        <h2>Đã làm so với kế hoạch gốc</h2>
+        <table>
+          <thead>
+            <tr><th>Hạng mục kế hoạch</th><th>Trạng thái</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>HTML blueprint 8 phần</td><td><span class="badge badge-done">Xong</span></td></tr>
+            <tr><td>Prompt PROJECT + Zod schema</td><td><span class="badge badge-done">Xong</span></td></tr>
+            <tr><td>Validator + unit test</td><td><span class="badge badge-done">Xong</span></td></tr>
+            <tr><td>generate-project-draft API</td><td><span class="badge badge-done">Xong</span></td></tr>
+            <tr><td>generate-and-save PROJECT (thay stub)</td><td><span class="badge badge-done">Xong</span></td></tr>
+            <tr><td>Endpoint test 3 sample</td><td><span class="badge badge-done">Xong</span></td></tr>
+            <tr><td>Tab UI /test</td><td><span class="badge badge-done">Xong</span></td></tr>
+            <tr><td>Prisma <code>AssignmentTestConfig</code>, <code>hiddenTestsObjectKey</code></td><td><span class="badge badge-todo">Chưa</span></td></tr>
+            <tr><td>Đóng gói zip → MinIO publish</td><td><span class="badge badge-todo">Chưa</span></td></tr>
+            <tr><td>Queue Docker validate golden</td><td><span class="badge badge-todo">Chưa</span></td></tr>
+            <tr><td>Worker JUDGE-PROJ-WK chấm submission SV</td><td><span class="badge badge-todo">Chưa</span></td></tr>
+            <tr><td>Wizard trên AdminProblemCreate (production GV)</td><td><span class="badge badge-todo">Chưa</span> — mới có lab /test</td></tr>
+          </tbody>
+        </table>
+        <div class="callout callout-warn">
+          Pipeline hiện tại đủ để <strong>thử sinh test bằng AI</strong> và lưu metadata vào DB.
+          Chưa đủ để học viên nộp zip và nhận điểm tự động trên production.
+        </div>
+      </section>
+
+      <section id="howto">
+        <h2>Hướng dẫn thử nhanh</h2>
+
+        <h3>A. Qua giao diện web</h3>
+        <ol>
+          <li>Chạy core-api + web; đăng nhập user <strong>ADMIN</strong>.</li>
+          <li>Mở <code>/test</code> → tab <strong>PROJECT testcase</strong>.</li>
+          <li>Chọn sample Backend → <strong>Test sample đang chọn</strong> hoặc <strong>Generate project draft</strong>.</li>
+          <li>Xem problemBrief, bảng testManifest, click file để xem source.</li>
+        </ol>
+
+        <h3>B. Qua curl (draft)</h3>
+        <pre>curl -X POST "%CORE_URL%/ai-testcase/test-generate-project-sample/backend" \
+  -H "Content-Type: application/json" \
+  -H "Cookie: accessToken=..." \
+  -d "{}"</pre>
+
+        <h3>C. Generate-and-save gắn problem</h3>
+        <pre>POST /ai-testcase/generate-and-save
+{
+  "problemId": "&lt;uuid-problem-mode-PROJECT&gt;",
+  "stack": "backend",
+  "goldenSummary": "..."
+}</pre>
+      </section>
+
+      <section id="refs">
+        <h2>Tham chiếu file trong repo</h2>
+        <ul>
+          <li><a href="PROJECT-TESTCASE-GENERATION-PLAN.html">PROJECT-TESTCASE-GENERATION-PLAN.html</a> — kế hoạch gốc</li>
+          <li><a href="../AI-TESTCASE-GENERATION.md">docs/AI-TESTCASE-GENERATION.md</a> — ALGO AI (đối chiếu)</li>
+          <li><code>apps/core-api/src/ai-testcase/ai-project-testcase.prompt.ts</code></li>
+          <li><code>apps/core-api/src/ai-testcase/project-testcase-output.validator.ts</code></li>
+          <li><code>apps/core-api/src/ai-testcase/project-testcase-samples.ts</code></li>
+          <li><code>apps/core-api/src/ai-testcase/ai-testcase.service.ts</code></li>
+          <li><code>apps/core-api/src/ai-testcase/ai-testcase.controller.ts</code></li>
+          <li><code>apps/web/components/test/ProjectTestcaseGenerateTab.tsx</code></li>
+          <li><code>apps/web/app/(main)/test/page.tsx</code></li>
+          <li><code>apps/web/services/ai-testcase.apis.ts</code></li>
+        </ul>
+
+        <h3>Dòng thời gian công việc (tóm tắt)</h3>
+        <ul class="timeline">
+          <li><strong>1.</strong> Soạn kế hoạch HTML blueprint auto-grader + sinh testcase PROJECT.</li>
+          <li><strong>2.</strong> Implement prompt 2 phase, validator, <code>generateProjectDraft</code>, thay stub <code>generate-and-save</code>.</li>
+          <li><strong>3.</strong> Thêm 3 sample + endpoint <code>test-generate-project-sample</code>.</li>
+          <li><strong>4.</strong> Tab <code>/test</code> + API client web.</li>
+          <li><strong>5.</strong> Tài liệu tổng quan as-built (file này).</li>
+        </ul>
+      </section>
+
+      <footer>
+        <p>
+          Mở file trực tiếp trong trình duyệt để đọc offline. Diagram Mermaid cần CDN hoặc bỏ qua block diagram.
+          Cập nhật khi có thêm phase Docker publish / project judge worker.
+        </p>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

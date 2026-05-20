@@ -1,0 +1,452 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI TESTCASE GENERATION — code-judge docs</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #58a6ff;
+      --accent-dim: #388bfd66;
+      --ok: #3fb950;
+      --partial: #d29922;
+      --missing: #f85149;
+      --border: #30363d;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --sidebar-w: 280px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      min-height: 100vh;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative !important; height: auto !important; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 1.25rem 1rem;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+    }
+    .sidebar h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin: 0 0 0.75rem;
+    }
+    .sidebar nav a {
+      display: block;
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .sidebar nav a:hover { background: var(--surface2); color: var(--text); text-decoration: none; }
+    .sidebar nav a.active { background: var(--surface2); color: var(--accent); font-weight: 600; }
+    
+    main {
+      max-width: 920px;
+      padding: 2rem 2.5rem 4rem;
+    }
+    header.doc-header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    header.doc-header h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      line-height: 1.3;
+    }
+    section {
+      margin-bottom: 2.5rem;
+      scroll-margin-top: 1rem;
+    }
+    h1, h2, h3, h4, h5, h6 { color: var(--text); }
+    h2 {
+      font-size: 1.35rem;
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.75rem; }
+    p { margin: 0 0 1rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--surface2); font-weight: 600; }
+    tr:nth-child(even) td { background: #1a233280; }
+    pre, code {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    code {
+        background: var(--surface2);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+    }
+    pre code {
+        background: transparent;
+        padding: 0;
+    }
+    blockquote {
+      border-left: 4px solid var(--border);
+      padding-left: 1rem;
+      margin: 1rem 0;
+      color: var(--muted);
+    }
+</style>
+</head>
+<body>
+  <div class="layout">
+    <div class="sidebar"><h2>Documentation</h2><nav><a href="AI-TESTCASE-GENERATION.html" class="active">AI TESTCASE GENERATION</a><a href="AWS-LAMBDA-INTEGRATION.html">AWS LAMBDA INTEGRATION</a><a href="BUILD-LEVEL-PLAN.html">BUILD LEVEL PLAN</a><a href="CAU-HINH-VA-UTILS.html">CAU HINH VA UTILS</a><a href="DEPLOY-VPS.html">DEPLOY VPS</a><a href="FEATURE-IMPLEMENTATION-TASKLIST.html">FEATURE IMPLEMENTATION TASKLIST</a><a href="JUDGE0-WINDOWS-WSL.html">JUDGE0 WINDOWS WSL</a><a href="LAMBDA-CONFIG.html">LAMBDA CONFIG</a><a href="MINIO.html">MINIO</a><a href="postman-testapi.html">postman testapi</a><a href="PRISMA-SEED.html">PRISMA SEED</a><a href="USER-STORIES-TASKLIST.html">USER STORIES TASKLIST</a></nav></div>
+    <main>
+      <header class="doc-header">
+        <h1>AI TESTCASE GENERATION</h1>
+      </header>
+      <div class="content">
+        <h1>Sinh test case bằng AI và liên kết với Problem (Core API)</h1>
+<p>Tài liệu mô tả <strong>trạng thái triển khai</strong> trong <code>apps/core-api</code>, <strong>luồng API</strong>, <strong>dữ liệu</strong>, <strong>cấu hình</strong> và <strong>hạn chế</strong> (đặc biệt <code>ProblemMode.PROJECT</code>).</p>
+<p><strong>Tham chiếu mã nguồn (điểm vào chính):</strong></p>
+<ul>
+<li><code>src/ai-testcase/ai-testcase.service.ts</code> — logic gọi OpenAI / Google, parse JSON, lưu DB</li>
+<li><code>src/ai-testcase/ai-testcase.controller.ts</code> — route nhóm <code>/ai-testcase</code></li>
+<li><code>src/ai-testcase/ai-testcase.prompt.ts</code> — prompt hệ thống, schema Zod, <code>buildAiTestcaseMessages</code></li>
+<li><code>src/problems/problems.controller.ts</code> — <code>POST /problems/generate-test-cases-draft</code> (alias admin)</li>
+<li><code>src/problems/problems.service.ts</code> — tạo/cập nhật problem kèm <code>testCases</code> thủ công</li>
+<li><code>prisma/schema.prisma</code> — <code>TestCase</code>, <code>AiGenerationJob</code>, <code>ProblemMode</code>, <code>AiJobStatus</code></li>
+</ul>
+<hr>
+<h2>1. Kết luận nhanh: đã có hay chưa?</h2>
+<table>
+<thead>
+<tr>
+<th>Khả năng</th>
+<th>Trạng thái</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Sinh <strong>bản nháp</strong> test case (JSON), <strong>không</strong> ghi <code>TestCase</code> vào DB</td>
+<td><strong>Đã có</strong></td>
+<td><code>generateDraft</code> — dùng chung cho admin và form “preview” trước khi tạo problem</td>
+</tr>
+<tr>
+<td>Sinh test case và <strong>ghi DB</strong> gắn với một <code>Problem</code> đã tồn tại (<code>mode = ALGO</code>)</td>
+<td><strong>Đã có</strong></td>
+<td><code>POST /ai-testcase/generate-and-save</code> — <strong>append</strong> sau test case hiện có (<code>orderIndex</code> tăng dần)</td>
+</tr>
+<tr>
+<td>Sinh test case cho problem <strong><code>mode = PROJECT</code></strong></td>
+<td><strong>Một phần (stub)</strong></td>
+<td>Chỉ tạo <code>AiGenerationJob</code> + metadata <code>plannedObjectKeys</code>; <strong>không</strong> insert <code>TestCase</code>; comment code: storage chưa tích hợp</td>
+</tr>
+<tr>
+<td>Thêm test case <strong>thủ công</strong> khi tạo/sửa problem</td>
+<td><strong>Đã có</strong></td>
+<td><code>CreateProblemDto</code> / <code>UpdateProblemDto</code> có <code>testCases[]</code></td>
+</tr>
+<tr>
+<td>Upload tài liệu bổ sung cho job AI</td>
+<td><strong>Đã có</strong></td>
+<td>Presign upload <code>resourceKind: ai-input</code> (<code>StorageController</code>) → client PUT lên MinIO → <code>POST /storage/bind-object-key</code> với <code>resourceKind: &#39;ai-input&#39;</code> gắn <code>objectKey</code> vào <code>AiGenerationJob</code> — xem mục 3.3</td>
+</tr>
+</tbody></table>
+<p><strong>Tổng kết:</strong> Với <strong>bài lập trình thuật toán (<code>ALGO</code>)</strong>, luồng sinh test case bằng AI <strong>đã được triển khai đầy đủ</strong> (draft + lưu DB + job audit). Với <strong><code>PROJECT</code></strong>, phần lưu test case thật <strong>chưa</strong> — chỉ setup kế hoạch key trong storage.</p>
+<hr>
+<h2>2. Kiến trúc tổng quan</h2>
+<pre><code>[Client]
+   │
+   ├─ POST /problems/generate-test-cases-draft   (ADMIN, JWT)  ──┐
+   ├─ POST /ai-testcase/generate-draft           (ADMIN, JWT)  ──┼─► AiTestcaseService.generateDraft()
+   ├─ POST /ai-testcase/quick-generate           (ADMIN, JWT)  ──┘
+   │
+   └─ POST /ai-testcase/generate-and-save        (JWT, creator hoặc ADMIN)
+          │
+          ├─ PROJECT → job SUCCEEDED + structuredOutput (không createMany TestCase)
+          └─ ALGO    → generateDraft → parse OK → transaction:
+                        testCase.createMany + aiGenerationJob.update(SUCCEEDED)
+</code></pre>
+<p><code>generateDraft</code> gọi LLM (OpenAI Chat Completions <code>response_format: json_object</code> hoặc Google Generative Language API <code>responseMimeType: application/json</code>), sau đó <strong>parse</strong> chuỗi trả về (hỗ trợ markdown fence, trích JSON cân bằng ngoặc) và validate bằng <strong>Zod</strong> (<code>generatedTestcaseSchema</code>).</p>
+<hr>
+<h2>3. API endpoints</h2>
+<h3>3.1 Nhóm <code>problems</code> (<code>ProblemsController</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Auth</th>
+<th>Vai trò</th>
+<th>Handler</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST</code></td>
+<td><code>/problems/generate-test-cases-draft</code></td>
+<td>Bearer JWT</td>
+<td><code>ADMIN</code></td>
+<td><code>AiTestcaseService.generateDraft(dto)</code></td>
+</tr>
+</tbody></table>
+<p>Body: <code>GenerateAiTestcaseDto</code> (xem mục 4). <strong>Trùng hành vi</strong> với <code>POST /ai-testcase/generate-draft</code> — tiện đặt route dưới tag “problems” trong Swagger.</p>
+<h3>3.2 Nhóm <code>ai-testcase</code> (<code>AiTestcaseController</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Auth</th>
+<th>Vai trò</th>
+<th>Mô tả</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST</code></td>
+<td><code>/ai-testcase/quick-generate</code></td>
+<td>JWT</td>
+<td><code>ADMIN</code></td>
+<td>Rút gọn input (<code>title</code>, <code>statement</code>, <code>ioSpec?</code>, <code>provider?</code>, <code>model?</code>) → map sang <code>generateDraft</code> với tham số mặc định cố định (vd. <code>maxTestCases: 8</code>)</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/ai-testcase/generate-draft</code></td>
+<td>JWT</td>
+<td><code>ADMIN</code></td>
+<td>Sinh bản nháp đầy đủ từ <code>GenerateAiTestcaseDto</code></td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/ai-testcase/generate-and-save</code></td>
+<td>JWT</td>
+<td>Mọi user đăng nhập (kiểm tra quyền trong service)</td>
+<td>Body: <code>GenerateAndSaveAiTestcaseDto</code> — <strong>bắt buộc</strong> <code>problemId</code>. Chỉ <strong>creator</strong> của problem hoặc <strong>ADMIN</strong></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/ai-testcase/problems/:problemId/documents</code></td>
+<td>JWT</td>
+<td>Creator problem / creator job / ADMIN</td>
+<td>Liệt kê job có <code>inputDocObjectKey != null</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/ai-testcase/jobs/:jobId/document/download</code></td>
+<td>JWT</td>
+<td>Tương tự</td>
+<td>Presigned download URL (query <code>expiresInSeconds</code> tùy chọn)</td>
+</tr>
+</tbody></table>
+<p><strong>Lưu ý định tuyến Nest:</strong> Trong <code>ProblemsController</code>, route <code>GET :id</code> đứng sau <code>GET /</code> — không xung đột với <code>POST .../generate-test-cases-draft</code> vì method khác nhau.</p>
+<h3>3.3 Luồng gắn file đầu vào cho job AI (Storage)</h3>
+<ol>
+<li>Tạo <code>AiGenerationJob</code> (thường qua <code>generate-and-save</code> hoặc tạo job riêng nếu sau này có endpoint) — cần biết <code>jobId</code>.</li>
+<li><code>POST /storage/presign/upload</code> với <code>resourceKind: &#39;ai-input&#39;</code>, <code>jobId</code>, <code>fileName</code> → nhận <code>uploadUrl</code> + <code>objectKey</code>.</li>
+<li>Client upload file bằng presigned PUT.</li>
+<li><code>POST /storage/bind-object-key</code> với <code>resourceKind: &#39;ai-input&#39;</code>, <code>recordId: jobId</code>, <code>objectKey</code>, metadata file (<code>fileName</code>, <code>contentType</code>, <code>sizeBytes</code>) → cập nhật <code>inputDocObjectKey</code>, <code>inputDocUrl</code>, v.v. trên <code>AiGenerationJob</code>.</li>
+<li>Đọc lại: <code>GET /ai-testcase/problems/:problemId/documents</code> hoặc presigned download <code>GET /ai-testcase/jobs/:jobId/document/download</code>.</li>
+</ol>
+<p><strong>Lưu ý:</strong> <code>supplementaryText</code> trong DTO sinh test case là text inline; tách biệt với file upload qua storage ở trên (file có thể được đưa vào prompt ở tầng client bằng cách extract text trước, hoặc mở rộng backend sau này để đọc object từ MinIO).</p>
+<p><strong>Hạn chế luồng:</strong> Presign <code>ai-input</code> cần <code>jobId</code>, nhưng <code>AiGenerationJob</code> hiện <strong>chỉ</strong> được tạo bên trong <code>generate-and-save</code> (client không nhận <code>jobId</code> trước khi LLM chạy xong). Muốn “upload tài liệu trước → rồi mới sinh test” trong một phiên bản API gọn, cần thêm bước tạo job <code>PENDING</code> (endpoint riêng hoặc trả <code>jobId</code> sớm) rồi mới gọi sinh.</p>
+<hr>
+<h2>4. DTO chính</h2>
+<h3>4.1 <code>GenerateAiTestcaseDto</code> (<code>dto/generate-ai-testcase.dto.ts</code>)</h3>
+<p>Dùng cho <strong>draft</strong> (và là input logic của <code>generateDraft</code> khi <code>generate-and-save</code> chạy cho ALGO).</p>
+<ul>
+<li>Bắt buộc: <code>title</code>, <code>statement</code> (tối đa 20k ký tự).</li>
+<li>Tùy chọn: <code>difficulty</code>, <code>timeLimitMs</code>, <code>memoryLimitMb</code>, <code>supportedLanguages</code>, <code>maxTestCases</code> (1–100, mặc định logic 10 nếu không set), <code>ioSpec</code>, <code>supplementaryText</code>, <code>provider</code> (<code>openai</code> | <code>google</code>), <code>model</code>.</li>
+<li><strong><code>revision</code></strong>: object tùy chọn để <strong>vòng cải tiện prompt</strong> — <code>promptVersionUsed</code>, <code>previousOutputSummary</code>, <code>userFeedback</code>, <code>validatorIssues[]</code>. Được đưa vào prompt user trong <code>buildAiTestcaseMessages</code>.</li>
+</ul>
+<h3>4.2 <code>GenerateAndSaveAiTestcaseDto</code> (<code>dto/generate-and-save-ai-testcase.dto.ts</code>)</h3>
+<ul>
+<li>Bắt buộc: <code>problemId</code>.</li>
+<li><code>createdById</code> trong body: <strong>deprecated</strong>, server <strong>luôn</strong> dùng <code>userId</code> từ JWT.</li>
+<li>Tùy chọn: <code>maxTestCases</code>, <code>ioSpec</code>, <code>supplementaryText</code>, <code>provider</code>, <code>model</code>.</li>
+</ul>
+<p>Giá trị đề bài lấy từ DB: <code>title</code>, <code>statementMd ?? description</code>, <code>difficulty</code>, <code>timeLimitMs</code>, <code>memoryLimitMb</code>, <code>supportedLanguages</code>, <code>maxTestCases</code> (có thể override bởi <code>input.maxTestCases</code>).</p>
+<h3>4.3 <code>QuickGenerateAiTestcaseDto</code></h3>
+<p>Chỉ các field tối thiểu để admin thử nhanh.</p>
+<hr>
+<h2>5. Schema output từ AI (Zod)</h2>
+<p>Định nghĩa trong <code>ai-testcase.prompt.ts</code>:</p>
+<pre><code class="language-json">{
+  &quot;testCases&quot;: [
+    {
+      &quot;input&quot;: &quot;string (min 1)&quot;,
+      &quot;expectedOutput&quot;: &quot;string (min 1)&quot;,
+      &quot;isHidden&quot;: false,
+      &quot;weight&quot;: 1,
+      &quot;explanation&quot;: &quot;optional&quot;
+    }
+  ],
+  &quot;notes&quot;: &quot;optional&quot;,
+  &quot;revisionNotes&quot;: &quot;optional&quot;
+}
+</code></pre>
+<ul>
+<li>Sau parse, service kiểm tra <code>testCases.length &lt;= (input.maxTestCases ?? 10)</code> (draft path).</li>
+<li>Field <code>explanation</code> / <code>notes</code> / <code>revisionNotes</code> <strong>không</strong> được map vào bảng <code>TestCase</code> khi lưu — chỉ <code>input</code>, <code>expectedOutput</code>, <code>isHidden</code>, <code>weight</code>.</li>
+</ul>
+<hr>
+<h2>6. Hành vi <code>generate-and-save</code> theo <code>ProblemMode</code></h2>
+<h3>6.1 <code>ALGO</code></h3>
+<ol>
+<li>Tạo <code>AiGenerationJob</code> (<code>status: PENDING</code> → <code>RUNNING</code>).</li>
+<li>Gọi <code>generateDraft</code> với context lấy từ problem.</li>
+<li>Nếu <strong>parse lỗi</strong>: job <code>FAILED</code>, lưu <code>structuredOutput.raw</code>, <code>parseError</code>; trả về <code>persistedTestCaseCount: 0</code>.</li>
+<li>Nếu <strong>parse OK</strong>: tính <code>nextOrderIndex = max(orderIndex) + 1</code>, <code>createMany</code> test case, job <code>SUCCEEDED</code>, lưu <code>structuredOutput</code> gồm provider/model/parsed/raw.</li>
+</ol>
+<h3>6.2 <code>PROJECT</code></h3>
+<ul>
+<li>Tạo job, sau đó <strong>không</strong> gọi LLM.</li>
+<li>Cập nhật job <code>SUCCEEDED</code> với <code>structuredOutput</code> mô tả <code>plannedObjectKeys</code> (từ <code>buildAiGeneratedTestcaseObjectKeys(jobId, index)</code>).</li>
+<li>Trả về <code>persistedTestCaseCount: 0</code>, <code>projectSetup.storageIntegrated: false</code>.</li>
+</ul>
+<p>Đây là <strong>placeholder</strong> cho tương lai (lưu artifact input/expected lên object storage thay vì chỉ DB text).</p>
+<hr>
+<h2>7. Cơ sở dữ liệu</h2>
+<h3>7.1 <code>TestCase</code></h3>
+<ul>
+<li>Khóa duy nhất <code>(problemId, orderIndex)</code>.</li>
+<li>Sinh AI <strong>append</strong> luôn sau bản ghi hiện có để tránh va chạm <code>orderIndex</code>.</li>
+</ul>
+<h3>7.2 <code>AiGenerationJob</code></h3>
+<ul>
+<li><code>status</code>: <code>PENDING</code> | <code>RUNNING</code> | <code>SUCCEEDED</code> | <code>FAILED</code>.</li>
+<li><code>structuredOutput</code> (JSON): kết quả parse, raw model, hoặc metadata PROJECT.</li>
+<li><code>inputDocObjectKey</code>, <code>inputDocUrl</code>, tên file, content-type, size — phục vụ tài liệu đính kèm (nếu luồng upload gán các field này).</li>
+</ul>
+<hr>
+<h2>8. Cấu hình môi trường</h2>
+<table>
+<thead>
+<tr>
+<th>Biến</th>
+<th>Ý nghĩa</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>OPENAI_API_KEY</code></td>
+<td>Bắt buộc nếu dùng provider <code>openai</code></td>
+</tr>
+<tr>
+<td><code>GOOGLE_GENERATIVE_AI_API_KEY</code></td>
+<td>Bắt buộc nếu dùng provider <code>google</code></td>
+</tr>
+<tr>
+<td><code>AI_DEFAULT_PROVIDER</code></td>
+<td><code>openai</code> hoặc <code>google</code> (mặc định <code>openai</code> nếu không set)</td>
+</tr>
+<tr>
+<td><code>AI_DEFAULT_MODEL_OPENAI</code></td>
+<td>Mặc định <code>gpt-4.1-mini</code></td>
+</tr>
+<tr>
+<td><code>AI_DEFAULT_MODEL_GOOGLE</code></td>
+<td>Mặc định <code>gemini-2.5-flash</code></td>
+</tr>
+<tr>
+<td><code>AI_PROMPT_VERSION</code></td>
+<td>Chuỗi phiên bản prompt (audit), mặc định <code>ai-testcase-v1</code></td>
+</tr>
+<tr>
+<td><code>AI_FAST_MODE</code></td>
+<td><code>1</code> / <code>true</code> / <code>yes</code> / <code>on</code> — bật chế độ nhanh: không fallback provider, giảm retry, prompt “FAST MODE”, giới hạn token</td>
+</tr>
+<tr>
+<td><code>AI_MAX_TOKENS</code></td>
+<td>Mặc định 2000 (fast mode có thể cap thêm)</td>
+</tr>
+<tr>
+<td><code>AI_TEMPERATURE</code></td>
+<td>Mặc định 0.2; fast mode = 0</td>
+</tr>
+</tbody></table>
+<p><strong>Provider fallback:</strong> Khi <strong>không</strong> bật fast mode, thử primary provider/model rồi fallback sang provider còn lại với model mặc định tương ứng.</p>
+<hr>
+<h2>9. Bảo mật và quyền</h2>
+<ul>
+<li><code>generate-draft</code>, <code>quick-generate</code>, <code>problems/generate-test-cases-draft</code>: decorator <code>@Roles(Role.ADMIN)</code>.</li>
+<li><code>generate-and-save</code>: không gắn <code>@Roles</code> ở controller; trong service <code>assertUserCanManageProblemAi</code>: <strong>ADMIN</strong> hoặc <code>problem.creatorId === user.userId</code> (creator null được coi là quản lý được nếu khớp user — xem điều kiện <code>creatorId === null || creatorId === user.userId</code>).</li>
+</ul>
+<hr>
+<h2>10. Tích hợp Storage (MinIO / S3)</h2>
+<ul>
+<li><code>StorageController</code> hỗ trợ <code>resourceKind: &#39;ai-testcase&#39;</code> với <code>jobId</code>, <code>testCaseIndex</code> để dựng object key (<code>storage-key.builder.ts</code>: <code>ai-jobs/{jobId}/generated-testcases/{index}/...</code>).</li>
+<li>Phù hợp với hướng <strong>PROJECT</strong> / artifact; <strong>chưa</strong> nối trọn vẹn với <code>generate-and-save</code> cho PROJECT (xem mục 6.2).</li>
+</ul>
+<hr>
+<h2>11. Frontend (tham chiếu)</h2>
+<ul>
+<li><code>apps/web/services/problems.api.ts</code> định nghĩa <code>GenerateTestCasesDraftDto</code> / <code>GenerateTestCasesDraftResult</code> khớp <code>GenerateAiTestcaseDto</code> và kết quả <code>generateDraft</code>.</li>
+<li>Cần gọi thêm <code>POST /ai-testcase/generate-and-save</code> từ UI khi muốn lưu vào problem (không chỉ draft).</li>
+</ul>
+<hr>
+<h2>12. Hạn chế và việc nên làm tiếp</h2>
+<ol>
+<li><strong><code>PROJECT</code></strong>: Hoàn thiện lưu test/input-output qua storage và/hoặc schema riêng; hiện chỉ trả kế hoạch key.</li>
+<li><strong>Nối file upload với prompt</strong>: Storage + <code>bind-object-key</code> đã gắn metadata vào job; <strong>chưa</strong> thấy service tự đọc nội dung file từ object storage để đổ vào <code>supplementaryText</code> khi gọi LLM — hiện phụ thuộc client extract hoặc bổ sung pipeline sau.</li>
+<li><strong>Idempotency / hàng đợi</strong>: <code>generate-and-save</code> chạy đồng bộ trong request; job dài có thể cần queue (BullMQ đã có trong stack) nếu timeout HTTP.</li>
+<li><strong>Chất lượng test</strong>: Output phụ thuộc model và prompt; nên có bước review UI trước khi lưu (draft endpoint đã hỗ trợ).</li>
+</ol>
+<hr>
+<h2>13. Kiểm tra nhanh thủ công (gợi ý)</h2>
+<ol>
+<li>Đặt <code>OPENAI_API_KEY</code> hoặc <code>GOOGLE_GENERATIVE_AI_API_KEY</code>.</li>
+<li>Lấy JWT <strong>ADMIN</strong>, <code>POST /problems/generate-test-cases-draft</code> với <code>title</code> + <code>statement</code> ngắn → nhận <code>parsed.testCases</code> hoặc <code>parseError</code> + <code>raw</code>.</li>
+<li>Tạo problem <code>ALGO</code>, <code>POST /ai-testcase/generate-and-save</code> với <code>problemId</code> → kiểm tra bản ghi <code>TestCase</code> mới và <code>AiGenerationJob.status = SUCCEEDED</code>.</li>
+</ol>
+<hr>
+<p><em>Tài liệu được đối chiếu với source <code>apps/core-api</code> tại thời điểm soạn: 2026-05-12.</em></p>
+
+
+      </div>
+    </main>
+  </div>
+</body>
+</html>

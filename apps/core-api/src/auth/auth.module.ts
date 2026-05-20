@@ -1,10 +1,12 @@
 /**
- * Auth: JWT (Passport `jwt` strategy) + guard toàn cục.
+ * Auth module: JWT + Google OAuth.
  *
- * - `JwtAuthGuard`: mọi route mặc định cần `Authorization: Bearer`, trừ khi có `@Public()`.
- * - `RolesGuard`: nếu dùng `@Roles(...)`, user phải có một trong các role đó (sau khi JWT hợp lệ).
+ * - `JwtAuthGuard` (global): mọi route cần JWT, trừ `@Public()`.
+ * - `RolesGuard` (global): kiểm `@Roles(...)` nếu có.
+ * - `GoogleStrategy`: passport-google-oauth20.
+ * - `JwtStrategy`: passport-jwt (Bearer token).
  *
- * Export `AuthService` / `JwtModule` để module khác (ví dụ user) tái sử dụng ký token.
+ * Export `AuthService` / `JwtModule` để module khác tái sử dụng ký token.
  */
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
@@ -17,6 +19,7 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
 
 @Module({
   imports: [
@@ -30,8 +33,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
           throw new Error(`${EnvKeys.JWT_SECRET} is required`);
         }
         const expiresRaw = config.get<string>(EnvKeys.JWT_EXPIRES_IN);
-        /** Số giây; mặc định 7 ngày. Có thể set `JWT_EXPIRES_IN=3600`. */
-        const expiresIn = expiresRaw !== undefined && expiresRaw !== '' ? Number(expiresRaw) : 604800;
+        /** Access token expiry in seconds; default 15 minutes. */
+        const expiresIn = expiresRaw !== undefined && expiresRaw !== '' ? Number(expiresRaw) : 900;
         if (Number.isNaN(expiresIn) || expiresIn <= 0) {
           throw new Error(`${EnvKeys.JWT_EXPIRES_IN} must be a positive number (seconds)`);
         }
@@ -46,6 +49,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   providers: [
     AuthService,
     JwtStrategy,
+    GoogleStrategy,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],

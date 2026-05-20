@@ -8,8 +8,12 @@ datasource db {
 
 enum Role {
   ADMIN
-  INSTRUCTOR
-  STUDENT
+  CLIENT
+}
+
+enum ClassRole {
+  OWNER
+  MEMBER
 }
 
 enum ProblemMode {
@@ -17,52 +21,426 @@ enum ProblemMode {
   PROJECT
 }
 
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum ProblemVisibility {
+  PRIVATE
+  PUBLIC
+  CONTEST_ONLY
+}
+
 enum SubmissionStatus {
   Pending
   Running
   Accepted
   Wrong
+  RuntimeError
   Error
+  CompilationError
+  TimeLimitExceeded
+  MemoryLimitExceeded
+}
+
+enum SubmissionContext {
+  PRACTICE
+  CONTEST
+  CLASS_ASSIGNMENT
+}
+
+enum ClassEnrollmentStatus {
+  ACTIVE
+  REMOVED
+  LEFT
+  BLOCKED
+}
+
+enum ContestStatus {
+  DRAFT
+  PUBLISHED
+  RUNNING
+  ENDED
+}
+
+enum ContestTestFeedbackPolicy {
+  SUMMARY_ONLY
+  VERBOSE
+}
+
+enum AiJobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum ExportFormat {
+  XLSX
+  PDF
+}
+
+enum ExportJobStatus {
+  PENDING
+  DONE
+  FAILED
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
 }
 
 model User {
-  id           String   @id
-  name         String
-  email        String   @unique
-  role         Role     @default(STUDENT)
-  createdAt    DateTime @default(now())
-  submissions  Submission[]
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  passwordHash  String?
+  role          Role
+  emailVerified Boolean
+  isActive      Boolean
+  imageObjectKey String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+
+  oauthAccounts         OAuthAccount[]
+  ownedClassRooms       ClassRoom[]             @relation("ClassRoomOwner")
+  classEnrollments      ClassEnrollment[]
+  createdProblems       Problem[]               @relation("ProblemCreator")
+  goldenSolutions       GoldenSolution[]
+  aiGenerationJobs      AiGenerationJob[]
+  createdContests       Contest[]               @relation("ContestCreator")
+  contestParticipations ContestParticipant[]
+  submissions           Submission[]
+  reportExports         ReportExport[]
+  codeSimilarityReports CodeSimilarityFinding[]
+
+  sentClassInvites ClassInvite[]
 }
 
-model Problem {
-  id          String      @id
-  title       String
-  description String?
-  difficulty  Int         @default(0)
-  mode        ProblemMode @default(ALGO)
-  createdAt   DateTime    @default(now())
+model OAuthAccount {
+  id             String    @id @default(uuid())
+  userId         String
+  provider       String
+  providerUserId String
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+}
+
+model ClassRoom {
+  id           String   @id @default(uuid())
+  ownerId      String
+  name         String
+  description  String?
+  academicYear String?
+  classCode    String   @unique
+  isActive     Boolean
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  owner       User              @relation("ClassRoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  enrollments ClassEnrollment[]
+  invites     ClassInvite[]
+  assignments ClassAssignment[]
   submissions Submission[]
 }
 
-model Submission {
-  id          String             @id @default(cuid())
+model ClassEnrollment {
+  id          String                @id @default(uuid())
+  classRoomId String
   userId      String
-  problemId   String
-  mode        ProblemMode
-  status      SubmissionStatus  @default(Pending)
-  score       Int?
-  logs        String?
-  runtimeMs   Int?
-  memoryMb    Int?
-  error       String?
-  sourceCode  String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  role        ClassRole
+  status      ClassEnrollmentStatus
+  joinedAt    DateTime?
 
-  user    User    @relation(fields: [userId], references: [id])
-  problem Problem @relation(fields: [problemId], references: [id])
+  classRoom ClassRoom @relation(fields: [classRoomId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([classRoomId, userId])
   @@index([userId])
+}
+
+model ClassInvite {
+  id            String       @id @default(uuid())
+
+  classRoomId   String
+  invitedById   String
+
+  email         String
+
+  tokenHash     String       @unique
+
+  status        InviteStatus @default(PENDING)
+
+  expiresAt     DateTime
+
+  acceptedAt    DateTime?
+  revokedAt     DateTime?
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  classRoom ClassRoom @relation(fields: [classRoomId], references: [id], onDelete: Cascade)
+
+  invitedBy User @relation(fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([classRoomId])
+  @@index([classRoomId, email])
+}
+
+model ClassAssignment {
+  id          String    @id @default(uuid())
+  classRoomId String
+  title       String
+  description String?
+  dueAt       DateTime?
+  problemId   String?
+  contestId   String?
+  publishedAt DateTime
+
+  classRoom   ClassRoom    @relation(fields: [classRoomId], references: [id], onDelete: Cascade)
+  problem     Problem?     @relation(fields: [problemId], references: [id], onDelete: SetNull)
+  contest     Contest?     @relation(fields: [contestId], references: [id], onDelete: SetNull)
+  submissions Submission[]
+}
+
+model Problem {
+  id                 String            @id @default(uuid())
+  slug               String            @unique
+  title              String
+  description        String?
+  statementMd        String?
+  difficulty         Difficulty
+  mode               ProblemMode
+  timeLimitMs        Int
+  memoryLimitMb      Int
+  isPublished        Boolean
+  visibility         ProblemVisibility
+  supportedLanguages Json?
+  maxTestCases       Int
+  creatorId          String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  creator          User?             @relation("ProblemCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+  assignments      ClassAssignment[]
+  tags             ProblemTag[]
+  testCases        TestCase[]
+  goldenSolutions  GoldenSolution[]
+  aiGenerationJobs AiGenerationJob[]
+  contests         ContestProblem[]
+  submissions      Submission[]
+}
+
+model Tag {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+
+  problems ProblemTag[]
+}
+
+model ProblemTag {
+  problemId String
+  tagId     String
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([problemId, tagId])
+  @@index([tagId])
+}
+
+model TestCase {
+  id             String   @id @default(uuid())
+  problemId      String
+  orderIndex     Int
+  input          String
+  expectedOutput String
+  isHidden       Boolean
+  weight         Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([problemId, orderIndex])
   @@index([problemId])
 }
 
+model GoldenSolution {
+  id          String   @id @default(uuid())
+  problemId   String
+  language    String
+  sourceCode  String
+  sourceCodeObjectKey String?
+  isPrimary   Boolean
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  problem   Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  createdBy User    @relation(fields: [createdById], references: [id], onDelete: Cascade)
+}
+
+model AiGenerationJob {
+  id               String      @id @default(uuid())
+  problemId        String
+  createdById      String
+  status             AiJobStatus
+  inputDocObjectKey  String?
+  inputDocUrl        String?
+  inputDocFileName String?
+  inputDocContentType String?
+  inputDocSizeBytes Int?
+  promptVersion      String?
+  structuredOutput   Json?
+  errorMessage       String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  problem   Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  createdBy User    @relation(fields: [createdById], references: [id], onDelete: Cascade)
+}
+
+model Contest {
+  id                       String                    @id @default(uuid())
+  title                    String
+  description              String?
+  slug                     String                    @unique
+  passwordHash             String?
+  startAt                  DateTime
+  endAt                    DateTime
+  status                   ContestStatus
+  testFeedbackPolicy       ContestTestFeedbackPolicy
+  maxSubmissionsPerProblem Int?
+  createdById              String
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+
+  createdBy              User                    @relation("ContestCreator", fields: [createdById], references: [id])
+  assignments            ClassAssignment[]
+  problems               ContestProblem[]
+  participants           ContestParticipant[]
+  submissions            Submission[]
+  reportExports          ReportExport[]
+  codeSimilarityFindings CodeSimilarityFinding[]
+}
+
+model ContestProblem {
+  contestId             String
+  problemId             String
+  orderIndex            Int
+  points                Int
+  timeLimitMsOverride   Int?
+  memoryLimitMbOverride Int?
+
+  contest Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id])
+
+  @@id([contestId, problemId])
+}
+
+model ContestParticipant {
+  id        String   @id @default(uuid())
+  contestId String
+  userId    String
+  joinedAt  DateTime @default(now())
+
+  contest Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([contestId, userId])
+  @@index([userId])
+}
+
+model Submission {
+  id                String            @id @default(uuid())
+  userId            String
+  problemId         String
+  mode              ProblemMode
+  context           SubmissionContext
+  isDryRun          Boolean           @default(false)
+  contestId         String?
+  classRoomId       String?
+  classAssignmentId String?
+  attemptNumber     Int     @default(1)
+  judgePriority     Int     @default(0)
+  language          String?
+  status            SubmissionStatus
+  score             Int?
+  logs              String?
+  compileLog        String?
+  runtimeMs         Int?
+  memoryMb          Int?
+  error             String?
+  judgeStartedAt    DateTime?
+  judgeFinishedAt   DateTime?
+  testsPassed       Int?
+  testsTotal        Int?
+  caseResults       Json?
+  sourceCode        String?
+  sourceCodeObjectKey String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem         Problem          @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  contest         Contest?         @relation(fields: [contestId], references: [id], onDelete: SetNull)
+  classRoom       ClassRoom?       @relation(fields: [classRoomId], references: [id], onDelete: SetNull)
+  classAssignment ClassAssignment? @relation(fields: [classAssignmentId], references: [id], onDelete: SetNull)
+
+  similaritiesAsA CodeSimilarityFinding[] @relation("SubmissionA")
+  similaritiesAsB CodeSimilarityFinding[] @relation("SubmissionB")
+
+  @@index([userId, problemId])
+  @@index([contestId])
+  @@index([status])
+}
+
+model ReportExport {
+  id            String          @id @default(uuid())
+  contestId     String
+  requestedById String
+  format        ExportFormat
+  status        ExportJobStatus
+  fileObjectKey String?
+  fileUrl       String?
+  errorMessage  String?
+  createdAt     DateTime        @default(now())
+  completedAt   DateTime?
+
+  contest     Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  requestedBy User    @relation(fields: [requestedById], references: [id], onDelete: Cascade)
+}
+
+model CodeSimilarityFinding {
+  id            String   @id @default(uuid())
+  contestId     String?
+  submissionIdA String
+  submissionIdB String
+  similarityPct Float
+  algorithm     String
+  details       Json?
+  reportedById  String?
+  createdAt     DateTime @default(now())
+
+  contest     Contest?   @relation(fields: [contestId], references: [id], onDelete: SetNull)
+  reportedBy  User?      @relation(fields: [reportedById], references: [id], onDelete: SetNull)
+  submissionA Submission @relation("SubmissionA", fields: [submissionIdA], references: [id], onDelete: Cascade)
+  submissionB Submission @relation("SubmissionB", fields: [submissionIdB], references: [id], onDelete: Cascade)
+}

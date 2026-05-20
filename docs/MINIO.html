@@ -1,0 +1,349 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MINIO — code-judge docs</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #58a6ff;
+      --accent-dim: #388bfd66;
+      --ok: #3fb950;
+      --partial: #d29922;
+      --missing: #f85149;
+      --border: #30363d;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --sidebar-w: 280px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      min-height: 100vh;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative !important; height: auto !important; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 1.25rem 1rem;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+    }
+    .sidebar h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin: 0 0 0.75rem;
+    }
+    .sidebar nav a {
+      display: block;
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .sidebar nav a:hover { background: var(--surface2); color: var(--text); text-decoration: none; }
+    .sidebar nav a.active { background: var(--surface2); color: var(--accent); font-weight: 600; }
+    
+    main {
+      max-width: 920px;
+      padding: 2rem 2.5rem 4rem;
+    }
+    header.doc-header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    header.doc-header h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      line-height: 1.3;
+    }
+    section {
+      margin-bottom: 2.5rem;
+      scroll-margin-top: 1rem;
+    }
+    h1, h2, h3, h4, h5, h6 { color: var(--text); }
+    h2 {
+      font-size: 1.35rem;
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.75rem; }
+    p { margin: 0 0 1rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--surface2); font-weight: 600; }
+    tr:nth-child(even) td { background: #1a233280; }
+    pre, code {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    code {
+        background: var(--surface2);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+    }
+    pre code {
+        background: transparent;
+        padding: 0;
+    }
+    blockquote {
+      border-left: 4px solid var(--border);
+      padding-left: 1rem;
+      margin: 1rem 0;
+      color: var(--muted);
+    }
+</style>
+</head>
+<body>
+  <div class="layout">
+    <div class="sidebar"><h2>Documentation</h2><nav><a href="AI-TESTCASE-GENERATION.html">AI TESTCASE GENERATION</a><a href="AWS-LAMBDA-INTEGRATION.html">AWS LAMBDA INTEGRATION</a><a href="BUILD-LEVEL-PLAN.html">BUILD LEVEL PLAN</a><a href="CAU-HINH-VA-UTILS.html">CAU HINH VA UTILS</a><a href="DEPLOY-VPS.html">DEPLOY VPS</a><a href="FEATURE-IMPLEMENTATION-TASKLIST.html">FEATURE IMPLEMENTATION TASKLIST</a><a href="JUDGE0-WINDOWS-WSL.html">JUDGE0 WINDOWS WSL</a><a href="LAMBDA-CONFIG.html">LAMBDA CONFIG</a><a href="MINIO.html" class="active">MINIO</a><a href="postman-testapi.html">postman testapi</a><a href="PRISMA-SEED.html">PRISMA SEED</a><a href="USER-STORIES-TASKLIST.html">USER STORIES TASKLIST</a></nav></div>
+    <main>
+      <header class="doc-header">
+        <h1>MINIO</h1>
+      </header>
+      <div class="content">
+        <h1>MinIO (S3-compatible) — setup &amp; lưu trữ object</h1>
+<p>Tài liệu duy nhất cho MinIO trong <code>code-judge</code>: chạy local, cấu hình env, quy ước key, luồng API/worker, và kiểm tra nhanh.</p>
+<h2>1. Tổng quan</h2>
+<ul>
+<li>MinIO chạy qua Docker Compose (<code>docker-compose.yml</code>), volume <code>minio_data</code> giữ dữ liệu.</li>
+<li><strong>API</strong>: <code>http://localhost:9000</code> — <strong>Console</strong>: <code>http://localhost:9001</code></li>
+<li>Tài khoản root local (Compose): <code>minioadmin</code> / <code>minioadmin</code> — chỉ dùng dev/local.</li>
+</ul>
+<h2>2. Điều kiện &amp; khởi động</h2>
+<ul>
+<li>Docker đang chạy; làm việc từ thư mục gốc repo <code>code-judge</code>.</li>
+</ul>
+<p>Chỉ MinIO:</p>
+<pre><code class="language-bash">docker compose up -d minio
+docker compose ps minio
+</code></pre>
+<p>Toàn bộ stack (Postgres, Redis, MinIO):</p>
+<pre><code class="language-bash">docker compose up -d
+</code></pre>
+<h2>3. Đăng nhập Console</h2>
+<ul>
+<li>Mở <a href="http://localhost:9001">http://localhost:9001</a></li>
+<li>Username: <code>minioadmin</code>, Password: <code>minioadmin</code></li>
+</ul>
+<h2>4. Biến môi trường</h2>
+<p>Áp dụng cho <strong>Core API</strong> (<code>apps/core-api/.env</code> hoặc tương đương) và <strong>Worker</strong> (<code>apps/worker/.env</code>). Tên biến thống nhất với <code>EnvKeys</code> trong <code>apps/core-api/src/common/config/env.keys.ts</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Biến</th>
+<th>Ý nghĩa</th>
+<th>Gợi ý local</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>MINIO_ENDPOINT</code></td>
+<td>Host API (không gồm <code>http://</code>)</td>
+<td><code>localhost</code></td>
+</tr>
+<tr>
+<td><code>MINIO_PORT</code></td>
+<td>Cổng API</td>
+<td><code>9000</code></td>
+</tr>
+<tr>
+<td><code>MINIO_USE_SSL</code></td>
+<td><code>true</code> / <code>false</code></td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>MINIO_ACCESS_KEY</code></td>
+<td>Access key</td>
+<td><code>minioadmin</code></td>
+</tr>
+<tr>
+<td><code>MINIO_SECRET_KEY</code></td>
+<td>Secret key</td>
+<td><code>minioadmin</code></td>
+</tr>
+<tr>
+<td><code>MINIO_BUCKET</code></td>
+<td>Bucket mặc định</td>
+<td><code>codejudge</code> (trùng <code>STORAGE_DEFAULT_BUCKET</code> trong code)</td>
+</tr>
+<tr>
+<td><code>MINIO_REGION</code></td>
+<td>Region S3-compatible</td>
+<td><code>us-east-1</code></td>
+</tr>
+<tr>
+<td><code>MINIO_PUBLIC_BASE_URL</code></td>
+<td>Base URL khi dựng link hiển thị (tuỳ chọn, <strong>chủ yếu Core API</strong>)</td>
+<td>Ví dụ <code>http://localhost:9000</code></td>
+</tr>
+</tbody></table>
+<p>Ví dụ <code>.env</code> Core API / Worker (local):</p>
+<pre><code class="language-env">MINIO_ENDPOINT=localhost
+MINIO_PORT=9000
+MINIO_USE_SSL=false
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+MINIO_BUCKET=codejudge
+MINIO_REGION=us-east-1
+# MINIO_PUBLIC_BASE_URL=http://localhost:9000
+</code></pre>
+<p>Bucket được <strong>tự tạo</strong> khi cần (lần upload/presign đầu tiên qua <code>StorageService.ensureBucketExists()</code>).</p>
+<h2>5. Hành vi lưu trữ (Core API)</h2>
+<p><code>StorageService</code> (<code>apps/core-api/src/storage/storage.service.ts</code>):</p>
+<ul>
+<li><strong>Presigned PUT</strong> / <strong>GET</strong> qua client MinIO (mặc định TTL 900 giây nếu không chỉ định khác).</li>
+<li><strong><code>putObject</code> / <code>removeObject</code></strong> cho server-side ghi/xoá.</li>
+<li><strong><code>getObjectUrl(objectKey)</code></strong>: <code>{base}/{bucket}/{objectKey}</code> với <code>base</code> = <code>MINIO_PUBLIC_BASE_URL</code> (bỏ slash cuối) hoặc fallback <code>http(s)://{endpoint}:{port}</code> theo <code>MINIO_USE_SSL</code>.</li>
+<li>Sau khi đảm bảo bucket tồn tại, service cố gắng áp <strong>bucket policy public read cho <code>s3:GetObject</code></strong> (nếu set thất bại chỉ log cảnh báo, không chặn luồng chính).</li>
+</ul>
+<h2>6. Taxonomy object key</h2>
+<p>Khớp <code>storage-key.builder.ts</code>:</p>
+<ul>
+<li><code>avatars/{userId}/{yyyy}/{mm}/{uuid}.{ext}</code></li>
+<li><code>submissions/{submissionId}/source/{fileName}</code></li>
+<li><code>submissions/{submissionId}/artifacts/{artifactName}</code></li>
+<li><code>golden-solutions/{problemId}/{goldenSolutionId}/{fileName}</code></li>
+<li><code>ai-jobs/{jobId}/input/{fileName}</code></li>
+<li><code>ai-jobs/{jobId}/generated-testcases/{index}/input.txt</code> và <code>.../expected.txt</code></li>
+<li><code>exports/{contestId}/{exportId}.{ext}</code></li>
+</ul>
+<h2>7. Luồng đã tích hợp</h2>
+<p><strong>Core API</strong></p>
+<ul>
+<li><code>POST /storage/presign/upload</code> — presigned PUT.</li>
+<li><code>GET /storage/presign/download?objectKey=...</code> — presigned GET.</li>
+<li><code>POST /users/me/avatar/upload-url</code> + <code>POST /users/me/avatar/confirm</code> (JWT).</li>
+<li>Source code submission lớn có thể <strong>externalize</strong> lên MinIO (kèm cột object key trong DB).</li>
+</ul>
+<p><strong>Worker</strong></p>
+<ul>
+<li>Ghi artifact như <code>judge.log</code>, output testcase stub, v.v. qua MinIO (cấu hình env như mục 4; xem <code>apps/worker/src/lib/storage.ts</code>).</li>
+</ul>
+<h2>8. DB: cột <code>*ObjectKey</code> (tương thích ngược)</h2>
+<p>Các cột object key (ví dụ <code>User.imageObjectKey</code>, <code>Submission.sourceCodeObjectKey</code>, …). Khi chưa có key, hệ thống vẫn có thể dùng field cũ (<code>image</code>, <code>sourceCode</code>, URL text, …).</p>
+<p><strong>Migrate dữ liệu cũ (định hướng)</strong></p>
+<ol>
+<li>Batch đọc bản ghi có field cũ nhưng thiếu <code>...ObjectKey</code>.</li>
+<li>Upload lên MinIO đúng taxonomy.</li>
+<li>Cập nhật cột object key theo batch nhỏ trong transaction.</li>
+<li>Script idempotent (bỏ qua bản ghi đã có key).</li>
+<li>Sau ổn định, giảm phụ thuộc field text/URL cũ.</li>
+</ol>
+<h2>9. Verification checklist</h2>
+<ul>
+<li>Upload avatar qua presign + confirm object key thành công.</li>
+<li>Submission source lớn: DB có <code>sourceCodeObjectKey</code> khi dùng luồng externalize.</li>
+<li>Worker: có artifact log/testcase trên bucket.</li>
+<li>Presigned download hoạt động trong thời hạn; từ chối key/URL không hợp lệ đúng kỳ vọng.</li>
+</ul>
+<h2>10. Smoke test nhanh</h2>
+<p><strong>Presign upload (không cần JWT tùy cấu hình route)</strong></p>
+<pre><code class="language-http">POST /storage/presign/upload
+Content-Type: application/json
+
+{
+  &quot;resourceKind&quot;: &quot;submission-artifact&quot;,
+  &quot;submissionId&quot;: &quot;test-sub-1&quot;,
+  &quot;fileName&quot;: &quot;hello.txt&quot;
+}
+</code></pre>
+<p>Kỳ vọng: <code>uploadUrl</code>, <code>bucket</code>, <code>objectKey</code>. Sau đó <code>PUT</code> nội dung file lên <code>uploadUrl</code>.</p>
+<p><strong>Avatar (JWT)</strong></p>
+<pre><code class="language-http">POST /users/me/avatar/upload-url
+Authorization: Bearer &lt;accessToken&gt;
+Content-Type: application/json
+
+{ &quot;extension&quot;: &quot;png&quot; }
+</code></pre>
+<p>Trên Console: bucket <code>codejudge</code>, ví dụ <code>submissions/test-sub-1/artifacts/hello.txt</code>, <code>avatars/...</code>.</p>
+<h2>11. Lệnh vận hành local</h2>
+<pre><code class="language-bash">docker compose restart minio
+docker compose logs -f minio
+docker compose stop minio
+docker compose rm -f minio   # giữ volume minio_data
+</code></pre>
+<h2>12. Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Hiện tượng</th>
+<th>Hướng xử lý</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Connection refused</code> tại <code>:9000</code></td>
+<td><code>docker compose ps minio</code>, xem logs</td>
+</tr>
+<tr>
+<td><code>Access Denied</code></td>
+<td>Kiểm tra <code>MINIO_ACCESS_KEY</code> / <code>MINIO_SECRET_KEY</code> trùng <code>MINIO_ROOT_*</code> trong Compose</td>
+</tr>
+<tr>
+<td>Upload OK nhưng không thấy object</td>
+<td>Đúng bucket <code>MINIO_BUCKET</code> và <code>objectKey</code> trả về</td>
+</tr>
+<tr>
+<td>Recreate container mất file</td>
+<td>Tránh xoá volume <code>minio_data</code></td>
+</tr>
+</tbody></table>
+<p>Chạy app cùng infra (ví dụ):</p>
+<pre><code class="language-bash">docker compose up -d
+npm run dev -w @code-judge/core-api
+npm run dev -w @code-judge/worker
+</code></pre>
+
+
+      </div>
+    </main>
+  </div>
+</body>
+</html>

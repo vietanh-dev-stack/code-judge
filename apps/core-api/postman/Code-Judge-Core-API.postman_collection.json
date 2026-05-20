@@ -1,0 +1,614 @@
+{
+  "info": {
+    "_postman_id": "c7e4a2b1-9d3e-4f80-a6c2-codejudge01",
+    "name": "Code Judge — Core API",
+    "description": "Collection đầy đủ endpoint Core API (NestJS).\n\n**Trước khi test:** chạy `npm run prisma:seed -w @code-judge/core-api` (Postgres phải bật). Login mặc định `instructor@seed.local` / `Secret12!` (đã set trong biến collection).\n\nLuồng gợi ý:\n1) Auth: Login → lưu `accessToken`.\n2) Users / Storage / Submissions.\n\nBiến: `aiJobId`, `exportRecordId`, `goldenSolutionId` khớp dữ liệu seed (cố định).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "accessToken", "value": "" },
+    { "key": "uploadUrl", "value": "" },
+    { "key": "objectKey", "value": "" },
+    { "key": "lastSubmissionId", "value": "" },
+    { "key": "targetUserId", "value": "" },
+    { "key": "testEmail", "value": "instructor@seed.local" },
+    { "key": "testPassword", "value": "Secret12!" },
+    { "key": "testUserName", "value": "Postman Test" },
+    { "key": "seedStudentId", "value": "seed-user-student" },
+    { "key": "seedProblemAlgoId", "value": "seed-problem-algo" },
+    { "key": "seedContestId", "value": "seed-contest-winter" },
+    { "key": "aiJobId", "value": "seed-ai-job-001" },
+    { "key": "exportRecordId", "value": "seed-export-001" },
+    { "key": "goldenSolutionId", "value": "seed-golden-001" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "try {",
+                  "  const res = pm.response.json();",
+                  "  if (res.success && res.result && res.result.accessToken) {",
+                  "    pm.collectionVariables.set('accessToken', res.result.accessToken);",
+                  "  }",
+                  "} catch (e) {}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{testUserName}}\",\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register",
+            "description": "Tạo user mới. Lưu `accessToken` vào biến collection nếu thành công."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "try {",
+                  "  const res = pm.response.json();",
+                  "  if (res.success && res.result && res.result.accessToken) {",
+                  "    pm.collectionVariables.set('accessToken', res.result.accessToken);",
+                  "  }",
+                  "} catch (e) {}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Đăng nhập email/password. Lưu `accessToken`."
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh (cookie refreshToken)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/refresh",
+            "description": "Cần cookie `refreshToken` từ Register/Login (bật cookie trong Postman hoặc gửi header Cookie thủ công)."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/logout",
+            "description": "Xóa cookie refresh (public)."
+          },
+          "response": []
+        },
+        {
+          "name": "Google OAuth — start (redirect)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/auth/google",
+            "description": "Chỉ hoạt động khi cấu hình GOOGLE_* trong .env. Trình duyệt follow redirect; Postman có thể không đủ để test full flow."
+          },
+          "response": []
+        },
+        {
+          "name": "Google OAuth — callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/auth/google/callback",
+            "description": "Google gọi sau consent; không gọi trực tiếp tay trong Postman."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Create user (CRUD)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"CRUD User\",\n  \"email\": \"crud-user-{{$timestamp}}@example.com\",\n  \"password\": \"Secret12!\",\n  \"role\": \"STUDENT\"\n}"
+            },
+            "url": "{{baseUrl}}/users",
+            "description": "Cần JWT. Email unique — dùng timestamp trong ví dụ."
+          },
+          "response": []
+        },
+        {
+          "name": "List users (paging + search)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users?page=1&limit=10&search=test",
+              "host": ["{{baseUrl}}"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "search", "value": "test" }
+              ]
+            },
+            "description": "Response: `result.items`, `result.paging`."
+          },
+          "response": []
+        },
+        {
+          "name": "Me",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "try {",
+                  "  const res = pm.response.json();",
+                  "  if (res.success && res.result && res.result.id) {",
+                  "    pm.collectionVariables.set('targetUserId', res.result.id);",
+                  "  }",
+                  "} catch (e) {}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/me",
+            "description": "Profile user hiện tại. Lưu `targetUserId`."
+          },
+          "response": []
+        },
+        {
+          "name": "Avatar — presign upload URL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "try {",
+                  "  const res = pm.response.json();",
+                  "  if (res.success && res.result) {",
+                  "    if (res.result.objectKey) pm.collectionVariables.set('objectKey', res.result.objectKey);",
+                  "    if (res.result.uploadUrl) pm.collectionVariables.set('uploadUrl', res.result.uploadUrl);",
+                  "  }",
+                  "} catch (e) {}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"extension\": \"png\"\n}"
+            },
+            "url": "{{baseUrl}}/users/me/avatar/upload-url",
+            "description": "Sau đó chạy request Storage → PUT file to MinIO (dùng uploadUrl)."
+          },
+          "response": []
+        },
+        {
+          "name": "Avatar — confirm objectKey",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"objectKey\": \"{{objectKey}}\"\n}"
+            },
+            "url": "{{baseUrl}}/users/me/avatar/confirm",
+            "description": "Chạy sau PUT lên MinIO thành công."
+          },
+          "response": []
+        },
+        {
+          "name": "Get user by id",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{targetUserId}}",
+            "description": "Dùng `targetUserId` từ Me hoặc nhập tay."
+          },
+          "response": []
+        },
+        {
+          "name": "Update user by id",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\"\n}"
+            },
+            "url": "{{baseUrl}}/users/{{targetUserId}}",
+            "description": "Cập nhật một phần field."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete user by id",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{targetUserId}}",
+            "description": "Cẩn thận: xóa user đang đăng nhập sẽ lỗi FK hoặc mất session."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Submissions",
+      "item": [
+        {
+          "name": "Create submission (public demo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "try {",
+                  "  const res = pm.response.json();",
+                  "  if (res.success && res.result && res.result.submissionId) {",
+                  "    pm.collectionVariables.set('lastSubmissionId', res.result.submissionId);",
+                  "  }",
+                  "} catch (e) {}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{seedStudentId}}\",\n  \"problemId\": \"{{seedProblemAlgoId}}\",\n  \"mode\": \"ALGO\",\n  \"sourceCode\": \"print(int(input()) + int(input()))\"\n}"
+            },
+            "url": "{{baseUrl}}/submissions",
+            "description": "Public tạm thời. Lưu `lastSubmissionId`."
+          },
+          "response": []
+        },
+        {
+          "name": "Request AI hint (after failed run)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"submissionId\": \"{{lastSubmissionId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/problems/{{seedProblemAlgoId}}/hint",
+            "description": "JWT bắt buộc. Submission phải thuộc user hiện tại và chưa Accepted. Chạy sau Create submission khi đã có lastSubmissionId."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "AI Testcase",
+      "item": [
+        {
+          "name": "Quick generate testcase (paste statement)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Tong hai so nguyen\",\n  \"statement\": \"Cho hai so nguyen a, b tren mot dong. Hay in ra tong cua chung.\\nInput: a b\\nOutput: a+b\",\n  \"ioSpec\": \"Input gom 2 so nguyen cach nhau boi khoang trang. Output la mot so nguyen duy nhat.\",\n  \"provider\": \"openai\"\n}"
+            },
+            "url": "{{baseUrl}}/ai-testcase/quick-generate",
+            "description": "API test nhanh: paste de bai va generate testcase ngay."
+          },
+          "response": []
+        },
+        {
+          "name": "Generate draft testcase (full context + revision)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Kiem tra so nguyen to\",\n  \"statement\": \"Cho so nguyen duong n. Hay xac dinh n co phai la so nguyen to hay khong.\\nInput: n\\nOutput: YES neu la so nguyen to, nguoc lai NO\",\n  \"difficulty\": \"Easy\",\n  \"timeLimitMs\": 1000,\n  \"memoryLimitMb\": 256,\n  \"supportedLanguages\": [\"cpp\", \"python\", \"java\"],\n  \"maxTestCases\": 10,\n  \"ioSpec\": \"Input mot so nguyen duong n. Output YES/NO viet hoa.\",\n  \"provider\": \"openai\",\n  \"revision\": {\n    \"promptVersionUsed\": \"ai-testcase-v1\",\n    \"previousOutputSummary\": \"Thieu testcase bien n=1\",\n    \"userFeedback\": \"Them test bien n=1, n=2, n rat lon va tranh trung lap\",\n    \"validatorIssues\": [\"Some expectedOutput had lowercase yes/no\"]\n  }\n}"
+            },
+            "url": "{{baseUrl}}/ai-testcase/generate-draft",
+            "description": "API day du context prompt. Co the gui revision de cai tien ket qua."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Storage",
+      "item": [
+        {
+          "name": "Presign upload — submission artifact",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "try {",
+                  "  const res = pm.response.json();",
+                  "  if (res.success && res.result) {",
+                  "    if (res.result.objectKey) pm.collectionVariables.set('objectKey', res.result.objectKey);",
+                  "    if (res.result.uploadUrl) pm.collectionVariables.set('uploadUrl', res.result.uploadUrl);",
+                  "  }",
+                  "} catch (e) {}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceKind\": \"submission-artifact\",\n  \"submissionId\": \"test-sub-1\",\n  \"fileName\": \"hello.txt\"\n}"
+            },
+            "url": "{{baseUrl}}/storage/presign/upload",
+            "description": "Public. Sau đó chạy PUT file to MinIO."
+          },
+          "response": []
+        },
+        {
+          "name": "Presign upload — avatar (by userId)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "try {",
+                  "  const res = pm.response.json();",
+                  "  if (res.success && res.result) {",
+                  "    if (res.result.objectKey) pm.collectionVariables.set('objectKey', res.result.objectKey);",
+                  "    if (res.result.uploadUrl) pm.collectionVariables.set('uploadUrl', res.result.uploadUrl);",
+                  "  }",
+                  "} catch (e) {}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceKind\": \"avatar\",\n  \"userId\": \"{{seedStudentId}}\",\n  \"extension\": \"png\"\n}"
+            },
+            "url": "{{baseUrl}}/storage/presign/upload",
+            "description": "Public — không cần JWT."
+          },
+          "response": []
+        },
+        {
+          "name": "Presign upload — submission source",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceKind\": \"submission-source\",\n  \"submissionId\": \"{{lastSubmissionId}}\",\n  \"fileName\": \"main.py\"\n}"
+            },
+            "url": "{{baseUrl}}/storage/presign/upload",
+            "description": "Chạy sau Create submission để có `lastSubmissionId`, hoặc nhập tay."
+          },
+          "response": []
+        },
+        {
+          "name": "Presign upload — golden solution",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceKind\": \"golden-solution\",\n  \"problemId\": \"{{seedProblemAlgoId}}\",\n  \"goldenSolutionId\": \"{{goldenSolutionId}}\",\n  \"fileName\": \"solution.py\"\n}"
+            },
+            "url": "{{baseUrl}}/storage/presign/upload",
+            "description": "Đặt biến `goldenSolutionId` trùng DB nếu cần upload thật."
+          },
+          "response": []
+        },
+        {
+          "name": "Presign upload — AI input doc",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceKind\": \"ai-input\",\n  \"jobId\": \"{{aiJobId}}\",\n  \"fileName\": \"problem.docx\"\n}"
+            },
+            "url": "{{baseUrl}}/storage/presign/upload",
+            "description": "Đặt `aiJobId` trùng bản ghi AiGenerationJob."
+          },
+          "response": []
+        },
+        {
+          "name": "Presign upload — AI testcase",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceKind\": \"ai-testcase\",\n  \"jobId\": \"{{aiJobId}}\",\n  \"testCaseIndex\": 0,\n  \"fileName\": \"input.txt\"\n}"
+            },
+            "url": "{{baseUrl}}/storage/presign/upload",
+            "description": "`fileName` expected.txt → key expected."
+          },
+          "response": []
+        },
+        {
+          "name": "Presign upload — export",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceKind\": \"export\",\n  \"contestId\": \"{{seedContestId}}\",\n  \"exportId\": \"{{exportRecordId}}\",\n  \"extension\": \"xlsx\"\n}"
+            },
+            "url": "{{baseUrl}}/storage/presign/upload",
+            "description": "Đặt `exportRecordId` trùng ReportExport."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT file to MinIO (presigned URL)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "text/plain" }],
+            "body": { "mode": "raw", "raw": "Hello MinIO from Postman" },
+            "url": "{{uploadUrl}}",
+            "description": "URL đầy đủ từ `uploadUrl` (không qua baseUrl). Chạy sau bất kỳ presign upload nào lưu biến."
+          },
+          "response": []
+        },
+        {
+          "name": "Presign download",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/storage/presign/download?objectKey={{objectKey}}&expiresInSeconds=900",
+              "host": ["{{baseUrl}}"],
+              "query": [
+                { "key": "objectKey", "value": "{{objectKey}}" },
+                { "key": "expiresInSeconds", "value": "900" }
+              ]
+            },
+            "description": "Dùng `objectKey` sau upload hoặc presign."
+          },
+          "response": []
+        },
+        {
+          "name": "Bind object key — AI input",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceKind\": \"ai-input\",\n  \"recordId\": \"{{aiJobId}}\",\n  \"objectKey\": \"ai-jobs/{{aiJobId}}/input/problem.docx\"\n}"
+            },
+            "url": "{{baseUrl}}/storage/bind-object-key",
+            "description": "Cần `recordId` tồn tại. Chỉnh `objectKey` khớp file đã upload."
+          },
+          "response": []
+        },
+        {
+          "name": "Bind object key — export",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceKind\": \"export\",\n  \"recordId\": \"{{exportRecordId}}\",\n  \"objectKey\": \"exports/{{seedContestId}}/{{exportRecordId}}.xlsx\"\n}"
+            },
+            "url": "{{baseUrl}}/storage/bind-object-key",
+            "description": "Cần bản ghi ReportExport thật."
+          },
+          "response": []
+        },
+        {
+          "name": "Bind object key — golden solution",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceKind\": \"golden-solution\",\n  \"recordId\": \"{{goldenSolutionId}}\",\n  \"objectKey\": \"golden-solutions/{{seedProblemAlgoId}}/{{goldenSolutionId}}/solution.py\"\n}"
+            },
+            "url": "{{baseUrl}}/storage/bind-object-key",
+            "description": "Cần bản ghi GoldenSolution thật."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Docs",
+      "item": [
+        {
+          "name": "OpenAPI JSON",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api-docs/json",
+            "description": "Chỉ có khi Swagger bật (không production, SWAGGER_ENABLED≠0)."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

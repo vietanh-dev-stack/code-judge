@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kế hoạch sinh testcase PROJECT — code-judge</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #58a6ff;
+      --accent-dim: #388bfd66;
+      --ok: #3fb950;
+      --partial: #d29922;
+      --missing: #f85149;
+      --border: #30363d;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --sidebar-w: 280px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      min-height: 100vh;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative !important; height: auto !important; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 1.25rem 1rem;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+    }
+    .sidebar h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin: 0 0 0.75rem;
+    }
+    .sidebar nav a {
+      display: block;
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .sidebar nav a:hover { background: var(--surface2); color: var(--text); text-decoration: none; }
+    .sidebar nav .sub { padding-left: 1rem; font-size: 0.85rem; }
+    main {
+      max-width: 920px;
+      padding: 2rem 2.5rem 4rem;
+    }
+    header.doc-header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    header.doc-header h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      line-height: 1.3;
+    }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-plan { background: #388bfd33; color: #79c0ff; border: 1px solid #388bfd55; }
+    .badge-ok { background: #23863633; color: var(--ok); }
+    .badge-partial { background: #9e6a0333; color: var(--partial); }
+    .badge-missing { background: #da363333; color: #ff7b72; }
+    section {
+      margin-bottom: 2.5rem;
+      scroll-margin-top: 1rem;
+    }
+    section h2 {
+      font-size: 1.35rem;
+      margin: 0 0 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--border);
+    }
+    section h3 { font-size: 1.1rem; margin: 1.5rem 0 0.75rem; }
+    section h4 { font-size: 1rem; margin: 1rem 0 0.5rem; color: var(--muted); }
+    p { margin: 0 0 1rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--surface2); font-weight: 600; }
+    tr:nth-child(even) td { background: #1a233280; }
+    pre, code {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    pre.ascii { color: var(--muted); line-height: 1.4; }
+    pre.mermaid-fallback { display: none; }
+    .no-mermaid pre.mermaid-fallback { display: block; }
+    .no-mermaid .mermaid-render { display: none; }
+    details {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin: 1rem 0;
+      padding: 0.5rem 1rem;
+    }
+    details summary {
+      cursor: pointer;
+      font-weight: 600;
+      padding: 0.35rem 0;
+    }
+    details[open] summary { margin-bottom: 0.75rem; }
+    .callout {
+      background: var(--accent-dim);
+      border-left: 4px solid var(--accent);
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .callout-warn {
+      background: #9e6a0322;
+      border-left-color: var(--partial);
+    }
+    .status-grid {
+      display: grid;
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+    .status-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: var(--surface);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .status-item strong { flex: 1; }
+    .phase-list {
+      counter-reset: phase;
+      list-style: none;
+      padding: 0;
+    }
+    .phase-list li {
+      counter-increment: phase;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      background: var(--surface);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .phase-list li::before {
+      content: "Phase " counter(phase);
+      display: block;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 0.35rem;
+    }
+    footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .mermaid-render {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+      text-align: center;
+    }
+  </style>
+  <!-- Mermaid: tùy chọn khi có mạng; offline dùng ASCII fallback -->
+  <script>
+    document.documentElement.classList.add("no-mermaid");
+    window.addEventListener("load", function () {
+      if (typeof mermaid !== "undefined") {
+        document.documentElement.classList.remove("no-mermaid");
+        mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "loose" });
+      }
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js" async
+    onload="document.documentElement.classList.remove('no-mermaid'); if (typeof mermaid !== 'undefined') { mermaid.initialize({ startOnLoad: true, theme: 'dark', securityLevel: 'loose' }); mermaid.run(); }"></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Mục lục</h2>
+      <nav>
+        <a href="#sec-1">1. Tóm tắt điều hành</a>
+        <a href="#sec-2">2. Kiến trúc auto-grader</a>
+        <a class="sub" href="#sec-2-sandbox">Mount sandbox</a>
+        <a class="sub" href="#sec-2-grade">Luồng chấm bài</a>
+        <a href="#sec-3">3. Đầu vào / đầu ra</a>
+        <a href="#sec-4">4. Quy trình 6 bước</a>
+        <a class="sub" href="#sec-4-prompt">Prompt AI PROJECT</a>
+        <a href="#sec-5">5. Gói hidden_tests.zip</a>
+        <a href="#sec-6">6. API &amp; UI</a>
+        <a href="#sec-7">7. Xử lý lỗi</a>
+        <a href="#sec-8">8. Lộ trình triển khai</a>
+        <a href="#appendix">Phụ lục: Mapping DB</a>
+        <a href="#refs">Tham chiếu repo</a>
+      </nav>
+    </aside>
+
+    <main>
+      <header class="doc-header">
+        <h1>Kế hoạch sinh testcase cho bài PROJECT (Backend / Frontend)</h1>
+        <div class="meta">
+          <span>Dự án: <strong>code-judge</strong></span>
+          <span>Phiên bản tài liệu: <strong>1.0</strong></span>
+          <span>Ngày: <strong>2026-05-18</strong></span>
+          <span class="badge badge-plan">Kế hoạch — chưa triển khai</span>
+        </div>
+        <p style="margin-top:1rem;color:var(--muted);max-width:720px;">
+          Blueprint sản phẩm và kỹ thuật cho pipeline giảng viên tạo <strong>gói hidden tests</strong>
+          gắn với bài <code>ProblemMode.PROJECT</code>, tích hợp hệ auto-grader (MinIO, BullMQ, Docker sandbox)
+          và mở rộng module AI / golden hiện có.
+        </p>
+      </header>
+
+      <!-- SECTION 1 -->
+      <section id="sec-1">
+        <h2>1. Tóm tắt điều hành</h2>
+
+        <h3>Mục tiêu</h3>
+        <p>
+          Cho phép giảng viên hoặc admin tạo và xuất bản một <strong>bundle testcase ẩn</strong>
+          (<code>hidden_tests.zip</code>) trước khi học viên nộp mã nguồn. Bundle này được worker mount read-only
+          vào sandbox Docker khi chấm bài, tương tự đặc tả auto-grader: <code>working_dir/hidden_tests → /app/tests</code>.
+        </p>
+
+        <h3>Phạm vi v1</h3>
+        <ul>
+          <li><strong>Trong phạm vi:</strong> Backend Node (Jest/Vitest + supertest), Frontend (Playwright e2e), fullstack đơn giản (một repo zip).</li>
+          <li><strong>Ngoài phạm vi v1:</strong> Mobile native, monorepo đa package phức tạp, ngôn ngữ không Node (Java/Python project judge riêng).</li>
+        </ul>
+
+        <h3>So sánh ALGO vs PROJECT</h3>
+        <table>
+          <thead>
+            <tr><th>Khía cạnh</th><th>ALGO</th><th>PROJECT</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Đơn vị test</td>
+              <td><code>TestCase.input</code> / <code>expectedOutput</code> (text)</td>
+              <td>Bundle file <code>tests/**/*.spec.ts</code> + fixtures trên MinIO</td>
+            </tr>
+            <tr>
+              <td>Engine chấm</td>
+              <td>Judge0 / Lambda từng case</td>
+              <td>Docker: <code>npm test</code> hoặc <code>npm run test:e2e</code> → parse JSON</td>
+            </tr>
+            <tr>
+              <td>Sinh test bằng AI</td>
+              <td><span class="badge badge-ok">Đã có</span></td>
+              <td><span class="badge badge-partial">Stub</span> — chỉ <code>plannedObjectKeys</code></td>
+            </tr>
+            <tr>
+              <td>Worker chấm zip</td>
+              <td>N/A</td>
+              <td><span class="badge badge-missing">Chưa</span> — <code>JUDGE-PROJ-WK-*</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="status-grid">
+          <div class="status-item">
+            <span class="badge badge-ok">Đã có</span>
+            <strong>ALGO AI testcase</strong>
+            <span>Draft + generate-and-save + Zod schema</span>
+          </div>
+          <div class="status-item">
+            <span class="badge badge-partial">Một phần</span>
+            <strong>PROJECT generate-and-save</strong>
+            <span>Job metadata, không LLM, không insert test thật</span>
+          </div>
+          <div class="status-item">
+            <span class="badge badge-partial">Một phần</span>
+            <strong>Golden verify</strong>
+            <span>stdin/stdout ALGO; chưa Docker project</span>
+          </div>
+          <div class="status-item">
+            <span class="badge badge-missing">Chưa có</span>
+            <strong>Project judge worker</strong>
+            <span>Extract zip, build, test, score breakdown</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2 -->
+      <section id="sec-2">
+        <h2>2. Kiến trúc trong hệ auto-grader</h2>
+        <p>
+          Hệ thống auto-grader gồm: <strong>Producer</strong> (NestJS API), <strong>Storage</strong> (MinIO),
+          <strong>Broker</strong> (Redis + BullMQ), <strong>Consumer</strong> (Grading Worker),
+          <strong>Sandbox</strong> (Docker), <strong>Result DB</strong> (PostgreSQL).
+          Tài liệu này tập trung vào nhánh <em>chuẩn bị</em> hidden tests; nhánh <em>chấm submission</em> dùng cùng bundle đã publish.
+        </p>
+
+        <h3 id="sec-2-flow">Luồng sinh test + chấm bài (tổng quan)</h3>
+        <div class="mermaid-render">
+          <pre class="mermaid">
+flowchart LR
+  subgraph ingest [Ingestion_GV]
+    Spec[De_bai_Rubric]
+    Golden[Golden_zip]
+    AI[AI_Generator]
+  end
+  subgraph storage [MinIO]
+    Hidden["problems/id/hidden_tests.zip"]
+    GoldenStore["golden-solutions/..."]
+  end
+  subgraph runtime [Runtime_cham_bai]
+    Submit[Submission_zip]
+    Worker[Grading_Worker]
+    Sandbox[Docker_sandbox]
+  end
+  Spec --> AI
+  Golden --> AI
+  AI --> Hidden
+  Golden --> GoldenStore
+  Hidden --> Worker
+  Submit --> Worker
+  Worker --> Sandbox
+  Sandbox --> Result[PostgreSQL_JSON]
+          </pre>
+        </div>
+        <pre class="ascii mermaid-fallback">[GV] Spec + Golden ──► AI Generator ──► MinIO hidden_tests.zip
+                              │                    │
+                              └────────────────────┼──► golden-solutions/
+                                                   │
+[SV] Submission zip ──► BullMQ ──► Worker ──► Docker (student_code + hidden_tests RO)
+                                        └──► PostgreSQL + WebSocket</pre>
+
+        <h3 id="sec-2-grade">Luồng chấm bài học viên (6 bước đặc tả)</h3>
+        <div class="mermaid-render">
+          <pre class="mermaid">
+sequenceDiagram
+  participant API as NestJS_API
+  participant Q as BullMQ
+  participant W as Grading_Worker
+  participant M as MinIO
+  participant D as Docker
+  participant DB as PostgreSQL
+  participant WS as WebSocket
+  API->>M: Upload submission zip
+  API->>DB: status PENDING
+  API->>Q: job payload
+  Q->>W: dispatch
+  W->>DB: status PROCESSING
+  W->>M: download + unzip
+  W->>D: create container mounts
+  D->>D: npm install + test
+  W->>DB: COMPLETED + JSON + logs
+  W->>WS: notify user
+  W->>W: cleanup container + tmpdir
+          </pre>
+        </div>
+        <pre class="ascii mermaid-fallback">1.Ingestion  2.Dispatch  3.Sandbox  4.Execute  5.Extract  6.Finalize+WS+cleanup</pre>
+
+        <h3 id="sec-2-sandbox">Cấu hình sandbox (khi validate &amp; khi chấm)</h3>
+        <table>
+          <thead>
+            <tr><th>Tham số</th><th>Giá trị đề xuất</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Image</td><td>Theo stack, vd. <code>node:18-alpine</code></td></tr>
+            <tr><td>Mount student</td><td><code>working_dir/student_code</code> → <code>/app</code> (RW)</td></tr>
+            <tr><td>Mount tests</td><td><code>working_dir/hidden_tests</code> → <code>/app/tests</code> (RO)</td></tr>
+            <tr><td>CPU / RAM</td><td>0.5 CPU, 512MB</td></tr>
+            <tr><td>Network</td><td><code>none</code></td></tr>
+            <tr><td>Timeout</td><td>300s (kill container)</td></tr>
+            <tr><td>User</td><td>Non-root trong image (khuyến nghị)</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- SECTION 3 -->
+      <section id="sec-3">
+        <h2>3. Đầu vào và đầu ra sinh testcase</h2>
+
+        <h3>Đầu vào (Giảng viên / Admin)</h3>
+        <ul>
+          <li><strong>Problem metadata:</strong> <code>title</code>, <code>statementMd</code>, <code>mode = PROJECT</code>, <code>stack</code> (<code>backend</code> | <code>frontend</code> | <code>fullstack</code>).</li>
+          <li><strong>AssignmentTestConfig</strong> (schema mới — chưa có trong Prisma):
+            <ul>
+              <li><code>dockerImage</code>, <code>installCommand</code>, <code>testCommand</code></li>
+              <li><code>resultParser</code>: <code>jest-json</code> | <code>playwright-json</code></li>
+              <li><code>framework</code>: express, nest, react, next, …</li>
+            </ul>
+          </li>
+          <li><strong>Golden solution:</strong> zip hoặc upload qua prefix <code>golden-solutions/{problemId}/</code>.</li>
+          <li><strong>Tài liệu bổ sung:</strong> PDF/README — presign <code>resourceKind: ai-input</code> (đã có storage API).</li>
+          <li><strong>Starter template</strong> (tùy chọn): skeleton học viên để smoke-test “fail có kiểm soát”.</li>
+        </ul>
+
+        <h3>Đầu ra</h3>
+        <ul>
+          <li><strong>MinIO:</strong> <code>problems/{problemId}/hidden-tests/{version}/bundle.zip</code></li>
+          <li><strong>DB:</strong> <code>Problem.hiddenTestsObjectKey</code>, <code>Problem.hiddenTestsVersion</code>, <code>AiGenerationJob.structuredOutput</code></li>
+          <li><strong>TestCase rows (meta):</strong> có thể chỉ lưu tên test, <code>weight</code>, <code>isHidden</code> — không nhét file vào cột text</li>
+        </ul>
+
+        <h3>JSON preview cho giảng viên (trước publish)</h3>
+        <pre>{
+  "problemId": "uuid",
+  "bundleVersion": 3,
+  "stack": "backend",
+  "plannedTests": [
+    { "testName": "Login API", "suite": "api", "weight": 5, "isHidden": true },
+    { "testName": "Database Migration", "suite": "api", "weight": 3, "isHidden": true }
+  ],
+  "validation": {
+    "goldenRun": "PASSED",
+    "starterSmoke": "FAILED_AS_EXPECTED",
+    "duration": "42s",
+    "flakyWarning": false
+  }
+}</pre>
+
+        <h3>JSON kết quả chấm bài (sau khi học viên nộp — schema đích)</h3>
+        <pre>{
+  "submissionId": "uuid",
+  "score": 85.5,
+  "stats": {
+    "totalTests": 20,
+    "passed": 17,
+    "failed": 3,
+    "duration": "45s"
+  },
+  "details": [
+    { "testName": "Login API", "status": "PASSED" },
+    {
+      "testName": "Database Migration",
+      "status": "FAILED",
+      "error": "Assertion Error..."
+    }
+  ],
+  "logs": "..."
+}</pre>
+        <p>Worker parser ánh xạ từ <code>result.json</code> (Jest) hoặc reporter JSON (Playwright) sang schema trên.</p>
+      </section>
+
+      <!-- SECTION 4 -->
+      <section id="sec-4">
+        <h2>4. Quy trình sinh testcase (6 bước)</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Bước</th>
+              <th>Tên</th>
+              <th>Hành động</th>
+              <th>Thành phần code-judge</th>
+              <th>Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>Thu thập ngữ cảnh</td>
+              <td>Upload spec, chọn stack, bind <code>ai-input</code></td>
+              <td><code>StorageController</code>, mở rộng đọc MinIO → prompt</td>
+              <td><span class="badge badge-partial">Một phần</span></td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>Sinh nháp test files</td>
+              <td>LLM → cây file <code>tests/</code> + scripts</td>
+              <td>Mở rộng <code>ai-testcase</code> hoặc <code>project-testcase</code></td>
+              <td><span class="badge badge-missing">Chưa</span></td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>Hợp nhất golden</td>
+              <td>Đối chiếu API contract với golden zip</td>
+              <td><code>golden-solutions/</code> prefix</td>
+              <td><span class="badge badge-partial">Một phần</span></td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>Xác thực sandbox</td>
+              <td>Queue chạy Docker giống worker chấm</td>
+              <td>Queue <code>golden-verify-project</code> (mới)</td>
+              <td><span class="badge badge-missing">Chưa</span></td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>Duyệt &amp; publish</td>
+              <td>GV sửa file, approve version</td>
+              <td>Wizard FE (mở rộng <code>AiTestCaseDraftSheet</code>)</td>
+              <td><span class="badge badge-missing">Chưa</span></td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>Gắn problem</td>
+              <td>Cập nhật object key + version</td>
+              <td><code>ProblemsService</code></td>
+              <td><span class="badge badge-missing">Chưa</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout">
+          <strong>Điều kiện publish:</strong> (1) Golden pass 100% trong sandbox;
+          (2) Starter template fail có kiểm soát nếu có;
+          (3) Zip vượt qua kiểm tra bảo mật (path traversal, zip bomb — tham chiếu <code>JUDGE-PROJ-TEST-04</code>).
+        </div>
+
+        <h3 id="sec-4-prompt">Prompt AI cho PROJECT (khác ALGO)</h3>
+        <p>
+          ALGO dùng schema <code>{ testCases: [{ input, expectedOutput, ... }] }</code> trong
+          <code>ai-testcase.prompt.ts</code>. PROJECT cần schema file-based:
+        </p>
+        <pre>{
+  "files": [
+    { "path": "tests/api/auth.spec.ts", "content": "..." }
+  ],
+  "testManifest": [
+    { "testName": "Login API", "suite": "api", "weight": 5, "isHidden": true }
+  ],
+  "notes": "optional assumptions"
+}</pre>
+
+        <details>
+          <summary>Ràng buộc prompt (system)</summary>
+          <ul>
+            <li>Chỉ trả về một JSON object hợp lệ, không markdown.</li>
+            <li>Test không gọi mạng ngoài; không đọc file ngoài <code>/app</code>.</li>
+            <li>Tên test ổn định (<code>describe</code> / <code>it</code>) để parser map <code>details[]</code>.</li>
+            <li>Backend: Jest hoặc Vitest + supertest; Frontend: Playwright tối thiểu.</li>
+            <li>Hỗ trợ <code>revision</code> khi parse fail (pattern đã có ở ALGO).</li>
+          </ul>
+        </details>
+
+        <details>
+          <summary>Ví dụ user message (rút gọn)</summary>
+          <pre>&lt;problem_context&gt;
+Title: REST API Quản lý thư viện
+Stack: backend (NestJS)
+Statement: ...
+&lt;/problem_context&gt;
+&lt;assignment_config&gt;
+dockerImage: node:18-alpine
+testCommand: npm test -- --json --outputFile=result.json
+&lt;/assignment_config&gt;
+&lt;golden_hint&gt;Golden đã implement đủ CRUD Book, Author&lt;/golden_hint&gt;</pre>
+        </details>
+      </section>
+
+      <!-- SECTION 5 -->
+      <section id="sec-5">
+        <h2>5. Cấu trúc gói hidden_tests.zip</h2>
+
+        <pre>hidden_tests/
+  package.json              # devDependencies cho test runner
+  jest.config.js            # hoặc vitest.config.ts
+  tests/
+    api/
+      auth.spec.ts
+      books.spec.ts
+    fixtures/
+      seed.sql
+  playwright.config.ts      # nếu frontend / e2e
+  e2e/
+    login.spec.ts
+  README_INSTRUCTOR.md      # ghi chú nội bộ (không mount cho SV)</pre>
+
+        <h3>Lệnh chấm theo stack</h3>
+        <table>
+          <thead>
+            <tr><th>Stack</th><th>Install</th><th>Test</th><th>Parser</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Backend</td>
+              <td><code>npm ci</code></td>
+              <td><code>npm test -- --json --outputFile=/app/result.json</code></td>
+              <td><code>jest-json</code></td>
+            </tr>
+            <tr>
+              <td>Frontend</td>
+              <td><code>npm ci</code></td>
+              <td><code>npm run test:e2e -- --reporter=json</code></td>
+              <td><code>playwright-json</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Ánh xạ parser → score</h3>
+        <ul>
+          <li><code>score = sum(weight_i * passed_i) / sum(weight_i) * 100</code></li>
+          <li>Exit code ≠ 0 trước khi có <code>result.json</code> → <code>BUILD_ERROR</code> hoặc <code>CRASHED</code></li>
+          <li>Timeout 300s → <code>TIMEOUT</code></li>
+        </ul>
+
+        <details>
+          <summary>Giới hạn bảo mật zip (publish gate)</summary>
+          <ul>
+            <li>Max uncompressed size (vd. 50MB)</li>
+            <li>Max số file (vd. 500)</li>
+            <li>Từ chối path <code>../</code>, absolute paths, symlink nguy hiểm</li>
+          </ul>
+        </details>
+      </section>
+
+      <!-- SECTION 6 -->
+      <section id="sec-6">
+        <h2>6. API và UI (kế hoạch triển khai)</h2>
+
+        <h3>API đề xuất</h3>
+        <table>
+          <thead>
+            <tr><th>Method</th><th>Path</th><th>Mô tả</th><th>Auth</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>POST</td>
+              <td><code>/problems/:id/project-testcases/generate-draft</code></td>
+              <td>Tạo job async, trả <code>jobId</code></td>
+              <td>Creator / ADMIN</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td><code>/ai-testcase/jobs/:jobId</code></td>
+              <td>Poll trạng thái + preview file tree</td>
+              <td>Creator / ADMIN</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/problems/:id/project-testcases/validate</code></td>
+              <td>Chạy golden trong Docker sandbox</td>
+              <td>Creator / ADMIN</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/problems/:id/project-testcases/publish</code></td>
+              <td>Đóng gói zip → MinIO, bump version</td>
+              <td>Creator / ADMIN</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td><code>/problems/:id/project-testcases/download</code></td>
+              <td>Presigned URL tải bundle</td>
+              <td>Creator / ADMIN</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Tái sử dụng codebase</h3>
+        <ul>
+          <li><code>buildAiGeneratedTestcaseObjectKeys</code> → mở rộng prefix <code>problems/{id}/hidden-tests/...</code></li>
+          <li>Queue BullMQ mới <code>project-testcase-gen</code> (tránh block HTTP — xem cảnh báo trong AI doc)</li>
+          <li>Presign <code>ai-input</code>, <code>golden-solutions</code> đã có trong storage module</li>
+        </ul>
+
+        <h3>UI: Wizard 4 bước (PROJECT)</h3>
+        <p>Gắn vào form tạo/sửa problem PROJECT (<code>AdminProblemCreate.tsx</code>, <code>ClassProblemCreate.tsx</code>):</p>
+        <ol>
+          <li><strong>Cấu hình:</strong> stack, Docker image, lệnh install/test, parser.</li>
+          <li><strong>Golden + AI:</strong> upload golden zip, nút “Sinh testcase”, poll job.</li>
+          <li><strong>Preview:</strong> cây file, editor đơn giản hoặc download chỉnh sửa local.</li>
+          <li><strong>Validate &amp; Publish:</strong> log sandbox, nút publish khi pass gate.</li>
+        </ol>
+        <p>Mở rộng từ <code>AiTestCaseDraftSheet.tsx</code> (hiện tối ưu cho ALGO input/output).</p>
+      </section>
+
+      <!-- SECTION 7 -->
+      <section id="sec-7">
+        <h2>7. Xử lý lỗi và vận hành</h2>
+
+        <table>
+          <thead>
+            <tr><th>Kịch bản</th><th>Phát hiện</th><th>Hành động pipeline sinh test</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>LLM output lỗi</td>
+              <td>Zod parse fail</td>
+              <td>Job <code>FAILED</code>; cho phép <code>revision</code> prompt (pattern ALGO)</td>
+            </tr>
+            <tr>
+              <td>Golden fail</td>
+              <td>Container exit ≠ 0</td>
+              <td>Chặn publish; hiển thị stderr/log artifact</td>
+            </tr>
+            <tr>
+              <td>Test flake</td>
+              <td>Hai lần validate khác kết quả</td>
+              <td>Cảnh báo GV; gợi ý timeout/selector</td>
+            </tr>
+            <tr>
+              <td>Timeout</td>
+              <td>&gt; 300s</td>
+              <td>Kill Docker; job <code>TIMEOUT</code></td>
+            </tr>
+            <tr>
+              <td>Infinite loop / CPU abuse</td>
+              <td>Docker limits</td>
+              <td>Container bị giới hạn; không treo host</td>
+            </tr>
+            <tr>
+              <td>Malicious zip</td>
+              <td>Path traversal / bomb</td>
+              <td>Từ chối ở bước upload/publish gate</td>
+            </tr>
+            <tr>
+              <td>Queue congestion</td>
+              <td>BullMQ depth cao</td>
+              <td>Scale worker replicas (ops)</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout-warn">
+          <strong>Phụ thuộc:</strong> Worker chấm submission học viên (<code>JUDGE-PROJ-WK-*</code>) là prerequisite
+          cho <em>điểm số thật</em> trên production, nhưng <strong>không chặn</strong> pipeline sinh + validate testcase
+          nếu queue validate riêng dùng chung module Docker.
+        </div>
+      </section>
+
+      <!-- SECTION 8 -->
+      <section id="sec-8">
+        <h2>8. Lộ trình triển khai (sau khi duyệt tài liệu)</h2>
+
+        <div class="mermaid-render">
+          <pre class="mermaid">
+gantt
+  title Phases trien khai
+  dateFormat YYYY-MM-DD
+  section Phase1
+  Schema_AssignmentConfig_DB     :p1, 2026-05-19, 5d
+  HTML_review                      :milestone, 2026-05-18, 0d
+  section Phase2
+  AI_PROJECT_prompt_parser         :p2, after p1, 7d
+  MinIO_bundle_layout              :p2b, after p1, 5d
+  section Phase3
+  Worker_golden_validate_docker    :p3, after p2, 10d
+  Publish_API                      :p3b, after p2b, 7d
+  section Phase4
+  FE_wizard_PROJECT                :p4, after p3, 10d
+  section Phase5
+  JUDGE_PROJ_WK_integration        :p5, after p3, 14d
+          </pre>
+        </div>
+        <pre class="ascii mermaid-fallback">Phase1 (5d)  : DB schema AssignmentTestConfig + hiddenTestsObjectKey
+Phase2 (7d)  : AI prompt PROJECT + MinIO bundle layout
+Phase3 (10d) : Docker validate queue + Publish API
+Phase4 (10d) : FE wizard PROJECT
+Phase5 (14d) : JUDGE-PROJ-WK-* nối submission worker</pre>
+
+        <ol class="phase-list">
+          <li>
+            <strong>Schema &amp; DB</strong> — Prisma: <code>AssignmentTestConfig</code>, <code>Problem.hiddenTestsObjectKey</code>,
+            <code>hiddenTestsVersion</code>. Thay stub PROJECT trong <code>generate-and-save</code> bằng job async thật.
+          </li>
+          <li>
+            <strong>AI + Storage</strong> — Prompt/parser PROJECT; layout MinIO <code>problems/{id}/hidden-tests/{version}/</code>;
+            queue <code>project-testcase-gen</code>.
+          </li>
+          <li>
+            <strong>Worker validate</strong> — Docker runner dùng chung spec sandbox; API validate + publish.
+          </li>
+          <li>
+            <strong>Frontend</strong> — Wizard GV; chưa đổi luồng submit học viên cho đến Phase 5.
+          </li>
+          <li>
+            <strong>Project judge</strong> — <code>JUDGE-PROJ-WK-01..04</code>: extract zip, build, test, upload logs;
+            output schema thống nhất + WebSocket.
+          </li>
+        </ol>
+      </section>
+
+      <!-- APPENDIX -->
+      <section id="appendix">
+        <h2>Phụ lục: Mapping cơ sở dữ liệu</h2>
+
+        <table>
+          <thead>
+            <tr><th>Entity / field hiện có</th><th>Dùng cho PROJECT testcase</th><th>Ghi chú</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>Problem.mode</code></td>
+              <td><code>PROJECT</code></td>
+              <td>Đã có enum</td>
+            </tr>
+            <tr>
+              <td><code>Problem.maxTestCases</code></td>
+              <td>Giới hạn số test meta / manifest</td>
+              <td>Chưa enforce đầy đủ trên mọi path</td>
+            </tr>
+            <tr>
+              <td><code>TestCase.input</code> / <code>expectedOutput</code></td>
+              <td>ALGO; PROJECT có thể chỉ meta</td>
+              <td>Hoặc bỏ qua, dùng manifest JSON</td>
+            </tr>
+            <tr>
+              <td><code>AiGenerationJob.structuredOutput</code></td>
+              <td>Lưu file tree + validation result</td>
+              <td>PROJECT stub chỉ <code>plannedObjectKeys</code></td>
+            </tr>
+            <tr>
+              <td><code>GoldenSolution</code></td>
+              <td>Reference implementation zip</td>
+              <td>Prefix MinIO đã có</td>
+            </tr>
+            <tr>
+              <td><code>Problem.hiddenTestsObjectKey</code></td>
+              <td>Pointer bundle đã publish</td>
+              <td><span class="badge badge-missing">Đề xuất mới</span></td>
+            </tr>
+            <tr>
+              <td><code>AssignmentTestConfig</code> (table mới)</td>
+              <td>dockerImage, commands, parser</td>
+              <td><span class="badge badge-missing">Đề xuất mới</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="refs">
+        <h2>Tham chiếu trong repo</h2>
+        <ul>
+          <li><a href="../AI-TESTCASE-GENERATION.md">docs/AI-TESTCASE-GENERATION.md</a> — ALGO AI flow, stub PROJECT</li>
+          <li><a href="../BUILD-LEVEL-PLAN.md">docs/BUILD-LEVEL-PLAN.md</a> — <code>JUDGE-PROJ-*</code>, <code>AI-*</code> task IDs</li>
+          <li><a href="../FEATURE-IMPLEMENTATION-TASKLIST.md">docs/FEATURE-IMPLEMENTATION-TASKLIST.md</a> — trạng thái tổng thể</li>
+          <li><code>apps/core-api/src/ai-testcase/ai-testcase.service.ts</code> — L207–238 PROJECT stub</li>
+          <li><code>apps/core-api/src/storage/storage-key.builder.ts</code> — object key taxonomy</li>
+          <li><code>apps/web/components/problems/AiTestCaseDraftSheet.tsx</code> — UI draft ALGO</li>
+        </ul>
+      </section>
+
+      <footer>
+        <p>
+          Tài liệu đối chiếu codebase code-judge (2026-05-18). Mở file này trực tiếp trong trình duyệt —
+          hoạt động offline; diagram Mermaid cần mạng (CDN) hoặc xem khối ASCII fallback.
+        </p>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

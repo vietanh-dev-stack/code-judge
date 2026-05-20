@@ -9,6 +9,8 @@ body {
   height: 100%;
 }
 
+@variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: var(--font-sans);
@@ -131,4 +133,11 @@ body {
   html {
     @apply font-sans;
   }
+}
+
+/* Force Sonner toast description to be readable (not muted gray) */
+[data-sonner-toast] [data-description] {
+  color: #111827 !important;
+  opacity: 1 !important;
+  font-weight: 500 !important;
 }

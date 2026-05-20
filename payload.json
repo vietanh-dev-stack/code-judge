@@ -1,0 +1,6 @@
+{
+  "source_code": "#include <iostream>\nint main() { int a, b; if (std::cin >> a >> b) std::cout << a+b << std::endl; return 0; }",
+  "language_id": 53,
+  "stdin": "1 2",
+  "expected_output": "3"
+}

@@ -1,0 +1,321 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JUDGE0 WINDOWS WSL — code-judge docs</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #58a6ff;
+      --accent-dim: #388bfd66;
+      --ok: #3fb950;
+      --partial: #d29922;
+      --missing: #f85149;
+      --border: #30363d;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --sidebar-w: 280px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      min-height: 100vh;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative !important; height: auto !important; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 1.25rem 1rem;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+    }
+    .sidebar h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin: 0 0 0.75rem;
+    }
+    .sidebar nav a {
+      display: block;
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .sidebar nav a:hover { background: var(--surface2); color: var(--text); text-decoration: none; }
+    .sidebar nav a.active { background: var(--surface2); color: var(--accent); font-weight: 600; }
+    
+    main {
+      max-width: 920px;
+      padding: 2rem 2.5rem 4rem;
+    }
+    header.doc-header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    header.doc-header h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      line-height: 1.3;
+    }
+    section {
+      margin-bottom: 2.5rem;
+      scroll-margin-top: 1rem;
+    }
+    h1, h2, h3, h4, h5, h6 { color: var(--text); }
+    h2 {
+      font-size: 1.35rem;
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.75rem; }
+    p { margin: 0 0 1rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--surface2); font-weight: 600; }
+    tr:nth-child(even) td { background: #1a233280; }
+    pre, code {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    code {
+        background: var(--surface2);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+    }
+    pre code {
+        background: transparent;
+        padding: 0;
+    }
+    blockquote {
+      border-left: 4px solid var(--border);
+      padding-left: 1rem;
+      margin: 1rem 0;
+      color: var(--muted);
+    }
+</style>
+</head>
+<body>
+  <div class="layout">
+    <div class="sidebar"><h2>Documentation</h2><nav><a href="AI-TESTCASE-GENERATION.html">AI TESTCASE GENERATION</a><a href="AWS-LAMBDA-INTEGRATION.html">AWS LAMBDA INTEGRATION</a><a href="BUILD-LEVEL-PLAN.html">BUILD LEVEL PLAN</a><a href="CAU-HINH-VA-UTILS.html">CAU HINH VA UTILS</a><a href="DEPLOY-VPS.html">DEPLOY VPS</a><a href="FEATURE-IMPLEMENTATION-TASKLIST.html">FEATURE IMPLEMENTATION TASKLIST</a><a href="JUDGE0-WINDOWS-WSL.html" class="active">JUDGE0 WINDOWS WSL</a><a href="LAMBDA-CONFIG.html">LAMBDA CONFIG</a><a href="MINIO.html">MINIO</a><a href="postman-testapi.html">postman testapi</a><a href="PRISMA-SEED.html">PRISMA SEED</a><a href="USER-STORIES-TASKLIST.html">USER STORIES TASKLIST</a></nav></div>
+    <main>
+      <header class="doc-header">
+        <h1>JUDGE0 WINDOWS WSL</h1>
+      </header>
+      <div class="content">
+        <h1>Hướng dẫn thiết lập WSL để chạy Judge0 trên Windows</h1>
+<p>Tài liệu này mô tả cách bật <strong>WSL2</strong>, cài <strong>Docker</strong>, đặt mã nguồn và chạy <strong>Judge0</strong> (theo <code>docker-compose.yml</code> ở root repo <code>code-judge</code>) trên Windows.</p>
+<hr>
+<h2>1. Điều kiện trước</h2>
+<ul>
+<li>Windows 10 (bản <strong>2004</strong> trở lên) hoặc Windows 11. Kiểm tra: <strong>Win + R</strong> → gõ <code>winver</code> → Enter.</li>
+<li>Quyền <strong>Administrator</strong> khi bật tính năng Windows / cài WSL lần đầu.</li>
+<li>RAM đủ cho Docker + vài container (khuyến nghị <strong>8 GB</strong> trở lên cho mượt).</li>
+</ul>
+<hr>
+<h2>2. Bật WSL2</h2>
+<h3>2.1. Cách nhanh (khuyến nghị)</h3>
+<ol>
+<li>Mở <strong>PowerShell</strong> hoặc <strong>Windows Terminal</strong> → chuột phải → <strong>Run as administrator</strong>.</li>
+<li>Chạy:</li>
+</ol>
+<pre><code class="language-powershell">wsl --install
+</code></pre>
+<ol start="3">
+<li><strong>Khởi động lại</strong> máy nếu Windows yêu cầu.</li>
+<li>Sau khi reboot, mở <strong>Ubuntu</strong> (hoặc distro mặc định) từ Start Menu, đợi cài đặt xong, tạo <strong>user / password</strong> Linux (khi gõ password thường không hiện ký tự — bình thường).</li>
+</ol>
+<h3>2.2. Nếu <code>wsl --install</code> không dùng được — bật thủ công</h3>
+<p><strong>Giao diện:</strong> <strong>Win + R</strong> → <code>optionalfeatures</code> → Enter. Tích:</p>
+<ul>
+<li><strong>Virtual Machine Platform</strong> (bắt buộc cho WSL2)</li>
+<li><strong>Windows Subsystem for Linux</strong></li>
+</ul>
+<p><strong>OK</strong> → restart nếu được hỏi.</p>
+<p><strong>Hoặc PowerShell (Admin):</strong></p>
+<pre><code class="language-powershell">dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+</code></pre>
+<p>Sau đó <strong>Restart</strong>.</p>
+<h3>2.3. Đặt WSL2 làm mặc định</h3>
+<p>Sau khi WSL đã cài (có thể không cần admin):</p>
+<pre><code class="language-powershell">wsl --set-default-version 2
+</code></pre>
+<p>Cài thêm distro (tuỳ chọn):</p>
+<pre><code class="language-powershell">wsl --list --online
+wsl --install -d Ubuntu
+</code></pre>
+<h3>2.4. Kiểm tra</h3>
+<pre><code class="language-powershell">wsl --status
+wsl --list --verbose
+</code></pre>
+<p>Cột <strong>VERSION</strong> của distro đang dùng phải là <strong>2</strong>.</p>
+<hr>
+<h2>3. Docker và WSL2</h2>
+<p>Judge0 chạy trong container Linux; bạn cần <strong>Docker daemon</strong> có thể chạy image Linux. Hai hướng phổ biến:</p>
+<h3>Phương án A — Docker Desktop (dễ cho máy cá nhân)</h3>
+<ol>
+<li>Cài <a href="https://docs.docker.com/desktop/install/windows-install/">Docker Desktop for Windows</a>.</li>
+<li>Mở Docker Desktop → <strong>Settings</strong> → <strong>General</strong>: bật <strong>Use the WSL 2 based engine</strong>.</li>
+<li><strong>Settings</strong> → <strong>Resources</strong> → <strong>WSL integration</strong>: bật tích cho distro bạn dùng (ví dụ <strong>Ubuntu</strong>).</li>
+<li>Khởi động lại Docker Desktop nếu cần.</li>
+</ol>
+<p>Sau đó trong terminal <strong>bên trong WSL</strong> (<code>wsl</code> hoặc app Ubuntu), lệnh <code>docker</code> và <code>docker compose</code> sẽ nói chuyện với Docker Desktop.</p>
+<p>Kiểm tra trong WSL:</p>
+<pre><code class="language-bash">docker version
+docker compose version
+</code></pre>
+<h3>Phương án B — Chỉ Docker trong WSL (không dùng Docker Desktop)</h3>
+<p>Cài Docker Engine theo hướng dẫn chính thức cho Ubuntu/Debian trong WSL (repository Docker hoặc <code>docker.io</code> tùy distro). Cần hiểu thêm về cgroup trên WSL nếu gặp lỗi hiếm. Phương án A thường ít rắc rối hơn trên Windows.</p>
+<hr>
+<h2>4. Chuẩn bị mã nguồn code-judge</h2>
+<p><strong>Khuyến nghị:</strong> đặt repo trên <strong>ổ đĩa Linux của WSL</strong> (ví dụ <code>~/projects/code-judge</code>), <strong>không</strong> chỉ làm việc trên <code>C:\Users\...</code> mount sang <code>/mnt/c/...</code> khi chạy compose:</p>
+<ul>
+<li>Mount <code>/mnt/c</code> có thể <strong>chậm</strong> và đôi khi gây lỗi <strong>permission</strong> hoặc <strong>line ending</strong> với file được bind-mount vào container (ví dụ <code>scripts/isolate_stub.sh</code>).</li>
+</ul>
+<p>Trong WSL:</p>
+<pre><code class="language-bash">mkdir -p ~/projects
+cd ~/projects
+git clone &lt;URL-repo-code-judge&gt; code-judge
+cd code-judge
+</code></pre>
+<p>Nếu bạn vẫn dùng repo trên <code>C:\</code>, có thể thử được nhưng khi lỗi liên quan script/volume, hãy chuyển clone sang <code>~/...</code> trong WSL.</p>
+<hr>
+<h2>5. Chạy Judge0 bằng Docker Compose</h2>
+<p>Từ thư mục root repo (có file <code>docker-compose.yml</code>):</p>
+<pre><code class="language-bash">docker compose up -d
+</code></pre>
+<p>Các service liên quan Judge0 (theo compose hiện tại): <code>judge0-server</code>, <code>judge0-worker</code>, <code>db</code> (Postgres Judge0), <code>redis</code> (Redis Judge0), cùng volume stub <code>scripts/isolate_stub.sh</code>, <code>scripts/sudo_stub.sh</code>.</p>
+<p>Đợi healthcheck xong (vài chục giây lần đầu kéo image). Xem log nếu cần:</p>
+<pre><code class="language-bash">docker compose logs -f judge0-server judge0-worker
+</code></pre>
+<p><strong>API Judge0</strong> được publish ra máy host tại cổng <strong>2358</strong> (map <code>2358:2358</code>).</p>
+<p>Kiểm tra nhanh từ Windows hoặc WSL:</p>
+<pre><code class="language-bash">curl -sS -o /dev/null -w &quot;%{http_code}&quot; http://localhost:2358/
+</code></pre>
+<p>(mã HTTP khác 000 thường là dấu hiệu service đã lên; tuỳ phiên bản có thể là 200, 302, 404 trên path gốc — quan trọng là có phản hồi.)</p>
+<hr>
+<h2>6. Kết nối worker / API với Judge0</h2>
+<p>Ứng dụng worker dùng biến môi trường (xem <code>apps/worker/.env.example</code>):</p>
+<ul>
+<li><code>JUDGE0_URL=http://localhost:2358</code></li>
+</ul>
+<p>Khi chạy worker trên <strong>Windows</strong> (ngoài Docker) cùng lúc với compose trên localhost, URL này thường <strong>đúng</strong>. Nếu worker chạy <strong>trong container</strong> khác mạng, cần đổi hostname cho phù hợp (không nằm trong phạm vi tài liệu WSL cơ bản).</p>
+<hr>
+<h2>7. Tại sao cấu hình repo này phù hợp WSL?</h2>
+<p>Trong <code>docker-compose.yml</code>:</p>
+<ul>
+<li><code>judge0-server</code> / <code>judge0-worker</code>: <code>privileged: true</code>, Postgres, Redis — stack Docker Linux thông thường; Docker Desktop + WSL2 thường hỗ trợ.</li>
+<li><code>JUDGE0_USE_CGROUP=false</code> — giảm phụ thuộc cgroup so với Judge0 “đầy đủ” trên server.</li>
+<li>Volume ghi đè <code>scripts/isolate_stub.sh</code> lên <code>/usr/local/bin/isolate</code> — <strong>không</strong> dùng isolate kernel đầy đủ; stub dùng <code>bash</code>, <code>timeout</code>, <code>/tmp/isolate</code> trong container → yêu cầu host <strong>thấp hơn</strong> Judge0 production chuẩn.</li>
+</ul>
+<p><strong>Kết luận:</strong> WSL2 + Docker <strong>đủ</strong> để chạy Judge0 theo compose của repo này, miễn Docker chạy ổn.</p>
+<hr>
+<h2>8. Gỡ / tắt WSL (khi không cần)</h2>
+<h3>Chỉ xóa một distro (WSL vẫn còn)</h3>
+<pre><code class="language-powershell">wsl --list --verbose
+wsl --unregister Ubuntu
+</code></pre>
+<p>Thay <code>Ubuntu</code> bằng đúng tên trong <code>wsl -l -v</code>.</p>
+<h3>Tắt hẳn tính năng trên Windows</h3>
+<p><strong>Win + R</strong> → <code>optionalfeatures</code> → bỏ tích <strong>Windows Subsystem for Linux</strong> và (nếu chắc chắn không cần) <strong>Virtual Machine Platform</strong> → OK → <strong>Restart</strong>.</p>
+<p>Lưu ý: tắt <strong>Virtual Machine Platform</strong> có thể ảnh hưởng thêm tới các tính năng khác dùng nền tảng ảo hóa nhẹ; chỉ tắt khi bạn hiểu hệ quả.</p>
+<hr>
+<h2>9. Xử lý sự cố nhanh</h2>
+<table>
+<thead>
+<tr>
+<th>Hiện tượng</th>
+<th>Gợi ý</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>docker: command not found</code> trong WSL</td>
+<td>Bật <strong>WSL integration</strong> trong Docker Desktop cho đúng distro, hoặc cài Docker trong WSL.</td>
+</tr>
+<tr>
+<td>Container Judge0 restart liên tục</td>
+<td><code>docker compose logs judge0-server</code> — kiểm tra Postgres/Redis phụ thuộc; đảm bảo đủ RAM/disk.</td>
+</tr>
+<tr>
+<td>Lỗi quyền / script khi mount từ <code>C:\</code></td>
+<td>Clone repo sang <code>~/projects/...</code> trong WSL; kiểm tra file <code>scripts/*.sh</code> dùng LF (Unix).</td>
+</tr>
+<tr>
+<td><code>privileged</code> / sandbox</td>
+<td>Cập nhật Docker Desktop và WSL; xem log image <code>judge0/judge0</code>.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>10. Sơ đồ luồng (Docker Desktop + WSL2)</h2>
+<pre><code class="language-mermaid">flowchart LR
+  subgraph host [Windows]
+    WSL[WSL2_distro]
+    DD[Docker_Desktop]
+  end
+  subgraph linux [Linux_runtime]
+    D[Docker_daemon]
+    J0[judge0_containers]
+  end
+  WSL --&gt; D
+  DD --&gt; D
+  D --&gt; J0
+</code></pre>
+<hr>
+<h2>11. So sánh nhanh: PowerShell vs bash trong WSL</h2>
+<p>Docker Desktop dùng engine Linux (WSL2). Bạn có thể gọi <code>docker compose</code> từ <strong>PowerShell</strong> (thư mục Windows) hoặc từ <strong>WSL</strong> (thư mục <code>~</code> trong Linux). Cả hai đều có thể chạy được stack; <strong>khuyến nghị</strong> chạy compose từ WSL với mã nguồn nằm trên filesystem Linux để tránh vấn đề mount <code>/mnt/c</code>.</p>
+<h2>NOTICE: change run type of script file isolate_stub.sh and sudo_stub.sh from CRLF to LF</h2>
+
+
+      </div>
+    </main>
+  </div>
+</body>
+</html>

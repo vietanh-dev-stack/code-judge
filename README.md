@@ -9,11 +9,15 @@
 1. Bật Docker Desktop và chạy:
    - `cd c:\Users\ADMIN\Documents\GitHub\code-judge`
    - `docker compose up -d`
-   - Service gồm: `postgres` (có `pgvector`), `redis`, `minio`
+   - Service gồm: `app-db` (Postgres + pgvector), `app-redis`, `minio`, Judge0 (`judge0-server`, `judge0-worker`, `db`, `redis` riêng cho Judge0).
+   - Chạy Judge0 trên Windows / WSL: [docs/JUDGE0-WINDOWS-WSL.md](docs/JUDGE0-WINDOWS-WSL.md)
 2. Generate Prisma client và migration:
    - `npm run prisma:generate -w @code-judge/core-api`
    - `npm run prisma:migrate -w @code-judge/core-api`
-3. Chạy các app:
+3. (Tuỳ chọn — khuyến nghị trước khi test API/Postman) Nạp dữ liệu seed:
+   - `npm run prisma:seed -w @code-judge/core-api`
+   - Chi tiết: [docs/PRISMA-SEED.md](docs/PRISMA-SEED.md)
+4. Chạy các app:
    - Core API: `npm run dev -w @code-judge/core-api` (port `3000`)
    - Worker: `npm run dev -w @code-judge/worker`
    - Web: `npm run dev -w @code-judge/web` (port `3001`)
@@ -46,10 +50,27 @@ Mọi endpoint HTTP trả về (hoặc lỗi) cùng một **envelope**:
 
 | Method | Path | Ghi chú |
 |--------|------|---------|
-| `POST` | `/auth/login` | Body `{ "email": "..." }` — tìm user theo email, cấp JWT (chưa kiểm tra mật khẩu; sẽ bổ sung bcrypt). |
-| `GET` | `/auth/me` | Cần Bearer token; trả user đầy đủ từ DB. |
+| `POST` | `/auth/register` | Body `{ "name", "email", "password" }` — tạo account và trả access token. |
+| `POST` | `/auth/login` | Body `{ "email", "password" }` — xác thực và trả access token. |
+| `POST` | `/auth/refresh` | Đổi refresh cookie lấy access token mới. |
+| `POST` | `/auth/logout` | Xoá refresh cookie. |
+| `GET` | `/auth/google` | Redirect Google OAuth (nếu đã cấu hình env). |
+| `GET` | `/auth/google/callback` | Callback OAuth, redirect về `FRONTEND_URL`. |
 
-**Biến môi trường** (xem `apps/core-api/.env.example`): `JWT_SECRET` (bắt buộc), `JWT_EXPIRES_IN` (tuỳ chọn, **giây**, mặc định 604800).
+## Core API: Users module (tách khỏi auth)
+
+| Method | Path | Ghi chú |
+|--------|------|---------|
+| `GET` | `/users/me` | Thông tin user hiện tại (JWT). |
+| `POST` | `/users/me/avatar/upload-url` | Lấy presigned URL upload avatar. |
+| `POST` | `/users/me/avatar/confirm` | Xác nhận `objectKey` avatar sau upload. |
+| `POST` | `/users` | Tạo user mới (CRUD cơ bản). |
+| `GET` | `/users` | List user có paging (`page`, `limit`) + `search`. |
+| `GET` | `/users/:id` | Lấy chi tiết user theo id. |
+| `PATCH` | `/users/:id` | Cập nhật user cơ bản. |
+| `DELETE` | `/users/:id` | Xóa user. |
+
+**Biến môi trường** (xem `apps/core-api/.env.example`): `JWT_SECRET` bắt buộc; `JWT_EXPIRES_IN` mặc định 900 giây; refresh token mặc định 604800 giây.
 
 **Mã nguồn chính**: `apps/core-api/src/auth/`, decorators trong `apps/core-api/src/common/decorators/`.
 
@@ -59,7 +80,8 @@ Mọi endpoint HTTP trả về (hoặc lỗi) cùng một **envelope**:
     - `userId: string`
     - `problemId: string`
     - `mode: "ALGO" | "PROJECT"`
-    - `sourceCode?: string` (stub)
+    - `sourceCode?: string` (nếu lớn có thể externalize sang MinIO)
+    - `sourceCodeObjectKey?: string` (nếu đã upload trước lên MinIO)
   - Response (trong `result` của envelope):
     - `{ submissionId, status }`
 
@@ -76,9 +98,27 @@ Mọi endpoint HTTP trả về (hoặc lỗi) cùng một **envelope**:
 - Mở: `http://localhost:3001`
 - Nhập `userId/problemId/mode`, bấm `Submit` và xem realtime logs.
 
+## Triển khai lên VPS (Ubuntu 24.04 LTS x64)
+
+**Sẵn sàng deploy test** qua Docker production (`docker-compose.production.yml`). Không cần kéo code từ GitHub.
+
+1. **Windows:** đồng bộ mã nguồn lên VPS — `.\deploy\sync-to-vps.ps1 -VpsHost <IP>` (hoặc WinSCP / rsync, xem [deploy/README.md](deploy/README.md)).
+2. **VPS (SSH):** `./deploy/ubuntu-24.04-setup.sh` → `cp .env.production.example .env.production` → chỉnh secret/URL → `./deploy/production-up.sh`.
+3. Mở `http://<VPS_IP>/` (web), API `http://<VPS_IP>:8080/` khi test bằng IP.
+
+- Stack: Judge0 isolate thật trên Linux; dev Windows dùng `docker-compose.yml` + stub.
+- Chi tiết SSH, env, HTTPS: [docs/DEPLOY-VPS.html](docs/DEPLOY-VPS.html).
+
+## AI gợi ý khi làm bài (học viên)
+- Sau Run/Submit thất bại trên `/problem/[id]`, panel **Gợi ý AI** tự tải (Socratic, không lộ đáp án).
+- Cấu hình: [docs/AI-HINT-ASSISTANT.html](docs/AI-HINT-ASSISTANT.html) (`AI_HINT_*`, Redis rate limit).
+
 ## Tài liệu cấu hình & utils
 - Xem: [docs/CAU-HINH-VA-UTILS.md](docs/CAU-HINH-VA-UTILS.md) (ESLint/Prettier, `common/`, `lib/`, cách import).
 - Phần **JWT / envelope JSON** ở trên bổ sung cho Core API; có thể đọc kèm comment trong `apps/core-api/src/auth/` và `apps/core-api/src/common/`.
+- MinIO (setup, env, taxonomy, luồng API/worker): [docs/MINIO.md](docs/MINIO.md).
+- Test API với Postman: [docs/postman-testapi.md](docs/postman-testapi.md), collection [apps/core-api/postman/Code-Judge-Core-API.postman_collection.json](apps/core-api/postman/Code-Judge-Core-API.postman_collection.json), curl [apps/core-api/postman/import.txt](apps/core-api/postman/import.txt).
+- Seed DB (test): [docs/PRISMA-SEED.md](docs/PRISMA-SEED.md).
 
 ## Lint & format (root)
 - `npm run lint` — kiểm tra ESLint.

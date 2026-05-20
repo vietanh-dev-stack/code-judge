@@ -1,0 +1,74 @@
+# CI: lint, test, build apps, build Docker (Lambda judge image).
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Lint, test & build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Unit / smoke tests
+        run: npm test
+
+      - name: Prisma generate (schema in core-api)
+        run: npm run prisma:generate -w @code-judge/core-api
+
+      - name: Build core-api
+        run: npm run build -w @code-judge/core-api
+
+      - name: Build worker
+        run: npm run build -w @code-judge/worker
+
+      - name: Build web
+        run: npm run build -w @code-judge/web
+        env:
+          # Next có thể đọc tại build; đặt giá trị giả để build ổn định trên CI.
+          NEXT_PUBLIC_CORE_URL: http://localhost:3000
+
+  docker:
+    name: Docker images
+    runs-on: ubuntu-latest
+    needs: [verify]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Lambda judge image (dry-run, no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/lambda
+          file: ./apps/lambda/Dockerfile
+          push: false
+          tags: code-judge-lambda:judge-ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Validate docker compose file
+        run: docker compose -f docker-compose.yml config --quiet

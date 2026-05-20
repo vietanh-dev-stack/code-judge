@@ -1,38 +1,41 @@
-version: "3.9"
-
 services:
-  postgres:
+  # --- Application Services ---
+  app-db:
     image: pgvector/pgvector:pg16
+    container_name: app-db
+    restart: always
     environment:
-      - POSTGRES_DB=codejudge
       - POSTGRES_USER=codejudge
       - POSTGRES_PASSWORD=codejudge
+      - POSTGRES_DB=codejudge
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docker/postgres/init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U codejudge -d codejudge"]
+      test: ['CMD-SHELL', 'pg_isready -U codejudge -d codejudge']
       interval: 5s
       timeout: 5s
       retries: 20
 
-  redis:
-    image: redis:7
+  app-redis:
+    image: redis:7-alpine
+    container_name: app-redis
+    restart: always
     ports:
-      - "6379:6379"
+      - '6379:6379'
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 5s
-      retries: 20
+      retries: 5
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio
+    restart: always
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - '9000:9000'
+      - '9001:9001'
     environment:
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD=minioadmin
@@ -40,6 +43,92 @@ services:
     volumes:
       - minio_data:/data
 
+  # --- Judge0 Services (v1.13.1 + Isolate Stub + Default User) ---
+  judge0-server:
+    image: judge0/judge0:latest
+    container_name: judge0-server
+    privileged: true
+    user: root # Quay lại user mặc định để tránh xung đột sudo
+    environment:
+      - RAILS_ENV=production
+      - DATABASE_URL=postgres://judge0:judge0@db:5432/judge0
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RAILS_MAX_THREADS=5
+      - RAILS_MIN_THREADS=5
+      - SECRET_KEY_BASE=7726487263487263487263487263487263487263487263487263487263487263
+      - JUDGE0_USE_CGROUP=false # Dev/Windows: memory metrics unavailable; runtime uses isolate_stub actual timing
+      - JUDGE0_MAX_MAX_FILE_SIZE=10485760
+    ports:
+      - '2358:2358'
+    volumes:
+      - judge0_box:/box
+      - ./scripts/isolate_stub.sh:/usr/local/bin/isolate:ro
+      - ./scripts/sudo_stub.sh:/usr/bin/sudo:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  judge0-worker:
+    image: judge0/judge0:latest
+    container_name: judge0-worker
+    command: ['./scripts/workers']
+    privileged: true
+    user: root # Quay lại user mặc định
+    environment:
+      - RAILS_ENV=production
+      - DATABASE_URL=postgres://judge0:judge0@db:5432/judge0
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RAILS_MAX_THREADS=5
+      - RAILS_MIN_THREADS=5
+      - SECRET_KEY_BASE=7726487263487263487263487263487263487263487263487263487263487263
+      - JUDGE0_USE_CGROUP=false # Dev/Windows: memory metrics unavailable; runtime uses isolate_stub actual timing
+      - JUDGE0_MAX_MAX_FILE_SIZE=10485760
+    volumes:
+      - judge0_box:/box
+      - ./scripts/isolate_stub.sh:/usr/local/bin/isolate:ro
+      - ./scripts/sudo_stub.sh:/usr/bin/sudo:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    container_name: db
+    ports:
+      - '5433:5432'
+    environment:
+      - POSTGRES_USER=judge0
+      - POSTGRES_PASSWORD=judge0
+      - POSTGRES_DB=judge0
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U judge0']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --save 60 1 --loglevel warning
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  default:
+    driver: bridge
+
 volumes:
   postgres_data:
   minio_data:
+  judge0_box:

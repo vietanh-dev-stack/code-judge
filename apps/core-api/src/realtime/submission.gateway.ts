@@ -30,7 +30,7 @@ export class SubmissionGateway implements OnGatewayInit, OnGatewayConnection {
   }
 
   handleConnection(client: any) {
-    const rawUserId = client?.handshake?.query?.userId;
+    const rawUserId = client?.handshake?.query?.userId ?? client?.handshake?.auth?.userId;
     const userId = Array.isArray(rawUserId) ? rawUserId[0] : rawUserId;
     if (!userId || typeof userId !== 'string') return;
 
@@ -46,10 +46,16 @@ export class SubmissionGateway implements OnGatewayInit, OnGatewayConnection {
     this.server.to(socketUserRoom(userId)).emit(event, payload);
   }
 
+  /**
+   * Broadcast to all connected clients.
+   */
+  emitToAll(event: string, payload: AnyRecord) {
+    this.server.emit(event, payload);
+  }
+
   // Optional helper to let frontend "ping" or validate connection.
   @SubscribeMessage('client:hello')
   onHello(@ConnectedSocket() client: any, @MessageBody() _body: AnyRecord) {
     client.emit('client:hello:ack', { ok: true });
   }
 }
-

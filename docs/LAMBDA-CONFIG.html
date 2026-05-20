@@ -1,0 +1,243 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LAMBDA CONFIG — code-judge docs</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #58a6ff;
+      --accent-dim: #388bfd66;
+      --ok: #3fb950;
+      --partial: #d29922;
+      --missing: #f85149;
+      --border: #30363d;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --sidebar-w: 280px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      min-height: 100vh;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative !important; height: auto !important; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 1.25rem 1rem;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+    }
+    .sidebar h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin: 0 0 0.75rem;
+    }
+    .sidebar nav a {
+      display: block;
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .sidebar nav a:hover { background: var(--surface2); color: var(--text); text-decoration: none; }
+    .sidebar nav a.active { background: var(--surface2); color: var(--accent); font-weight: 600; }
+    
+    main {
+      max-width: 920px;
+      padding: 2rem 2.5rem 4rem;
+    }
+    header.doc-header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    header.doc-header h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      line-height: 1.3;
+    }
+    section {
+      margin-bottom: 2.5rem;
+      scroll-margin-top: 1rem;
+    }
+    h1, h2, h3, h4, h5, h6 { color: var(--text); }
+    h2 {
+      font-size: 1.35rem;
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.75rem; }
+    p { margin: 0 0 1rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--surface2); font-weight: 600; }
+    tr:nth-child(even) td { background: #1a233280; }
+    pre, code {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    code {
+        background: var(--surface2);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+    }
+    pre code {
+        background: transparent;
+        padding: 0;
+    }
+    blockquote {
+      border-left: 4px solid var(--border);
+      padding-left: 1rem;
+      margin: 1rem 0;
+      color: var(--muted);
+    }
+</style>
+</head>
+<body>
+  <div class="layout">
+    <div class="sidebar"><h2>Documentation</h2><nav><a href="AI-TESTCASE-GENERATION.html">AI TESTCASE GENERATION</a><a href="AWS-LAMBDA-INTEGRATION.html">AWS LAMBDA INTEGRATION</a><a href="BUILD-LEVEL-PLAN.html">BUILD LEVEL PLAN</a><a href="CAU-HINH-VA-UTILS.html">CAU HINH VA UTILS</a><a href="DEPLOY-VPS.html">DEPLOY VPS</a><a href="FEATURE-IMPLEMENTATION-TASKLIST.html">FEATURE IMPLEMENTATION TASKLIST</a><a href="JUDGE0-WINDOWS-WSL.html">JUDGE0 WINDOWS WSL</a><a href="LAMBDA-CONFIG.html" class="active">LAMBDA CONFIG</a><a href="MINIO.html">MINIO</a><a href="postman-testapi.html">postman testapi</a><a href="PRISMA-SEED.html">PRISMA SEED</a><a href="USER-STORIES-TASKLIST.html">USER STORIES TASKLIST</a></nav></div>
+    <main>
+      <header class="doc-header">
+        <h1>LAMBDA CONFIG</h1>
+      </header>
+      <div class="content">
+        <h1>AWS Lambda Configuration for Code Judge</h1>
+<h2>Reserved Concurrency Setup</h2>
+<h3>1. AWS Console Configuration</h3>
+<pre><code class="language-bash"># Set Reserved Concurrency to 100
+aws lambda put-function-concurrency \
+  --function-name your-lambda-function-name \
+  --reserved-concurrent-executions 100
+</code></pre>
+<h3>2. Terraform Configuration (recommended)</h3>
+<pre><code class="language-hcl">resource &quot;aws_lambda_function&quot; &quot;code_judge&quot; {
+  # ... other config
+
+  reserved_concurrent_executions = 100
+}
+
+# Or use aws_lambda_provisioned_concurrency_config for faster cold starts
+resource &quot;aws_lambda_provisioned_concurrency_config&quot; &quot;code_judge&quot; {
+  function_name                     = aws_lambda_function.code_judge.function_name
+  provisioned_concurrent_executions = 100
+  qualifier                         = &quot;$LATEST&quot;
+}
+</code></pre>
+<h3>3. CloudFormation Configuration</h3>
+<pre><code class="language-yaml">Resources:
+  CodeJudgeLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      # ... other properties
+      ReservedConcurrentExecutions: 100
+</code></pre>
+<h2>Environment Variables for Lambda</h2>
+<p>Add these environment variables to your Lambda function:</p>
+<pre><code class="language-bash">ENABLE_PARALLEL_EXECUTION=true
+MAX_CONCURRENT_TEST_CASES=10
+MEMORY_SIZE=1024
+TIMEOUT=300
+</code></pre>
+<h2>Monitoring Setup</h2>
+<h3>CloudWatch Alarms</h3>
+<pre><code class="language-bash"># Alert when concurrency limit is reached
+aws cloudwatch put-metric-alarm \
+  --alarm-name &quot;Lambda-Concurrency-Limit&quot; \
+  --alarm-description &quot;Lambda function hitting concurrency limit&quot; \
+  --metric-name ConcurrentExecutions \
+  --namespace AWS/Lambda \
+  --statistic Maximum \
+  --period 60 \
+  --threshold 95 \
+  --comparison-operator GreaterThanThreshold \
+  --dimensions Name=FunctionName,Value=your-lambda-function-name
+</code></pre>
+<h3>X-Ray Tracing</h3>
+<p>Enable X-Ray tracing in Lambda console for performance monitoring.</p>
+<h2>Cost Estimation</h2>
+<h3>Monthly Cost Calculation</h3>
+<ul>
+<li><strong>Lambda Requests</strong>: 1,000,000 requests × $0.20/million = $200</li>
+<li><strong>Lambda Duration</strong>: 100 instances × 10 seconds × 1,000,000/100 × $0.0000166667/GB-second = ~$1,667</li>
+<li><strong>Total</strong>: ~$1,867/month</li>
+</ul>
+<h2>Performance Expectations</h2>
+<p>With 100 concurrent instances:</p>
+<ul>
+<li><strong>Throughput</strong>: 100-200 submissions/second</li>
+<li><strong>Latency</strong>: 5-15 seconds per submission</li>
+<li><strong>Cold Start Impact</strong>: Minimal with provisioned concurrency</li>
+</ul>
+<h2>Scaling Strategy</h2>
+<ol>
+<li><strong>Start with 50 instances</strong> for testing</li>
+<li><strong>Monitor metrics</strong> (duration, errors, throttling)</li>
+<li><strong>Gradually increase</strong> to 100 based on performance</li>
+<li><strong>Use auto-scaling</strong> based on queue depth</li>
+</ol>
+<h2>Worker Configuration</h2>
+<p>Update worker concurrency to match Lambda capacity:</p>
+<pre><code class="language-typescript">// apps/worker/src/index.ts
+const worker = new Worker(JUDGE_SUBMISSIONS_QUEUE_NAME, processSubmission, {
+  connection,
+  concurrency: 50, // Match Lambda concurrency
+});
+```&lt;/content&gt;
+&lt;parameter name=&quot;filePath&quot;&gt;d:\Full-Stack\project\code-judge\docs\LAMBDA-CONFIG.md
+</code></pre>
+
+
+      </div>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mã mẫu test chức năng — code-judge</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #58a6ff;
+      --accent-dim: #388bfd33;
+      --ok: #3fb950;
+      --warn: #d29922;
+      --bad: #f85149;
+      --violet: #a371f7;
+      --border: #30363d;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --sidebar-w: 280px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; font-size: 15px; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative !important; height: auto !important; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+    .sidebar {
+      position: sticky; top: 0; height: 100vh; overflow-y: auto;
+      padding: 1.25rem 1rem; background: var(--surface); border-right: 1px solid var(--border);
+    }
+    .sidebar h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 1.25rem 0 0.75rem; }
+    .sidebar h2:first-child { margin-top: 0; }
+    .sidebar nav a { display: block; padding: 0.35rem 0.5rem; border-radius: 6px; color: var(--muted); font-size: 0.88rem; }
+    .sidebar nav a:hover { background: var(--surface2); color: var(--text); text-decoration: none; }
+    main { max-width: 900px; padding: 2rem 2.5rem 4rem; }
+    header.doc-header { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+    header.doc-header h1 { font-size: 1.65rem; margin: 0 0 0.5rem; }
+    .meta { font-size: 0.85rem; color: var(--muted); }
+    .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.72rem; font-weight: 600; margin-right: 0.35rem; }
+    .badge-ok { background: #23863633; color: var(--ok); }
+    .badge-warn { background: #9e6a0333; color: var(--warn); }
+    .badge-easy { background: var(--accent-dim); color: var(--accent); }
+    .badge-med { background: #9e6a0333; color: var(--warn); }
+    .badge-hard { background: #da363633; color: var(--bad); }
+    section { margin-bottom: 2.5rem; scroll-margin-top: 1rem; }
+    h2 { font-size: 1.3rem; margin: 0 0 1rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1.05rem; margin: 1.5rem 0 0.75rem; color: var(--text); }
+    p { margin: 0 0 1rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.88rem; }
+    th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+    th { background: var(--surface2); }
+    tr:nth-child(even) td { background: #1a233260; }
+    pre, code { font-family: var(--mono); font-size: 0.82rem; }
+    pre {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      padding: 1rem; overflow-x: auto; margin: 0.75rem 0 1.25rem; position: relative;
+    }
+    code { background: var(--surface2); padding: 0.12rem 0.35rem; border-radius: 4px; }
+    pre code { background: transparent; padding: 0; }
+    .callout { background: var(--accent-dim); border-left: 4px solid var(--accent); padding: 0.75rem 1rem; margin: 1rem 0; border-radius: 0 8px 8px 0; }
+    .callout-warn { background: #9e6a0322; border-left-color: var(--warn); }
+    .callout-bad { background: #da363622; border-left-color: var(--bad); }
+    .problem-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      padding: 1rem 1.25rem; margin: 1.25rem 0;
+    }
+    .problem-card h3 { margin-top: 0; }
+    .id-row { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.75rem; }
+    .id-row code { font-size: 0.78rem; }
+    .lang-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    .lang-tabs span {
+      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em;
+      color: var(--muted); padding: 0.2rem 0.5rem; border: 1px solid var(--border); border-radius: 4px;
+    }
+    .lang-tabs span.primary { color: var(--accent); border-color: var(--accent); }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Bắt đầu</h2>
+      <nav>
+        <a href="#setup">Chuẩn bị</a>
+        <a href="#accounts">Tài khoản seed</a>
+        <a href="#features">Chức năng cần test</a>
+      </nav>
+      <h2>API &amp; luồng</h2>
+      <nav>
+        <a href="#api-auth">Auth / JWT</a>
+        <a href="#api-submit">Submit &amp; chấm</a>
+        <a href="#api-hint">AI Hint</a>
+        <a href="#api-class">Lớp học</a>
+        <a href="#wrong-code">Code sai (test hint)</a>
+      </nav>
+      <h2>Kho đề (PUBLIC)</h2>
+      <nav>
+        <a href="#bank-easy">5 EASY</a>
+        <a href="#bank-medium">3 MEDIUM</a>
+        <a href="#bank-hard">1 HARD</a>
+      </nav>
+      <h2>Bài tập lớp</h2>
+      <nav>
+        <a href="#class-cpp">Lớp CPP</a>
+        <a href="#class-web">Lớp Web</a>
+      </nav>
+      <h2>Docs khác</h2>
+      <nav>
+        <a href="../PRISMA-SEED.html">PRISMA SEED</a>
+        <a href="../postman-testapi.html">Postman API</a>
+        <a href="../AI-HINT-ASSISTANT.html">AI Hint</a>
+        <a href="../DEPLOY-VPS.html">Deploy VPS</a>
+      </nav>
+    </aside>
+
+    <main>
+      <header class="doc-header" id="setup">
+        <h1>Mã mẫu test chức năng</h1>
+        <p class="meta">
+          <span class="badge badge-ok">Seed DB</span>
+          <span>Judge0 / Worker</span>
+          <span>Cập nhật: 2026-05-19</span>
+        </p>
+        <p style="color:var(--muted); max-width: 720px;">
+          Tài liệu này gom <strong>mã nguồn mẫu</strong> (chủ yếu Python) và <strong>payload API</strong>
+          để kiểm tra nhanh các tính năng của <code>code-judge</code> sau khi chạy
+          <code>npm run prisma:seed -w @code-judge/core-api</code>.
+        </p>
+      </header>
+
+      <section id="setup">
+        <h2>Chuẩn bị môi trường</h2>
+        <ol>
+          <li><code>docker compose up -d</code> (Postgres, Redis, MinIO, Judge0).</li>
+          <li><code>npm run prisma:migrate -w @code-judge/core-api</code></li>
+          <li><code>npm run prisma:seed -w @code-judge/core-api</code></li>
+          <li>Chạy <strong>core-api</strong> (:3000), <strong>worker</strong>, <strong>web</strong> (:3001).</li>
+        </ol>
+        <div class="callout">
+          Mật khẩu mọi user seed: <code>123456</code>. API envelope:
+          <code>{ code, success, message, result }</code>.
+        </div>
+      </section>
+
+      <section id="accounts">
+        <h2>Tài khoản &amp; entity seed</h2>
+        <table>
+          <thead>
+            <tr><th>Vai trò</th><th>Email</th><th>userId</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Admin</td><td><code>admin@example.com</code></td><td><code>seed-user-admin</code></td></tr>
+            <tr><td>Giảng viên</td><td><code>instructor@example.com</code></td><td><code>seed-user-instructor</code></td></tr>
+            <tr><td>Học viên</td><td><code>student@example.com</code></td><td><code>seed-user-student</code></td></tr>
+            <tr><td>Học viên 2</td><td><code>student2@example.com</code></td><td><code>seed-user-student-2</code></td></tr>
+          </tbody>
+        </table>
+        <table>
+          <thead>
+            <tr><th>Lớp</th><th>classRoomId</th><th>Mã lớp</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>CPP 101</td><td><code>seed-class-cpp-101</code></td><td><code>SEEDCPP101</code></td></tr>
+            <tr><td>Web 102</td><td><code>seed-class-web-102</code></td><td><code>SEEDWEB102</code></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="features">
+        <h2>Chức năng nên test</h2>
+        <table>
+          <thead>
+            <tr><th>Chức năng</th><th>Cách test</th><th>Mã / endpoint</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Đăng nhập JWT</td>
+              <td>Web hoặc <code>POST /auth/login</code></td>
+              <td><a href="#api-auth">#api-auth</a></td>
+            </tr>
+            <tr>
+              <td>Chấm bài ALGO (Accepted)</td>
+              <td>Submit code đúng → worker → status <code>Accepted</code></td>
+              <td><a href="#bank-easy">Kho đề</a>, <a href="#class-cpp">Lớp</a></td>
+            </tr>
+            <tr>
+              <td>Run thử (dry-run)</td>
+              <td><code>isDryRun: true</code> — chỉ sample, không hidden</td>
+              <td><a href="#api-submit">#api-submit</a></td>
+            </tr>
+            <tr>
+              <td>Hidden testcase</td>
+              <td>Submit full — phải pass cả hidden</td>
+              <td>Mọi bài seed (2 hidden/bài)</td>
+            </tr>
+            <tr>
+              <td>AI Hint</td>
+              <td>Sau submit <strong>thất bại</strong>, <code>POST /problems/:id/hint</code></td>
+              <td><a href="#wrong-code">Code sai</a>, <a href="#api-hint">#api-hint</a></td>
+            </tr>
+            <tr>
+              <td>Kho đề PUBLIC</td>
+              <td>Problem không có ClassAssignment</td>
+              <td><code>visibility: PUBLIC</code></td>
+            </tr>
+            <tr>
+              <td>Bài tập lớp</td>
+              <td>Problem <code>PRIVATE</code> + ClassAssignment riêng</td>
+              <td><a href="#class-cpp">#class-cpp</a></td>
+            </tr>
+            <tr>
+              <td>Realtime submission</td>
+              <td>Socket sau submit (web)</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Tags / Problems API</td>
+              <td><code>GET /problems</code>, <code>GET /tags</code></td>
+              <td>JWT instructor/admin</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="api-auth">
+        <h2>Auth — lấy JWT</h2>
+        <pre><code>curl -s -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"student@example.com","password":"123456"}'</code></pre>
+        <p>Lấy <code>result.accessToken</code> (hoặc cookie) cho các request có <code>Authorization: Bearer …</code>.</p>
+      </section>
+
+      <section id="api-submit">
+        <h2>Submit — chấm bài</h2>
+        <p><code>POST /submissions</code> (hiện public để demo; production nên bảo vệ JWT).</p>
+        <h3>Kho đề — Accepted (Tổng hai số)</h3>
+        <pre><code>curl -s -X POST http://localhost:3000/submissions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "seed-user-student",
+    "problemId": "seed-problem-algo",
+    "mode": "ALGO",
+    "language": "PYTHON",
+    "sourceCode": "a=int(input())\nb=int(input())\nprint(a+b)"
+  }'</code></pre>
+        <h3>Run thử — chỉ sample testcase</h3>
+        <pre><code>curl -s -X POST http://localhost:3000/submissions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "seed-user-student",
+    "problemId": "seed-problem-algo",
+    "mode": "ALGO",
+    "language": "PYTHON",
+    "isDryRun": true,
+    "sourceCode": "print(int(input())+int(input()))"
+  }'</code></pre>
+        <h3>Bài lớp CPP — Tổng ba số</h3>
+        <pre><code>curl -s -X POST http://localhost:3000/submissions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "seed-user-student",
+    "problemId": "seed-problem-class-cpp-01",
+    "mode": "ALGO",
+    "language": "PYTHON",
+    "sourceCode": "print(int(input())+int(input())+int(input()))"
+  }'</code></pre>
+        <p>Kiểm tra kết quả: <code>GET /submissions/{submissionId}</code> hoặc theo dõi realtime trên web <code>/problem/seed-problem-algo</code>.</p>
+      </section>
+
+      <section id="api-hint">
+        <h2>AI Hint — sau khi submit sai</h2>
+        <ol>
+          <li>Submit code sai (xem <a href="#wrong-code">#wrong-code</a>), đợi status ≠ <code>Accepted</code>.</li>
+          <li>Gọi hint (cần JWT học viên):</li>
+        </ol>
+        <pre><code>curl -s -X POST http://localhost:3000/problems/seed-problem-algo/hint \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -d '{"submissionId": "SUBMISSION_UUID_FROM_STEP_1"}'</code></pre>
+        <div class="callout-warn callout">
+          Cần <code>OPENAI_API_KEY</code> hoặc <code>GOOGLE_GENERATIVE_AI_API_KEY</code> trong <code>apps/core-api/.env</code>.
+          Chi tiết: <a href="../AI-HINT-ASSISTANT.html">AI-HINT-ASSISTANT.html</a>.
+        </div>
+      </section>
+
+      <section id="api-class">
+        <h2>Lớp học — assignment riêng problem</h2>
+        <p>Kho đề <strong>không</strong> gắn ClassAssignment. Bài lớp dùng <code>problemId</code> khác:</p>
+        <table>
+          <thead>
+            <tr><th>classAssignmentId</th><th>problemId</th><th>Lớp</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>seed-assignment-cpp-01</code></td><td><code>seed-problem-class-cpp-01</code></td><td>CPP</td></tr>
+            <tr><td><code>seed-assignment-cpp-02</code></td><td><code>seed-problem-class-cpp-02</code></td><td>CPP</td></tr>
+            <tr><td><code>seed-assignment-cpp-03</code></td><td><code>seed-problem-class-cpp-03</code></td><td>CPP</td></tr>
+            <tr><td><code>seed-assignment-web-01</code></td><td><code>seed-problem-class-web-01</code></td><td>Web</td></tr>
+            <tr><td><code>seed-assignment-web-02</code></td><td><code>seed-problem-class-web-02</code></td><td>Web</td></tr>
+          </tbody>
+        </table>
+        <p>Đăng nhập <code>instructor@example.com</code> → quản lý lớp; <code>student@example.com</code> → làm bài trong lớp trên web.</p>
+      </section>
+
+      <section id="wrong-code">
+        <h2>Code cố ý sai — test Wrong + AI Hint</h2>
+        <div class="callout-bad callout">
+          Dùng để kiểm tra <code>Wrong</code>, <code>RuntimeError</code>, hoặc kích hoạt gợi ý AI — không dùng làm bài nộp đúng.
+        </div>
+        <h3>Sai logic (Tổng hai số)</h3>
+        <pre><code># problemId: seed-problem-algo
+print(int(input()) - int(input()))</code></pre>
+        <h3>RuntimeError</h3>
+        <pre><code># problemId: seed-problem-easy-03
+n = int(input())
+print(1 / (n - n))</code></pre>
+        <h3>TimeLimit (vòng lặp vô hạn — tùy judge)</h3>
+        <pre><code>while True:
+    pass</code></pre>
+      </section>
+
+      <!-- BANK EASY -->
+      <section id="bank-easy">
+        <h2>Kho đề — 5 EASY <span class="badge badge-easy">PUBLIC</span></h2>
+
+        <div class="problem-card" id="p-algo">
+          <h3>1. Tổng hai số</h3>
+          <div class="id-row"><code>seed-problem-algo</code> · slug <code>sum-two-numbers-seed</code></div>
+          <div class="lang-tabs"><span class="primary">Python</span><span>JS / CPP / Java</span></div>
+          <pre><code>a = int(input())
+b = int(input())
+print(a + b)</code></pre>
+        </div>
+
+        <div class="problem-card" id="p-max2">
+          <h3>2. Số lớn hơn</h3>
+          <div class="id-row"><code>seed-problem-easy-02</code></div>
+          <pre><code>a = int(input())
+b = int(input())
+print(max(a, b))</code></pre>
+        </div>
+
+        <div class="problem-card" id="p-even">
+          <h3>3. Chẵn hay lẻ</h3>
+          <div class="id-row"><code>seed-problem-easy-03</code></div>
+          <pre><code>n = int(input())
+print("EVEN" if n % 2 == 0 else "ODD")</code></pre>
+        </div>
+
+        <div class="problem-card" id="p-hello">
+          <h3>4. Xin chào</h3>
+          <div class="id-row"><code>seed-problem-easy-04</code></div>
+          <pre><code>name = input()
+print(f"Hello, {name}")</code></pre>
+        </div>
+
+        <div class="problem-card" id="p-square">
+          <h3>5. Bình phương</h3>
+          <div class="id-row"><code>seed-problem-easy-05</code></div>
+          <pre><code>n = int(input())
+print(n * n)</code></pre>
+        </div>
+      </section>
+
+      <section id="bank-medium">
+        <h2>Kho đề — 3 MEDIUM</h2>
+
+        <div class="problem-card">
+          <h3>6. Tổng dãy số</h3>
+          <div class="id-row"><code>seed-problem-med-01</code> — Input: <code>n</code> rồi <code>n</code> số trên một dòng</div>
+          <pre><code>n = int(input())
+arr = list(map(int, input().split()))
+print(sum(arr))</code></pre>
+        </div>
+
+        <div class="problem-card">
+          <h3>7. Palindrome</h3>
+          <div class="id-row"><code>seed-problem-med-02</code></div>
+          <pre><code>s = input().strip()
+print("YES" if s == s[::-1] else "NO")</code></pre>
+        </div>
+
+        <div class="problem-card">
+          <h3>8. Số nguyên tố</h3>
+          <div class="id-row"><code>seed-problem-med-03</code></div>
+          <pre><code>n = int(input())
+
+def is_prime(x):
+    if x &lt; 2:
+        return False
+    for i in range(2, int(x ** 0.5) + 1):
+        if x % i == 0:
+            return False
+    return True
+
+print("YES" if is_prime(n) else "NO")</code></pre>
+        </div>
+      </section>
+
+      <section id="bank-hard">
+        <h2>Kho đề — 1 HARD</h2>
+        <div class="problem-card">
+          <h3>9. Tổng dãy con lớn nhất (Kadane)</h3>
+          <div class="id-row"><code>seed-problem-hard-01</code> · time limit seed: 2000ms</div>
+          <pre><code>n = int(input())
+a = list(map(int, input().split()))
+best = cur = a[0]
+for x in a[1:]:
+    cur = max(x, cur + x)
+    best = max(best, cur)
+print(best)</code></pre>
+        </div>
+      </section>
+
+      <section id="class-cpp">
+        <h2>Bài tập lớp — CPP 101</h2>
+        <p>Problem <code>PRIVATE</code>, chỉ gắn lớp qua ClassAssignment.</p>
+
+        <div class="problem-card">
+          <h3>BT tuần 1: Tổng ba số</h3>
+          <div class="id-row">
+            assignment <code>seed-assignment-cpp-01</code> ·
+            problem <code>seed-problem-class-cpp-01</code>
+          </div>
+          <pre><code>a = int(input())
+b = int(input())
+c = int(input())
+print(a + b + c)</code></pre>
+        </div>
+
+        <div class="problem-card">
+          <h3>BT tuần 2: GCD</h3>
+          <div class="id-row">
+            <code>seed-assignment-cpp-02</code> · <code>seed-problem-class-cpp-02</code>
+          </div>
+          <pre><code>import math
+
+a = int(input())
+b = int(input())
+print(math.gcd(a, b))</code></pre>
+        </div>
+
+        <div class="problem-card">
+          <h3>BT tuần 3: Đếm số chia hết</h3>
+          <div class="id-row">
+            <code>seed-assignment-cpp-03</code> · <code>seed-problem-class-cpp-03</code><br />
+            Input một dòng: <code>L R k</code> (theo công thức seed)
+          </div>
+          <pre><code>L, R, k = map(int, input().split())
+# Khớp testcase seed: (R - L) // k + 1
+print((R - L) // k + 1)</code></pre>
+        </div>
+      </section>
+
+      <section id="class-web">
+        <h2>Bài tập lớp — Web 102</h2>
+
+        <div class="problem-card">
+          <h3>BT lab: Nhân đôi</h3>
+          <div class="id-row">
+            <code>seed-assignment-web-01</code> · <code>seed-problem-class-web-01</code>
+          </div>
+          <pre><code>n = int(input())
+print(2 * n)</code></pre>
+        </div>
+
+        <div class="problem-card">
+          <h3>BT lab: Đảo ngược chuỗi số</h3>
+          <div class="id-row">
+            <code>seed-assignment-web-02</code> · <code>seed-problem-class-web-02</code>
+          </div>
+          <pre><code>s = input().strip()
+print(int(s[::-1]))</code></pre>
+        </div>
+      </section>
+
+      <section id="other-lang">
+        <h2>Gợi ý ngôn ngữ khác (C++)</h2>
+        <p>Judge0 hỗ trợ <code>CPP</code>, <code>JAVA</code>, <code>JAVASCRIPT</code>. Ví dụ Tổng hai số:</p>
+        <pre><code>#include &lt;iostream&gt;
+using namespace std;
+int main() {
+    long long a, b;
+    cin &gt;&gt; a &gt;&gt; b;
+    cout &lt;&lt; a + b;
+    return 0;
+}</code></pre>
+        <p>Submit với <code>"language": "CPP"</code> (hoặc <code>PYTHON</code> như trên).</p>
+      </section>
+
+      <footer>
+        <p>
+          Nguồn seed: <code>apps/core-api/prisma/seed.ts</code> ·
+          Collection Postman: <code>apps/core-api/postman/Code-Judge-Core-API.postman_collection.json</code>
+        </p>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

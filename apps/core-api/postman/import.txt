@@ -1,0 +1,106 @@
+# =============================================================================
+# code-judge — cURL để import vào Postman
+# =============================================================================
+# Import đủ endpoint một lần: dùng file JSON collection cùng thư mục:
+#   Code-Judge-Core-API.postman_collection.json  (Postman → Import → Upload)
+# =============================================================================
+# Cách dùng Postman:
+#   Import → Raw text → dán MỘT khối curl tương ứng từng request → Continue → Import
+# Một số phiên bản Postman cho phép dán nhiều curl cách nhau bằng dòng trống; nếu không,
+# import từng request một.
+#
+# Biến thay thế trước khi chạy:
+#   BASE: http://localhost:3000 (Core API)
+#   ACCESS_TOKEN: lấy từ POST /auth/login hoặc /auth/register (field result.accessToken)
+#   OBJECT_KEY: lấy từ response presign upload (field result.objectKey)
+#   UPLOAD_URL: lấy từ response presign (field result.uploadUrl) — URL đầy đủ từ MinIO
+# =============================================================================
+
+# --- 01) Đăng ký (public) ---
+curl --location 'http://localhost:3000/auth/register' \
+  --header 'Content-Type: application/json' \
+  --data-raw '{
+    "name": "Test User",
+    "email": "testuser@example.com",
+    "password": "Secret12!"
+  }'
+
+# --- 02) Đăng nhập (public) ---
+curl --location 'http://localhost:3000/auth/login' \
+  --header 'Content-Type: application/json' \
+  --data-raw '{
+    "email": "testuser@example.com",
+    "password": "Secret12!"
+  }'
+
+# --- 03) Lấy profile hiện tại (JWT) — thay ACCESS_TOKEN ---
+curl --location 'http://localhost:3000/users/me' \
+  --header 'Authorization: Bearer ACCESS_TOKEN'
+
+# --- 04) Danh sách user có paging + search (JWT) ---
+curl --location 'http://localhost:3000/users?page=1&limit=10&search=test' \
+  --header 'Authorization: Bearer ACCESS_TOKEN'
+
+# --- 05) Tạo submission (public — demo) ---
+curl --location 'http://localhost:3000/submissions' \
+  --header 'Content-Type: application/json' \
+  --data-raw '{
+    "userId": "demo-user-1",
+    "problemId": "demo-problem-1",
+    "mode": "ALGO",
+    "sourceCode": "print(42)"
+  }'
+
+# --- 06) Presign upload MinIO (public) — artifact ---
+curl --location 'http://localhost:3000/storage/presign/upload' \
+  --header 'Content-Type: application/json' \
+  --data-raw '{
+    "resourceKind": "submission-artifact",
+    "submissionId": "test-sub-1",
+    "fileName": "hello.txt"
+  }'
+
+# --- 07) Presign upload MinIO (public) — avatar key (không cần JWT; key random) ---
+curl --location 'http://localhost:3000/storage/presign/upload' \
+  --header 'Content-Type: application/json' \
+  --data-raw '{
+    "resourceKind": "avatar",
+    "userId": "demo-user-1",
+    "extension": "png"
+  }'
+
+# --- 08) Upload file lên MinIO bằng URL đã ký — thay UPLOAD_URL ---
+# Sau bước 06 hoặc 07: copy result.uploadUrl từ response API (sau envelope là result.uploadUrl).
+curl --location --request PUT 'UPLOAD_URL' \
+  --header 'Content-Type: text/plain' \
+  --data-raw 'Hello MinIO'
+
+# --- 09) Presign download (public) — thay OBJECT_KEY (URL-encode nếu cần) ---
+curl --location 'http://localhost:3000/storage/presign/download?objectKey=OBJECT_KEY&expiresInSeconds=900'
+
+# --- 10) Avatar: lấy presigned upload (JWT) ---
+curl --location 'http://localhost:3000/users/me/avatar/upload-url' \
+  --header 'Authorization: Bearer ACCESS_TOKEN' \
+  --header 'Content-Type: application/json' \
+  --data-raw '{
+    "extension": "png"
+  }'
+
+# --- 11) Avatar: xác nhận sau khi PUT lên MinIO (JWT) — thay OBJECT_KEY ---
+curl --location 'http://localhost:3000/users/me/avatar/confirm' \
+  --header 'Authorization: Bearer ACCESS_TOKEN' \
+  --header 'Content-Type: application/json' \
+  --data-raw '{
+    "objectKey": "OBJECT_KEY"
+  }'
+
+# --- 12) Refresh token (cookie) — Postman: bật cookie jar hoặc gửi Cookie header ---
+curl --location 'http://localhost:3000/auth/refresh' \
+  --header 'Cookie: refreshToken=PASTE_REFRESH_TOKEN_FROM_SET_COOKIE'
+
+# --- 13) Logout (xóa cookie refresh) ---
+curl --location 'http://localhost:3000/auth/logout' \
+  --request POST
+
+# --- 14) Swagger JSON (khi SWAGGER_ENABLED không tắt) ---
+curl --location 'http://localhost:3000/api-docs/json'
