@@ -32,7 +32,12 @@ export default function ProblemDescription({
     'text-rose-500 bg-rose-500/10 border-rose-500/20';
 
   return (
-    <div className="w-[45%] flex flex-col border-r border-border/50 bg-card/30 backdrop-blur-sm overflow-hidden">
+    <div className={cn(
+      "flex flex-col border-r border-border/50 bg-card/30 backdrop-blur-sm overflow-hidden transition-all duration-300",
+      contestId && isSidebarOpen
+        ? "w-[35%] min-w-[320px]"
+        : "w-[45%] min-w-[400px]"
+    )}>
       {/* Tab Switcher */}
       <div className="flex items-center border-b border-border/50 bg-muted/20 px-4 gap-2">
         {contestId && setIsSidebarOpen && (

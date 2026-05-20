@@ -134,3 +134,10 @@ body {
     @apply font-sans;
   }
 }
+
+/* Force Sonner toast description to be readable (not muted gray) */
+[data-sonner-toast] [data-description] {
+  color: #111827 !important;
+  opacity: 1 !important;
+  font-weight: 500 !important;
+}

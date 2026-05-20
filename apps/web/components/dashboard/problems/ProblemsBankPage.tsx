@@ -90,7 +90,7 @@ export default function ProblemsBankPage() {
         console.error(e);
         if (!cancelled) {
           const msg =
-            e instanceof ApiRequestError ? e.body.message : 'Không tải được danh sách đề.';
+            e instanceof ApiRequestError ? e.body.message : 'Failed to load problem bank.';
           toast.error(msg, { position: 'top-center' });
           setItems([]);
           setTotal(0);
@@ -172,8 +172,7 @@ export default function ProblemsBankPage() {
         setTotal(res.total);
       })
       .catch((e) => {
-        const msg =
-          e instanceof ApiRequestError ? e.body.message : 'Không tải được danh sách đề.';
+        const msg = e instanceof ApiRequestError ? e.body.message : 'Failed to load problem bank.';
         toast.error(msg, { position: 'top-center' });
         setItems([]);
         setTotal(0);
@@ -184,9 +183,9 @@ export default function ProblemsBankPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Kho đề</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Problem Bank</h1>
         <p className="text-muted-foreground text-sm">
-          Các đề công khai đã publish. {total > 0 ? `${total} đề` : null}
+          Publicly available problems. {total > 0 ? `${total} problems` : null}
         </p>
       </div>
 
@@ -194,37 +193,37 @@ export default function ProblemsBankPage() {
         <div className="relative max-w-md flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Tìm theo tiêu đề, mô tả, slug..."
+            placeholder="Search by title, description, or slug..."
             value={searchDraft}
             onChange={(e) => setSearchDraft(e.target.value)}
             className="bg-background pl-8"
-            aria-label="Tìm kiếm đề"
+            aria-label="Search problems"
           />
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1.5">
-            <p className="text-muted-foreground text-xs font-medium">Độ khó</p>
+            <p className="text-muted-foreground text-xs font-medium">Difficulty</p>
             <Select value={filters.difficulty || 'all'} onValueChange={setDifficulty}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Tất cả" />
+              <SelectTrigger className="w-[120px] m-0 cursor-pointer">
+                <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="EASY">Dễ</SelectItem>
-                <SelectItem value="MEDIUM">Trung bình</SelectItem>
-                <SelectItem value="HARD">Khó</SelectItem>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="EASY">Easy</SelectItem>
+                <SelectItem value="MEDIUM">Medium</SelectItem>
+                <SelectItem value="HARD">Hard</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
-            <p className="text-muted-foreground text-xs font-medium">Dạng</p>
+            <p className="text-muted-foreground text-xs font-medium">Mode</p>
             <Select value={filters.mode || 'all'} onValueChange={setMode}>
-              <SelectTrigger className="w-[130px]">
-                <SelectValue placeholder="Tất cả" />
+              <SelectTrigger className="w-[130px] m-0 cursor-pointer">
+                <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="ALGO">Thuật toán</SelectItem>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="ALGO">Algorithm</SelectItem>
                 <SelectItem value="PROJECT">Project</SelectItem>
               </SelectContent>
             </Select>
@@ -233,14 +232,14 @@ export default function ProblemsBankPage() {
             value={filters.tagSlug}
             onChange={setTagSlug}
             label="Tag"
-            allLabel="Tất cả"
-            triggerClassName="w-[150px]"
+            allLabel="All"
+            triggerClassName="w-[150px] m-0 cursor-pointer"
           />
           <Button
             type="button"
             variant="outline"
             size="icon"
-            className="shrink-0"
+            className="shrink-0 cursor-pointer"
             onClick={() => void refetch()}
             disabled={loading}
             aria-label="Làm mới"
@@ -254,11 +253,11 @@ export default function ProblemsBankPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Tiêu đề</TableHead>
+              <TableHead>Title</TableHead>
               <TableHead className="hidden sm:table-cell">Slug</TableHead>
-              <TableHead>Độ khó</TableHead>
+              <TableHead>Difficulty</TableHead>
               <TableHead className="hidden md:table-cell">Mode</TableHead>
-              <TableHead className="text-right">Thao tác</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -271,7 +270,7 @@ export default function ProblemsBankPage() {
             ) : items.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-muted-foreground h-32 text-center">
-                  Không có đề phù hợp. Thử đổi bộ lọc hoặc từ khóa.
+                  No matching problems. Try adjusting filters or keywords.
                 </TableCell>
               </TableRow>
             ) : (
@@ -312,7 +311,7 @@ export default function ProblemsBankPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/problem/${p.id}`}>Làm bài</Link>
+                      <Link href={`/problem/${p.id}`}>Solve Problem</Link>
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -325,7 +324,7 @@ export default function ProblemsBankPage() {
       {totalPages > 1 ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-muted-foreground text-sm">
-            Trang {filters.page} / {totalPages} · {PAGE_SIZE} đề / trang
+            Page {filters.page} / {totalPages} · {PAGE_SIZE} problems / page
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -336,7 +335,7 @@ export default function ProblemsBankPage() {
               disabled={filters.page <= 1 || loading}
             >
               <ChevronLeft className="h-4 w-4" />
-              Trước
+              Prev
             </Button>
             <Button
               type="button"
@@ -345,7 +344,7 @@ export default function ProblemsBankPage() {
               onClick={() => goPage(filters.page + 1)}
               disabled={filters.page >= totalPages || loading}
             >
-              Sau
+              Next
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

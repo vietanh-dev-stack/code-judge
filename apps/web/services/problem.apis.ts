@@ -23,13 +23,16 @@ export interface Problem {
   creatorId: string | null;
   createdAt: string;
   updatedAt: string;
-  tags?: Array<{
+  tags?: {
+    problemId: string;
+    tagId: string;
     tag: {
       id: string;
       name: string;
       slug: string;
+      createdAt: string;
     };
-  }>;
+  }[];
   testCases?: Array<{
     id: string;
     orderIndex: number;
@@ -170,7 +173,7 @@ export interface ProblemsListQuery {
   mode?: 'ALGO' | 'PROJECT';
   tagId?: string;
   tagSlug?: string;
-};
+}
 
 /** GET /problems/admin/all */
 export interface AdminProblemsListQuery {
@@ -179,7 +182,7 @@ export interface AdminProblemsListQuery {
   limit?: number;
   tagId?: string;
   tagSlug?: string;
-};
+}
 
 function appendProblemsListParams(params: URLSearchParams, query: ProblemsListQuery) {
   if (query.search) params.set('search', query.search);
@@ -200,7 +203,10 @@ export const problemsApi = {
     return apiFetch(`/problems${queryString ? `?${queryString}` : ''}`, options);
   },
 
-  async findAllAdmin(query?: AdminProblemsListQuery, options?: RequestInit): Promise<PaginatedProblems> {
+  async findAllAdmin(
+    query?: AdminProblemsListQuery,
+    options?: RequestInit,
+  ): Promise<PaginatedProblems> {
     const params = new URLSearchParams();
     if (query?.search) params.set('search', query.search);
     if (query?.page != null) params.set('page', String(query.page));

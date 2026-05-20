@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import ClassCard from '@/components/dashboard/ClassCard';
 import { getClassroomBannerColor } from '@/lib/classroom-banner';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import Pagination from '@/components/shared/pagination';
 
 import { archiveClassroom, restoreClassroom } from '@/services/classroom.apis';
 import { useClassroomStore } from '@/store/classroom-store';
@@ -24,6 +25,23 @@ export default function StudentDashboardPage() {
   const classrooms = useMemo(() => [...teaching, ...enrolled], [teaching, enrolled]);
   const activeClasses = useMemo(() => classrooms.filter((c) => c.isActive), [classrooms]);
   const user = useAuthStore((s) => s.user);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+  const totalPages = Math.ceil(activeClasses.length / itemsPerPage);
+
+  const paginatedClasses = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return activeClasses.slice(startIndex, startIndex + itemsPerPage);
+  }, [activeClasses, currentPage]);
+
+  // Adjust page if it gets out of bounds (e.g. after archiving)
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
 
   // DIALOG STATE
   const [confirmConfig, setConfirmConfig] = useState<{
@@ -127,28 +145,36 @@ export default function StudentDashboardPage() {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {activeClasses.map((item) => {
-        const bannerColors = getClassroomBannerColor(item.id);
-        const isOwner = item.ownerId === user?.id;
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {paginatedClasses.map((item) => {
+          const bannerColors = getClassroomBannerColor(item.id);
+          const isOwner = item.ownerId === user?.id;
 
-        return (
-          <ClassCard
-            key={item.id}
-            id={item.id}
-            title={item.name}
-            subTitle={item.academicYear ?? ''}
-            teacher={item.owner?.name ?? 'Unknown'}
-            bannerBg={bannerColors}
-            avatar={item.owner?.image}
-            isActive={item.isActive}
-            isOwner={isOwner}
-            onArchive={() => handleArchive(item.id)}
-            onRestore={() => handleRestore(item.id)}
-            onLeave={() => handleLeave(item.id)}
-          />
-        );
-      })}
+          return (
+            <ClassCard
+              key={item.id}
+              id={item.id}
+              title={item.name}
+              subTitle={item.academicYear ?? ''}
+              teacher={item.owner?.name ?? 'Unknown'}
+              bannerBg={bannerColors}
+              avatar={item.owner?.image}
+              isActive={item.isActive}
+              isOwner={isOwner}
+              onArchive={() => handleArchive(item.id)}
+              onRestore={() => handleRestore(item.id)}
+              onLeave={() => handleLeave(item.id)}
+            />
+          );
+        })}
+      </div>
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
 
       <ConfirmDialog
         isOpen={confirmConfig.isOpen}

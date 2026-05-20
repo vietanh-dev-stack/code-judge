@@ -108,12 +108,14 @@ export default function SchedulePageContent({ filter }: { filter?: string }) {
           return (
             <div key={index} className="flex flex-col min-h-full">
               {/* Header */}
-              <div className="py-4 flex flex-col items-center border-b border-zinc-100 bg-gray-50/30">
-                <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider">
+              <div className="py-4 flex flex-col items-center ">
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-wider ${isSameDay(day, new Date()) ? 'text-black' : 'text-zinc-500'}`}
+                >
                   {format(day, 'EEE', { locale: enUS })}
                 </span>
                 <span
-                  className={`text-2xl font-light ${isSameDay(day, new Date()) ? 'text-black font-bold' : 'text-zinc-400'}`}
+                  className={`text-2xl font-light ${isSameDay(day, new Date()) ? 'text-white font-bold bg-black rounded-full p-1' : 'text-zinc-400'}`}
                 >
                   {format(day, 'd')}
                 </span>
@@ -121,9 +123,8 @@ export default function SchedulePageContent({ filter }: { filter?: string }) {
 
               {/* Events */}
               <div className="p-2 flex-1 space-y-2 overflow-y-auto max-h-[500px]">
-                {dayEvents.length > 0 ? (
-                  dayEvents.map((event, idx) => {
-                    const itemClasses = `
+                {dayEvents.map((event, idx) => {
+                  const itemClasses = `
                         rounded-xl px-3 py-2.5
                         border transition-all duration-200
                         
@@ -134,41 +135,36 @@ export default function SchedulePageContent({ filter }: { filter?: string }) {
                         }
                       `;
 
-                    const dotColor = event.type === 'Contest' ? 'bg-orange-500' : 'bg-indigo-500';
+                  const dotColor = event.type === 'Contest' ? 'bg-orange-500' : 'bg-indigo-500';
 
-                    const content = (
-                      <div className={itemClasses}>
-                        <div className="flex items-start gap-2">
-                          <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${dotColor}`} />
+                  const content = (
+                    <div className={itemClasses}>
+                      <div className="flex items-start gap-2">
+                        <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${dotColor}`} />
 
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-zinc-800 line-clamp-2">
-                              {event.title}
-                            </p>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-zinc-800 line-clamp-2">
+                            {event.title}
+                          </p>
 
-                            <div className="mt-2 flex items-center justify-between text-xs text-zinc-500">
-                              <span className="truncate font-medium">{event.className}</span>
+                          <div className="mt-2 flex items-center justify-between text-xs text-zinc-500">
+                            <span className="truncate font-medium">{event.className}</span>
 
-                              <span className="tabular-nums">{event.time}</span>
-                            </div>
+                            <span className="tabular-nums">{event.time}</span>
                           </div>
                         </div>
                       </div>
-                    );
+                    </div>
+                  );
 
-                    return event.href ? (
-                      <Link key={idx} href={event.href} className="block">
-                        {content}
-                      </Link>
-                    ) : (
-                      <div key={idx}>{content}</div>
-                    );
-                  })
-                ) : (
-                  <div className="h-full flex items-center justify-center">
-                    <span className="text-xs text-zinc-400 italic">No events</span>
-                  </div>
-                )}
+                  return event.href ? (
+                    <Link key={idx} href={event.href} className="block">
+                      {content}
+                    </Link>
+                  ) : (
+                    <div key={idx}>{content}</div>
+                  );
+                })}
               </div>
             </div>
           );
