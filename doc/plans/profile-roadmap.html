@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Code Judge — Kế hoạch triển khai Profile</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --card: #1a2332;
+      --border: #2d3a4f;
+      --text: #e7ecf3;
+      --muted: #8b9cb3;
+      --accent: #3b82f6;
+      --success: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      margin: 0;
+      padding: 2rem 1rem 4rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--muted); margin-bottom: 2rem; }
+    h2 {
+      font-size: 1.25rem;
+      margin-top: 2.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1rem; margin-top: 1.5rem; color: var(--accent); }
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .badge-done { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+    .badge-next { background: rgba(59, 130, 246, 0.2); color: var(--accent); }
+    .badge-later { background: rgba(245, 158, 11, 0.15); color: var(--warn); }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin: 1rem 0;
+    }
+    ul { padding-left: 1.25rem; }
+    li { margin: 0.35rem 0; }
+    code {
+      background: rgba(0, 0, 0, 0.35);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      margin: 1rem 0;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+    }
+    th { background: rgba(0, 0, 0, 0.25); }
+    .note {
+      border-left: 3px solid var(--accent);
+      padding: 0.75rem 1rem;
+      background: rgba(59, 130, 246, 0.08);
+      margin: 1rem 0;
+      font-size: 0.95rem;
+    }
+    .schema-block {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: Consolas, monospace;
+      font-size: 0.85rem;
+      white-space: pre;
+    }
+    footer {
+      margin-top: 3rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Kế hoạch triển khai Profile — Code Judge</h1>
+    <p class="subtitle">
+      Tài liệu mô tả trạng thái hiện tại và lộ trình mở rộng trang profile.
+      <strong>Không thay đổi <code>schema.prisma</code></strong> cho đến khi team chốt migration.
+    </p>
+
+    <div class="note">
+      Cập nhật: Tháng 5/2026. Phase 1–2 đã triển khai (bảo mật, stats từ <code>Submission</code>).
+      Các tính năng cần cột DB mới được hoãn sang Phase 3+ và mô tả dưới đây.
+    </div>
+
+    <h2>1. Đã triển khai <span class="badge badge-done">Done</span></h2>
+    <div class="card">
+      <h3>Backend (<code>apps/core-api</code>)</h3>
+      <ul>
+        <li><code>GET /auth/me</code>, <code>GET/PATCH /users/me</code> — response an toàn (không <code>passwordHash</code>)</li>
+        <li><code>UpdateMeDto</code> — chỉ <code>name</code>, <code>email</code> (chặn tự nâng <code>role</code> / <code>isActive</code>)</li>
+        <li>Avatar: presign → MinIO → confirm (ghi <code>image</code> + <code>imageObjectKey</code>)</li>
+        <li><code>GET /users/me/stats</code> — bài đã giải, theo độ khó, ngôn ngữ, tỷ lệ đúng, hoạt động gần đây</li>
+        <li><code>POST /auth/change-password</code></li>
+        <li><code>DELETE /users/me</code> — vô hiệu hóa tài khoản (soft: <code>isActive = false</code>)</li>
+      </ul>
+      <h3>Frontend (<code>apps/web</code>)</h3>
+      <ul>
+        <li>Route <code>/dashboard/profile</code> — tab Tổng quan, Thống kê, Cài đặt</li>
+        <li>Bỏ mock data; loading / empty state</li>
+        <li>Settings → <code>?tab=settings</code>; redirect <code>/settings</code>, <code>/dashboard/settings</code></li>
+        <li>Sau lưu profile / avatar: <code>refreshUser()</code> từ <code>/auth/me</code></li>
+      </ul>
+    </div>
+
+    <h2>2. Cần migration Prisma <span class="badge badge-next">Phase 3</span></h2>
+    <p>
+      Các tính năng sau <strong>yêu cầu thêm cột hoặc bảng</strong>. Khi triển khai, tạo migration riêng
+      (ví dụ <code>YYYYMMDD_profile_extended</code>) và cập nhật seed nếu cần.
+    </p>
+
+    <h3>2.1 Mở rộng model <code>User</code></h3>
+    <div class="schema-block">model User {
+  // ... các field hiện có ...
+  bio             String?
+  location        String?
+  isProfilePublic Boolean @default(false)
+}</div>
+
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Mục đích</th><th>API / UI</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>bio</code></td><td>Giới thiệu ngắn (max ~500 ký tự)</td><td><code>PATCH /users/me</code>, hiển thị header profile</td></tr>
+        <tr><td><code>location</code></td><td>Địa điểm</td><td><code>PATCH /users/me</code>, header</td></tr>
+        <tr><td><code>isProfilePublic</code></td><td>Cho phép xem profile công khai</td><td>Checkbox Cài đặt; <code>GET /users/:id/public</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>2.2 Profile công khai</h3>
+    <ul>
+      <li><code>GET /users/:id/public</code> — <code>@Public()</code>, chỉ trả field công khai (không email)</li>
+      <li>Kèm stats rút gọn (optional): <code>problemsSolved</code>, ngôn ngữ top 3</li>
+      <li>Frontend: <code>/users/[id]</code> hoặc <code>/profile/[id]</code></li>
+    </ul>
+
+    <h3>2.3 Social links</h3>
+    <p>Hai hướng:</p>
+    <ul>
+      <li><strong>JSON</strong> trên User: <code>socialLinks Json?</code> — nhanh, ít join</li>
+      <li><strong>Bảng riêng</strong> <code>UserSocialLink</code> — chuẩn hóa, dễ validate URL</li>
+    </ul>
+
+    <h3>2.4 Achievements (gamification)</h3>
+    <ul>
+      <li>Model <code>Achievement</code> + <code>UserAchievement</code></li>
+      <li>Job/cron hoặc hook sau submission Accepted để unlock</li>
+      <li>Tab Achievements trên profile (đã có UI prototype cũ, có thể tái sử dụng layout)</li>
+    </ul>
+
+    <h3>2.5 Preferences & notifications</h3>
+    <ul>
+      <li><code>UserPreferences</code> (JSON hoặc bảng): email contest, class announcements, v.v.</li>
+      <li>Tích hợp sau khi có hệ thống gửi email/notification</li>
+    </ul>
+
+    <h3>2.6 Metrics nâng cao (không cần migration User)</h3>
+    <ul>
+      <li>Streak, level, best rank toàn hệ thống — cần định nghĩa product + có thể bảng <code>UserStats</code> cache</li>
+      <li>Hoạt động contest/class trong <code>recentActivity</code> — mở rộng <code>UserStatsService</code></li>
+    </ul>
+
+    <h2>3. Thứ tự triển khai đề xuất</h2>
+    <div class="card">
+      <ol>
+        <li><strong>Migration User</strong> — bio, location, isProfilePublic + API + UI settings</li>
+        <li><strong>Public profile page</strong> — endpoint + route frontend</li>
+        <li><strong>Social links</strong> — theo quyết định JSON vs bảng</li>
+        <li><strong>Achievements</strong> — schema + rules + tab UI</li>
+        <li><strong>Notifications preferences</strong> — khi có email service</li>
+        <li><strong>Streak / level</strong> — product spec + cache layer</li>
+      </ol>
+    </div>
+
+    <h2>4. Checklist trước khi merge migration</h2>
+    <ul>
+      <li>Review với team: field nullable, default <code>isProfilePublic = false</code></li>
+      <li>Chạy <code>npx prisma migrate dev</code> trên staging</li>
+      <li>Cập nhật Postman / OpenAPI</li>
+      <li>Kiểm tra GDPR: export data (<code>Download My Data</code>) nếu bật</li>
+      <li>Regression: admin <code>PATCH /users/:id</code> vẫn dùng <code>UpdateUserDto</code> đầy đủ</li>
+    </ul>
+
+    <h2>5. File liên quan</h2>
+    <table>
+      <thead>
+        <tr><th>Thành phần</th><th>Đường dẫn</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Profile page</td><td><code>apps/web/app/(dashboard)/dashboard/profile/</code></td></tr>
+        <tr><td>Profile API client</td><td><code>apps/web/services/profile.apis.ts</code></td></tr>
+        <tr><td>Users module</td><td><code>apps/core-api/src/users/</code></td></tr>
+        <tr><td>User stats</td><td><code>apps/core-api/src/users/user-stats.service.ts</code></td></tr>
+        <tr><td>Schema (không sửa tạm)</td><td><code>apps/core-api/prisma/schema.prisma</code></td></tr>
+      </tbody>
+    </table>
+
+    <h2>6. Ước lượng effort</h2>
+    <table>
+      <thead>
+        <tr><th>Hạng mục</th><th>Backend</th><th>Frontend</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>User fields + public profile</td><td>0.5 ngày</td><td>0.5 ngày</td></tr>
+        <tr><td>Social links</td><td>0.5–1 ngày</td><td>0.5 ngày</td></tr>
+        <tr><td>Achievements</td><td>2–3 ngày</td><td>1 ngày</td></tr>
+        <tr><td>Notifications prefs</td><td>1–2 ngày</td><td>0.5 ngày</td></tr>
+        <tr><td>Streak / level</td><td>2+ ngày</td><td>1 ngày</td></tr>
+      </tbody>
+    </table>
+
+    <footer>
+      Code Judge — doc/plans/profile-roadmap.html. Mở file này trực tiếp trên trình duyệt để xem.
+    </footer>
+  </div>
+</body>
+</html>

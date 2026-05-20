@@ -258,15 +258,15 @@ export default function Sidebar() {
           )}
         </div>
 
-        {/* SETTINGS */}
+        {/* PROFILE */}
         <div className="mt-auto">
           {renderItem(
             {
               icon: Settings,
-              label: 'Settings',
-              path: '/dashboard/settings',
+              label: 'Profile',
+              path: '/dashboard/profile',
             },
-            'settings',
+            'profile-nav',
           )}
         </div>
       </div>

@@ -12,7 +12,12 @@
  *       Refresh tokens are now stateless JWTs stored only in HttpOnly cookies.
  *       To revoke all sessions for a user, rotate JWT_REFRESH_SECRET.
  */
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Role, type User } from '@prisma/client';
@@ -209,6 +214,32 @@ export class AuthService {
       });
 
     return this.issueTokenPair(user);
+  }
+
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<{ success: boolean }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.passwordHash) {
+      throw new BadRequestException(
+        'Tài khoản đăng nhập bằng Google — không thể đổi mật khẩu tại đây',
+      );
+    }
+
+    const valid = await verifyPassword(currentPassword, user.passwordHash);
+    if (!valid) {
+      throw new UnauthorizedException('Mật khẩu hiện tại không đúng');
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+
+    return { success: true };
   }
 
   async getUserProfile(userId: string) {

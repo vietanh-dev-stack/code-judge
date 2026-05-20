@@ -7,9 +7,11 @@ import { AvatarConfirmDto } from './dto/avatar-confirm.dto';
 import { AvatarUploadDto } from './dto/avatar-upload.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ListUsersDto } from './dto/list-users.dto';
+import { UpdateMeDto } from './dto/update-me.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ToggleStatusDto } from './dto/toggle-status.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { UserStatsService } from './user-stats.service';
 import { UsersService } from './users.service';
 import { Roles } from '../common/decorators/roles.decorator';
 
@@ -17,7 +19,10 @@ import { Roles } from '../common/decorators/roles.decorator';
 @ApiBearerAuth('JWT')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly users: UsersService) {}
+  constructor(
+    private readonly users: UsersService,
+    private readonly userStats: UserStatsService,
+  ) {}
 
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Tạo user mới' })
@@ -41,13 +46,19 @@ export class UsersController {
   @ApiOperation({ summary: 'Lấy thông tin user hiện tại' })
   @Get('me')
   me(@CurrentUser() user: RequestUser) {
-    return this.users.findById(user.userId);
+    return this.users.findPublicById(user.userId);
+  }
+
+  @ApiOperation({ summary: 'Thống kê profile của user hiện tại' })
+  @Get('me/stats')
+  myStats(@CurrentUser() user: RequestUser) {
+    return this.userStats.getMyStats(user.userId);
   }
 
   @ApiOperation({ summary: 'Cập nhật thông tin user hiện tại' })
   @Patch('me')
-  updateMe(@CurrentUser() user: RequestUser, @Body() dto: UpdateUserDto) {
-    return this.users.update(user.userId, dto);
+  updateMe(@CurrentUser() user: RequestUser, @Body() dto: UpdateMeDto) {
+    return this.users.updateMe(user.userId, dto);
   }
 
   @ApiOperation({ summary: 'Lấy presigned URL upload avatar của user hiện tại' })
@@ -60,6 +71,12 @@ export class UsersController {
   @Post('me/avatar/confirm')
   confirmAvatarUpload(@CurrentUser() user: RequestUser, @Body() dto: AvatarConfirmDto) {
     return this.users.confirmAvatarObjectKey(user.userId, dto.objectKey);
+  }
+
+  @ApiOperation({ summary: 'Vô hiệu hóa tài khoản của chính mình' })
+  @Delete('me')
+  deactivateMe(@CurrentUser() user: RequestUser) {
+    return this.users.deactivateMe(user.userId);
   }
 
   @Roles(Role.ADMIN)
