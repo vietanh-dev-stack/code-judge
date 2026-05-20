@@ -134,6 +134,30 @@ docker compose -f docker-compose.production.yml --env-file .env.production up -d
 
 Đổi `NEXT_PUBLIC_CORE_URL` → bắt buộc rebuild web (`production-up.sh` đã có `--build`).
 
+**Chỉ đổi `deploy/nginx/conf.d/code-judge.conf`** (vd. tăng timeout API cho AI):
+
+```bash
+cd /root/code-judge   # hoặc ~/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production exec nginx nginx -t
+docker compose -f docker-compose.production.yml --env-file .env.production exec nginx nginx -s reload
+```
+
+Cấu hình hiện tại: `proxy_read_timeout 300s` trên `api.*` và cổng `:8080` (tránh **504** khi `generate-test-cases-draft` / AI chậm).
+
+---
+
+## Lỗi `504 Gateway Timeout` khi sinh testcase AI
+
+**Triệu chứng:** `POST .../generate-test-cases-draft` → **504**, trình duyệt `Failed to fetch`.
+
+**Nguyên nhân:** Nginx mặc định chờ upstream ~**60s**; core-api gọi LLM đồng bộ (retry + fallback) có thể lâu hơn.
+
+**Xử lý:**
+
+1. Sync repo (đã có `proxy_*_timeout 300s` trong `deploy/nginx/conf.d/code-judge.conf`) → reload nginx (lệnh ở mục trên).
+2. Trên VPS `.env.production`: `OPENAI_API_KEY` (fallback), `AI_DEFAULT_MODEL_GOOGLE=gemini-2.0-flash` (ít 503 hơn).
+3. `docker compose ... up -d --force-recreate core-api` sau khi sửa env.
+
 ---
 
 ## Lỗi Prisma `P3015` (thiếu `migration.sql`)
