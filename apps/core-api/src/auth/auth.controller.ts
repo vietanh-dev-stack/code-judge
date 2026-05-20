@@ -27,6 +27,7 @@ import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common';
 import type { RequestUser } from '../common/interfaces/request-user.interface';
 import { AuthService, type GoogleProfile } from './auth.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
@@ -126,6 +127,12 @@ export class AuthController {
   // ---------------------------------------------------------------------------
   // Me (protected)
   // ---------------------------------------------------------------------------
+
+  @ApiOperation({ summary: 'Đổi mật khẩu (tài khoản email/password)' })
+  @Post('change-password')
+  changePassword(@CurrentUser() requestUser: RequestUser, @Body() dto: ChangePasswordDto) {
+    return this.auth.changePassword(requestUser.userId, dto.currentPassword, dto.newPassword);
+  }
 
   @ApiOperation({ summary: 'Trả thông tin user đang đăng nhập' })
   @Get('me')

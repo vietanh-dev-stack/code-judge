@@ -10,7 +10,6 @@ export interface AvatarUploadResponse {
 
 export interface UpdateMePayload {
   name?: string;
-  email?: string;
 }
 
 export interface CreateUserPayload {

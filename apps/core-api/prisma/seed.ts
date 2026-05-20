@@ -1,6 +1,8 @@
 /**
- * Seed tạm thời — **chỉ Contest** (+ user, problem/testcase cho contest).
- * Không tạo Submission. Không seed lớp học, kho đề, golden, AI job, invite.
+ * Seed dev/test — **Contest** + **ClassAssignment** (không tạo Submission).
+ *
+ * - Problem/testcase cho contest.
+ * - Lớp học: ClassAssignment trỏ problem riêng (khác contest) + 1 assignment gắn contest Winter.
  *
  * Chạy: `npm run prisma:seed -w @code-judge/core-api`
  */
@@ -27,9 +29,12 @@ const SEED_IDS = {
   instructor: 'seed-user-instructor',
   student: 'seed-user-student',
   student2: 'seed-user-student-2',
+  classCpp: 'seed-class-cpp-101',
+  classWeb: 'seed-class-web-102',
   contestWinter: 'seed-contest-winter',
   contestSpring: 'seed-contest-spring',
   contestPast: 'seed-contest-past',
+  assignmentContestWinter: 'seed-assignment-cpp-contest-winter',
 } as const;
 
 const SEED_PREFIX = 'seed-';
@@ -52,6 +57,14 @@ type SeedProblemDef = {
   tagSlugs: string[];
   visibility: ProblemVisibility;
   testCases: SeedTestCase[];
+};
+
+type SeedClassAssignmentDef = {
+  id: string;
+  classRoomId: string;
+  title: string;
+  description: string;
+  problem: SeedProblemDef;
 };
 
 const SUPPORTED_LANGUAGES = ['PYTHON', 'JAVASCRIPT', 'CPP', 'JAVA'];
@@ -162,6 +175,81 @@ const SEED_CONTEST_PROBLEMS: SeedProblemDef[] = [
     ],
   },
 ];
+
+/** Bài tập lớp — problem riêng, chỉ gắn qua ClassAssignment */
+const SEED_CLASS_ASSIGNMENTS: SeedClassAssignmentDef[] = [
+  {
+    id: 'seed-assignment-cpp-01',
+    classRoomId: SEED_IDS.classCpp,
+    title: 'BT tuần 1: Tổng ba số',
+    description: 'Bài nộp lớp CPP.',
+    problem: {
+      id: 'seed-problem-class-cpp-01',
+      slug: 'sum-three-numbers-class-cpp',
+      title: 'Tổng ba số (Lớp CPP)',
+      description: 'Đọc ba số nguyên, in tổng.',
+      statementMd: 'Cho **a**, **b**, **c** (mỗi số một dòng). In **a + b + c**.',
+      difficulty: 'EASY',
+      tagSlugs: ['math'],
+      visibility: 'PRIVATE',
+      testCases: [
+        { id: 'seed-tc-cpp01-1', input: '1\n2\n3', expectedOutput: '6', isHidden: false },
+        { id: 'seed-tc-cpp01-2', input: '0\n0\n0', expectedOutput: '0', isHidden: false },
+        { id: 'seed-tc-cpp01-3', input: '-1\n5\n-2', expectedOutput: '2', isHidden: false },
+        { id: 'seed-tc-cpp01-4', input: '1000000\n2000000\n3000000', expectedOutput: '6000000', isHidden: true },
+        { id: 'seed-tc-cpp01-5', input: '-999999\n1\n999998', expectedOutput: '0', isHidden: true },
+      ],
+    },
+  },
+  {
+    id: 'seed-assignment-cpp-02',
+    classRoomId: SEED_IDS.classCpp,
+    title: 'BT tuần 2: GCD',
+    description: 'GCD hai số — bài lớp CPP.',
+    problem: {
+      id: 'seed-problem-class-cpp-02',
+      slug: 'gcd-two-numbers-class-cpp',
+      title: 'GCD (Lớp CPP)',
+      description: 'Đọc a, b, in gcd(a,b).',
+      statementMd: 'Cho **a**, **b** (a,b ≥ 0). In **gcd(a, b)**.',
+      difficulty: 'MEDIUM',
+      tagSlugs: ['math'],
+      visibility: 'PRIVATE',
+      testCases: [
+        { id: 'seed-tc-cpp02-1', input: '12\n18', expectedOutput: '6', isHidden: false },
+        { id: 'seed-tc-cpp02-2', input: '7\n13', expectedOutput: '1', isHidden: false },
+        { id: 'seed-tc-cpp02-3', input: '0\n5', expectedOutput: '5', isHidden: false },
+        { id: 'seed-tc-cpp02-4', input: '1071\n462', expectedOutput: '21', isHidden: true },
+        { id: 'seed-tc-cpp02-5', input: '270270\n756756', expectedOutput: '270270', isHidden: true },
+      ],
+    },
+  },
+  {
+    id: 'seed-assignment-web-01',
+    classRoomId: SEED_IDS.classWeb,
+    title: 'BT lab: Nhân đôi',
+    description: 'Bài nộp lớp Web.',
+    problem: {
+      id: 'seed-problem-class-web-01',
+      slug: 'double-number-class-web',
+      title: 'Nhân đôi (Lớp Web)',
+      description: 'Đọc n, in 2*n.',
+      statementMd: 'Cho **n**. In **2 × n**.',
+      difficulty: 'EASY',
+      tagSlugs: ['math'],
+      visibility: 'PRIVATE',
+      testCases: [
+        { id: 'seed-tc-web01-1', input: '5', expectedOutput: '10', isHidden: false },
+        { id: 'seed-tc-web01-2', input: '0', expectedOutput: '0', isHidden: false },
+        { id: 'seed-tc-web01-3', input: '-3', expectedOutput: '-6', isHidden: false },
+        { id: 'seed-tc-web01-4', input: '500000', expectedOutput: '1000000', isHidden: true },
+        { id: 'seed-tc-web01-5', input: '-250000', expectedOutput: '-500000', isHidden: true },
+      ],
+    },
+  },
+];
+
+const SEED_CLASS_PROBLEMS = SEED_CLASS_ASSIGNMENTS.map((a) => a.problem);
 
 const LEGACY_SEED_IDS = [
   'seed-problem-web-sum',
@@ -297,7 +385,91 @@ async function seedContestProblems(): Promise<void> {
   await insertProblemsWithTestCases(SEED_CONTEST_PROBLEMS, tagBySlug);
 }
 
-async function seedContestsAndRelated(now: Date): Promise<void> {
+async function seedClassrooms(now: Date): Promise<void> {
+  await prisma.classRoom.createMany({
+    data: [
+      {
+        id: SEED_IDS.classCpp,
+        ownerId: SEED_IDS.instructor,
+        name: 'CPP 101 (Seed)',
+        description: 'Lớp seed — C++ cơ bản.',
+        academicYear: '2026-2027',
+        classCode: 'SEEDCPP101',
+        isActive: true,
+      },
+      {
+        id: SEED_IDS.classWeb,
+        ownerId: SEED_IDS.instructor,
+        name: 'Web 102 (Seed)',
+        description: 'Lớp seed — Web.',
+        academicYear: '2026-2027',
+        classCode: 'SEEDWEB102',
+        isActive: true,
+      },
+    ],
+  });
+
+  await prisma.classEnrollment.createMany({
+    data: [
+      {
+        classRoomId: SEED_IDS.classCpp,
+        userId: SEED_IDS.instructor,
+        role: 'OWNER',
+        status: 'ACTIVE',
+        joinedAt: now,
+      },
+      {
+        classRoomId: SEED_IDS.classCpp,
+        userId: SEED_IDS.student,
+        role: 'MEMBER',
+        status: 'ACTIVE',
+        joinedAt: now,
+      },
+      {
+        classRoomId: SEED_IDS.classCpp,
+        userId: SEED_IDS.student2,
+        role: 'MEMBER',
+        status: 'ACTIVE',
+        joinedAt: now,
+      },
+      {
+        classRoomId: SEED_IDS.classWeb,
+        userId: SEED_IDS.instructor,
+        role: 'OWNER',
+        status: 'ACTIVE',
+        joinedAt: now,
+      },
+      {
+        classRoomId: SEED_IDS.classWeb,
+        userId: SEED_IDS.student,
+        role: 'MEMBER',
+        status: 'ACTIVE',
+        joinedAt: now,
+      },
+    ],
+  });
+}
+
+async function seedClassAssignments(now: Date, dueAt: Date): Promise<void> {
+  const tagBySlug = new Map(
+    (await prisma.tag.findMany()).map((t) => [t.slug, t.id] as const),
+  );
+  await insertProblemsWithTestCases(SEED_CLASS_PROBLEMS, tagBySlug);
+
+  await prisma.classAssignment.createMany({
+    data: SEED_CLASS_ASSIGNMENTS.map((a) => ({
+      id: a.id,
+      classRoomId: a.classRoomId,
+      problemId: a.problem.id,
+      title: a.title,
+      description: a.description,
+      dueAt,
+      publishedAt: now,
+    })),
+  });
+}
+
+async function seedContestsAndRelated(now: Date): Promise<Date> {
   const day = 24 * 60 * 60 * 1000;
   const winterStart = new Date(now.getTime() - day);
   const winterEnd = new Date(now.getTime() + 7 * day);
@@ -370,6 +542,20 @@ async function seedContestsAndRelated(now: Date): Promise<void> {
       { id: 'seed-cpart-spring-student', contestId: SEED_IDS.contestSpring, userId: SEED_IDS.student },
     ],
   });
+
+  await prisma.classAssignment.create({
+    data: {
+      id: SEED_IDS.assignmentContestWinter,
+      classRoomId: SEED_IDS.classCpp,
+      contestId: SEED_IDS.contestWinter,
+      title: 'Contest Winter 2026 (Seed)',
+      description: 'Assignment gắn contest — không trỏ problemId.',
+      dueAt: winterEnd,
+      publishedAt: now,
+    },
+  });
+
+  return winterEnd;
 }
 
 async function seed(): Promise<void> {
@@ -431,17 +617,24 @@ async function seed(): Promise<void> {
   }
 
   const now = new Date();
+  const dueAt = new Date(now);
+  dueAt.setDate(dueAt.getDate() + 30);
 
+  await seedClassrooms(now);
   await seedContestProblems();
+  await seedClassAssignments(now, dueAt);
   await seedContestsAndRelated(now);
 
   const submissionCount = await prisma.submission.count({
     where: { userId: { startsWith: SEED_PREFIX } },
   });
 
-  console.info('[prisma seed] Mode: contest-only');
+  console.info('[prisma seed] Contest + ClassAssignment');
   console.info(
-    `[prisma seed] Users: 4 · Contest problems: ${SEED_CONTEST_PROBLEMS.length} · Contests: 3 · Participants: 4`,
+    `[prisma seed] Users: 4 · Classes: 2 · Contest problems: ${SEED_CONTEST_PROBLEMS.length} · Class problems: ${SEED_CLASS_PROBLEMS.length}`,
+  );
+  console.info(
+    `[prisma seed] Contests: 3 · Class assignments: ${SEED_CLASS_ASSIGNMENTS.length + 1} (${SEED_CLASS_ASSIGNMENTS.length} problem + 1 contest)`,
   );
   console.info(`[prisma seed] Submissions created: 0 (existing seed-user submissions in DB: ${submissionCount})`);
 }

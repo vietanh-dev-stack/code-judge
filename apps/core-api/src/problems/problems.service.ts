@@ -103,7 +103,9 @@ export class ProblemsService {
         .map((e: any) => e.user.email)
         .filter((email: string | null): email is string => !!email);
 
-      console.log(`[ProblemsService] Found ${memberEmails.length} members to notify for problem "${problem.title}" in class "${assignment.classRoom.name}"`);
+      console.log(
+        `[ProblemsService] Found ${memberEmails.length} members to notify for problem "${problem.title}" in class "${assignment.classRoom.name}"`,
+      );
 
       if (memberEmails.length > 0 && problem.visibility !== 'CONTEST_ONLY') {
         const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3001';
@@ -117,7 +119,9 @@ export class ProblemsService {
             dueAt: dto.dueAt ? new Date(dto.dueAt).toLocaleString() : undefined,
             url: `${frontendUrl}/dashboard/${classRoomId}/classwork`,
           })
-          .catch((err) => console.error('[ProblemsService] Failed to send assignment notification emails:', err));
+          .catch((err) =>
+            console.error('[ProblemsService] Failed to send assignment notification emails:', err),
+          );
       }
 
       if (dto.tagIds !== undefined) {
@@ -195,6 +199,8 @@ export class ProblemsService {
     const { page, limit, skip } = this.normalizeListPagination(query.page, query.limit);
     const search = query.search?.trim();
     const where: Prisma.ProblemWhereInput = {
+      // Only show PUBLIC problems to admin - hide class-specific (PRIVATE/CONTEST_ONLY) problems
+      visibility: ProblemVisibility.PUBLIC,
       ...(query.tagId ? { tags: { some: { tagId: query.tagId } } } : {}),
       ...(query.tagSlug ? { tags: { some: { tag: { slug: query.tagSlug } } } } : {}),
       ...(search

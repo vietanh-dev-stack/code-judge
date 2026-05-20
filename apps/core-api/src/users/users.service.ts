@@ -14,7 +14,9 @@ import { StorageService } from '../storage/storage.service';
 import { AvatarUploadDto } from './dto/avatar-upload.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ListUsersDto } from './dto/list-users.dto';
+import { UpdateMeDto } from './dto/update-me.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { PUBLIC_USER_SELECT, type PublicUser } from './user-public.select';
 
 @Injectable()
 export class UsersService {
@@ -92,6 +94,38 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('Người dùng không tồn tại');
     return user;
+  }
+
+  async findPublicById(userId: string): Promise<PublicUser> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: PUBLIC_USER_SELECT,
+    });
+    if (!user) throw new NotFoundException('Người dùng không tồn tại');
+    return user;
+  }
+
+  async deactivateMe(userId: string): Promise<{ success: boolean }> {
+    await this.findById(userId);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { isActive: false },
+    });
+    return { success: true };
+  }
+
+  async updateMe(userId: string, dto: UpdateMeDto): Promise<PublicUser> {
+    await this.findById(userId);
+
+    if (dto.name === undefined) {
+      return this.findPublicById(userId);
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { name: dto.name },
+      select: PUBLIC_USER_SELECT,
+    });
   }
 
   async update(userId: string, dto: UpdateUserDto): Promise<User> {
@@ -204,13 +238,15 @@ export class UsersService {
     };
   }
 
-  async confirmAvatarObjectKey(userId: string, objectKey: string): Promise<User> {
+  async confirmAvatarObjectKey(userId: string, objectKey: string): Promise<PublicUser> {
     await this.findById(userId);
     return this.prisma.user.update({
       where: { id: userId },
       data: {
         image: this.storage.getObjectUrl(objectKey),
+        imageObjectKey: objectKey,
       },
+      select: PUBLIC_USER_SELECT,
     });
   }
 

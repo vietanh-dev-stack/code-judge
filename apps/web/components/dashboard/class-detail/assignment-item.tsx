@@ -21,10 +21,10 @@ interface AssignmentItemProps extends Problem {
 export default function AssignmentItem({
   id,
   title,
-  createdAt,
   timeLimitMs,
   memoryLimitMb,
   difficulty,
+  tags,
   mode,
   onEdit,
   onDelete,
@@ -98,6 +98,19 @@ export default function AssignmentItem({
           {mode}
         </div>
       </div>
+
+      {tags && tags.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {tags.map((tagItem) => (
+            <span
+              key={tagItem.tag.id}
+              className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 border border-slate-200"
+            >
+              {tagItem.tag.name}
+            </span>
+          ))}
+        </div>
+      )}
 
       <Link
         href={`/problem/${id}`}

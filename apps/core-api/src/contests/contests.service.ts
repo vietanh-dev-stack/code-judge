@@ -166,6 +166,8 @@ export class ContestsService {
     const skip = (page - 1) * limit;
     const search = query.search?.trim();
     const where: Prisma.ContestWhereInput = {
+      // Only show contests without class assignments (admin-created contests)
+      assignments: { none: {} },
       ...(search
         ? {
             OR: [
