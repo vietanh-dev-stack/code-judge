@@ -22,7 +22,6 @@ export default function ContestDetailPage() {
   const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
   const [hasShownStartToast, setHasShownStartToast] = useState(false);
 
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'RUNNING':
@@ -160,7 +159,10 @@ export default function ContestDetailPage() {
         </div>
         <div className="flex flex-wrap gap-4">
           <Button variant="outline" size="lg" asChild className="border-2">
-            <Link href={`/dashboard/contests/${contestId}/leaderboard`} className="flex items-center gap-2">
+            <Link
+              href={`/dashboard/contests/${contestId}/leaderboard`}
+              className="flex items-center gap-2"
+            >
               <BarChart3 className="w-5 h-5 text-blue-600" />
               Leaderboard
             </Link>
@@ -195,9 +197,7 @@ export default function ContestDetailPage() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Max submissions/problem</p>
-              <p className="font-semibold">
-                {contest.maxSubmissionsPerProblem ?? 'Unlimited'}
-              </p>
+              <p className="font-semibold">{contest.maxSubmissionsPerProblem ?? 'Unlimited'}</p>
             </div>
           </div>
 
@@ -218,7 +218,15 @@ export default function ContestDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!contest.problems || contest.problems.length === 0 ? (
+              {currentTime < new Date(contest.startAt) ? (
+                <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-6 text-sm text-yellow-700 dark:text-yellow-600">
+                  <p className="font-semibold">{getContestStatusMessage(contest)}</p>
+                  <p className="mt-2">
+                    Contest problems are hidden until the contest starts. Please return after{' '}
+                    {startAt}.
+                  </p>
+                </div>
+              ) : !contest.problems || contest.problems.length === 0 ? (
                 <div className="rounded-xl border border-border bg-background/80 p-4 text-sm text-muted-foreground">
                   Contest does not have any problems.
                 </div>
@@ -227,7 +235,10 @@ export default function ContestDetailPage() {
                   {!isContestAccessible(contest) && (
                     <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-700 dark:text-yellow-600">
                       <p className="font-semibold">{getContestStatusMessage(contest)}</p>
-                      <p className="mt-1">The problems will be locked until the contest opens or after the contest has ended.</p>
+                      <p className="mt-1">
+                        The problems will be locked until the contest opens or after the contest has
+                        ended.
+                      </p>
                     </div>
                   )}
                   {contest.problems.map((item) => (
