@@ -9,21 +9,15 @@
  */
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
-const PROBLEM_ID = '3b7ffcfd-2d7f-4a6f-92ec-524bc0e3ef13';
+const PROBLEM_ID = 'seed-problem-easy-02';
+const CONTEST_ID = 'seed-contest-spring'; // Link to Spring Open 2026 contest to show in leaderboard
 const TOTAL_SUBMISSIONS = 1000;
-const CONCURRENCY = 10; // Giảm từ 50 xuống 10 để tránh rate limiting
-const LANGUAGE = 'CPP';
+const CONCURRENCY = 50; // High concurrency to simulate simultaneous submission
+const LANGUAGE = 'PYTHON';
 const SOURCE_CODE = `
-#include <bits/stdc++.h>
-using namespace std;
-
-int main() {
-    int a, b;
-    cin >> a >> b;
-    cout << a + b << endl;
-
-    return 0;
-}
+a = int(input())
+b = int(input())
+print(max(a, b))
 `;
 
 function requestOptions(body) {
@@ -37,13 +31,14 @@ function requestOptions(body) {
 }
 
 function getUserId(index) {
-  return `sim-user-${String(index + 1).padStart(4, '0')}`;
+  return `seed-user-${index + 1}`;
 }
 
 async function submit(userId, retryCount = 0) {
   const payload = {
     userId,
     problemId: PROBLEM_ID,
+    contestId: CONTEST_ID,
     mode: 'ALGO',
     language: LANGUAGE,
     sourceCode: SOURCE_CODE,
@@ -103,8 +98,7 @@ async function run() {
   const results = [];
 
   for (let i = 0; i < TOTAL_SUBMISSIONS; i += 1) {
-    // const userId = getUserId(i);
-    const userId = '4b17f4d4-1ffa-490a-8e67-7c331d9b9a5d';
+    const userId = getUserId(i);
     pending.push(submit(userId));
 
     if (pending.length >= CONCURRENCY) {

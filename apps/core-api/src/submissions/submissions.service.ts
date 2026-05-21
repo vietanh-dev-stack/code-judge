@@ -123,6 +123,15 @@ export class SubmissionsService {
       status: submission.status,
     });
 
+    if (contestId && !dto.isDryRun) {
+      this.realtime.emitToAll('submission:created', {
+        submissionId: submission.id,
+        contestId,
+        userId: dto.userId,
+        status: submission.status,
+      });
+    }
+
     return submission;
   }
 

@@ -79,6 +79,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<SubmissionResult | null>(null);
   const [lastSubmissionId, setLastSubmissionId] = useState<string | null>(null);
+  const lastSubmissionIdRef = useRef<string | null>(null);
   const [hintState, setHintState] = useState<HintUiState>('idle');
   const [hintData, setHintData] = useState<RequestHintResult | null>(null);
   const [hintError, setHintError] = useState<string | null>(null);
@@ -317,6 +318,9 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
   useEffect(() => {
     if (socket) {
       const handleFinished = (data: any) => {
+        if (data.submissionId && data.submissionId !== lastSubmissionIdRef.current) {
+          return;
+        }
         if (data.submissionId) {
           if (processedSubmissionsRef.current.has(data.submissionId)) {
             return;
@@ -348,18 +352,15 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
           setHintPulse(false);
           setHintState('idle');
           setHintData(null);
-          toast.success(data.isDryRun ? 'Run Code Success!' : 'Accepted!', {
-            description: data.isDryRun
-              ? `Passed all ${data.testsTotal} sample test cases.`
-              : `All ${data.testsTotal} test cases passed.`,
-          });
         } else {
           setHintPulse(true);
-          toast.error(data.status, { description: data.error || 'Some test cases failed.' });
         }
       };
 
       const handleFailed = (data: any) => {
+        if (data.submissionId && data.submissionId !== lastSubmissionIdRef.current) {
+          return;
+        }
         if (data.submissionId) {
           if (processedSubmissionsRef.current.has(data.submissionId)) {
             return;
@@ -383,7 +384,6 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
           loadSubmissions();
         }
         setHintPulse(true);
-        toast.error('Error', { description: data.error || 'Judging failed' });
       };
 
       socket.on('submission:finished', handleFinished);
@@ -515,6 +515,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
     }
     setResult(null);
     setLastSubmissionId(null);
+    lastSubmissionIdRef.current = null;
     setHintState('idle');
     setHintData(null);
     setHintError(null);
@@ -565,12 +566,8 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
         isDryRun,
       });
       setLastSubmissionId(created.submissionId);
+      lastSubmissionIdRef.current = created.submissionId;
 
-      toast.info(isDryRun ? 'Running Code' : 'Submission Received', {
-        description: isDryRun
-          ? 'Running your code against sample test cases...'
-          : 'Your code is being judged...',
-      });
     } catch (error: any) {
       console.warn('Submission failed:', error.message || error);
       toast.error('Submission Error', { description: error.message || 'Failed to submit code.' });

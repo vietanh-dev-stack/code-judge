@@ -561,45 +561,68 @@ async function seedContestsAndRelated(now: Date): Promise<Date> {
 async function seed(): Promise<void> {
   await wipeSeedArtifacts();
 
+  const usersToCreate: {
+    id: string;
+    name: string;
+    email: string;
+    passwordHash: string;
+    role: 'ADMIN' | 'CLIENT';
+    emailVerified: boolean;
+    isActive: boolean;
+  }[] = [
+    {
+      id: SEED_IDS.admin,
+      name: 'Seed Admin',
+      email: 'admin@example.com',
+      passwordHash,
+      role: 'ADMIN' as const,
+      emailVerified: true,
+      isActive: true,
+    },
+    {
+      id: SEED_IDS.instructor,
+      name: 'Seed Instructor',
+      email: 'instructor@example.com',
+      passwordHash,
+      role: 'CLIENT' as const,
+      emailVerified: true,
+      isActive: true,
+    },
+    {
+      id: SEED_IDS.student,
+      name: 'Seed Student',
+      email: 'student@example.com',
+      passwordHash,
+      role: 'CLIENT' as const,
+      emailVerified: true,
+      isActive: true,
+    },
+    {
+      id: SEED_IDS.student2,
+      name: 'Seed Student Two',
+      email: 'student2@example.com',
+      passwordHash,
+      role: 'CLIENT' as const,
+      emailVerified: true,
+      isActive: true,
+    },
+  ];
+
+  // Generate 1000 test users (user1 to user1000)
+  for (let i = 1; i <= 1000; i++) {
+    usersToCreate.push({
+      id: `${SEED_PREFIX}user-${i}`,
+      name: `user${i}`,
+      email: `user${i}@example.com`,
+      passwordHash,
+      role: 'CLIENT' as const,
+      emailVerified: true,
+      isActive: true,
+    });
+  }
+
   await prisma.user.createMany({
-    data: [
-      {
-        id: SEED_IDS.admin,
-        name: 'Seed Admin',
-        email: 'admin@example.com',
-        passwordHash,
-        role: 'ADMIN',
-        emailVerified: true,
-        isActive: true,
-      },
-      {
-        id: SEED_IDS.instructor,
-        name: 'Seed Instructor',
-        email: 'instructor@example.com',
-        passwordHash,
-        role: 'CLIENT',
-        emailVerified: true,
-        isActive: true,
-      },
-      {
-        id: SEED_IDS.student,
-        name: 'Seed Student',
-        email: 'student@example.com',
-        passwordHash,
-        role: 'CLIENT',
-        emailVerified: true,
-        isActive: true,
-      },
-      {
-        id: SEED_IDS.student2,
-        name: 'Seed Student Two',
-        email: 'student2@example.com',
-        passwordHash,
-        role: 'CLIENT',
-        emailVerified: true,
-        isActive: true,
-      },
-    ],
+    data: usersToCreate,
   });
 
   const seedTags = [

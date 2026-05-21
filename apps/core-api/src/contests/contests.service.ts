@@ -357,7 +357,7 @@ export class ContestsService {
     }
 
     const submissions = await this.prisma.submission.findMany({
-      where: { contestId },
+      where: { contestId, isDryRun: false },
       orderBy: { createdAt: 'asc' },
     });
 
@@ -392,6 +392,10 @@ export class ContestsService {
         const problemSubmissions = userSubmissions.filter((s) => s.problemId === cp.problemId);
         const acceptedSubmission = problemSubmissions.find((s) => s.status === 'Accepted');
 
+        const isPending = problemSubmissions.some(
+          (s) => s.status === 'Pending' || s.status === 'Running',
+        );
+
         let penalty = 0;
         let solvedAt = null;
         let attempts = 0;
@@ -399,18 +403,22 @@ export class ContestsService {
         if (acceptedSubmission) {
           solvedAt = acceptedSubmission.createdAt.getTime();
           const failedSubmissions = problemSubmissions.filter(
-            (s) => s.status !== 'Accepted' && s.createdAt < acceptedSubmission.createdAt,
+            (s) => s.status !== 'Accepted' && s.createdAt < acceptedSubmission.createdAt && s.status !== 'Pending' && s.status !== 'Running',
           );
           attempts = failedSubmissions.length + 1;
           penalty = solvedAt - contestStartTime + failedSubmissions.length * PENALTY_PER_FAILED;
         } else {
-          attempts = problemSubmissions.length;
+          const gradedSubmissions = problemSubmissions.filter(
+            (s) => s.status !== 'Pending' && s.status !== 'Running',
+          );
+          attempts = gradedSubmissions.length;
         }
 
         return {
           problemId: cp.problemId,
           problemTitle: cp.problem.title,
           isSolved: !!acceptedSubmission,
+          isPending,
           points: acceptedSubmission ? cp.points : 0,
           penalty: acceptedSubmission ? penalty : 0,
           solvedAt: solvedAt ? new Date(solvedAt) : null,
