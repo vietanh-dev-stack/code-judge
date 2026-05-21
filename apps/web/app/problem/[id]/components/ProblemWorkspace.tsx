@@ -79,6 +79,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<SubmissionResult | null>(null);
   const [lastSubmissionId, setLastSubmissionId] = useState<string | null>(null);
+  const lastSubmissionIdRef = useRef<string | null>(null);
   const [hintState, setHintState] = useState<HintUiState>('idle');
   const [hintData, setHintData] = useState<RequestHintResult | null>(null);
   const [hintError, setHintError] = useState<string | null>(null);
@@ -326,6 +327,9 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
 
       const handleFinished = (data: any) => {
         if (!isPendingSubmissionEvent(data)) return;
+        if (data.submissionId && data.submissionId !== lastSubmissionIdRef.current) {
+          return;
+        }
         if (data.submissionId) {
           if (processedSubmissionsRef.current.has(data.submissionId)) {
             return;
@@ -365,6 +369,9 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
 
       const handleFailed = (data: any) => {
         if (!isPendingSubmissionEvent(data)) return;
+        if (data.submissionId && data.submissionId !== lastSubmissionIdRef.current) {
+          return;
+        }
         if (data.submissionId) {
           if (processedSubmissionsRef.current.has(data.submissionId)) {
             return;
@@ -520,6 +527,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
     }
     setResult(null);
     setLastSubmissionId(null);
+    lastSubmissionIdRef.current = null;
     setHintState('idle');
     setHintData(null);
     setHintError(null);
@@ -572,6 +580,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
       });
       pendingSubmissionIdRef.current = created.submissionId;
       setLastSubmissionId(created.submissionId);
+      lastSubmissionIdRef.current = created.submissionId;
 
     } catch (error: any) {
       console.warn('Submission failed:', error.message || error);
