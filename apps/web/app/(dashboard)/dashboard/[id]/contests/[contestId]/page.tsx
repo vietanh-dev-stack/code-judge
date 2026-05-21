@@ -324,7 +324,15 @@ export default function ContestDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!contest.problems || contest.problems.length === 0 ? (
+              {currentTime < new Date(contest.startAt) ? (
+                <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-6 text-sm text-yellow-700 dark:text-yellow-600">
+                  <p className="font-semibold">{getContestStatusMessage(contest)}</p>
+                  <p className="mt-2">
+                    Contest problems are hidden until the contest starts. Please return after{' '}
+                    {startAt}.
+                  </p>
+                </div>
+              ) : !contest.problems || contest.problems.length === 0 ? (
                 <div className="rounded-xl border border-border bg-background/80 p-4 text-sm text-muted-foreground">
                   Contest has no problems.
                 </div>
