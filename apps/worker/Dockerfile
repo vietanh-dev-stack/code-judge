@@ -21,6 +21,8 @@ COPY apps/worker ./apps/worker
 
 WORKDIR /app/apps/worker
 
+ENV DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build?schema=public"
+
 RUN npx prisma generate --schema ../core-api/prisma/schema.prisma
 RUN npm run build
 

@@ -58,10 +58,16 @@ export default async function ClassworkPage({ params }: { params: Promise<{ id: 
 
   const initialProblems = problemsResult.items as Problem[];
   const isOwner = classroom.ownerId === user.id;
+  const canManage = isOwner && classroom.isActive !== false;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
-      <ClassworkList classId={id} initialProblems={initialProblems} isOwner={isOwner} />
+      <ClassworkList
+        classId={id}
+        initialProblems={initialProblems}
+        isOwner={isOwner}
+        canManage={canManage}
+      />
     </div>
   );
 }

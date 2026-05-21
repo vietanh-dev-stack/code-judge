@@ -46,7 +46,6 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
     timeLimitMs: 1000,
     memoryLimitMb: 256,
     isPublished: true,
-    visibility: 'PUBLIC',
     supportedLanguages: ['PYTHON', 'JAVASCRIPT', 'CPP', 'JAVA'],
     maxTestCases: 100,
     testCases: [],
@@ -71,7 +70,6 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
         timeLimitMs: data.timeLimitMs,
         memoryLimitMb: data.memoryLimitMb,
         isPublished: data.isPublished,
-        visibility: data.visibility,
         supportedLanguages: data.supportedLanguages ?? ['PYTHON', 'JAVASCRIPT', 'CPP', 'JAVA'],
         maxTestCases: data.maxTestCases,
         testCases: (data.testCases ?? []).map(
@@ -149,7 +147,12 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
     <div className="max-w-6xl mx-auto p-8 space-y-8 animate-in fade-in duration-500 pb-20">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+            className="rounded-full"
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
@@ -157,7 +160,9 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
               {problemId ? 'Edit Problem' : 'New Problem'}
             </h1>
             <p className="text-slate-500">
-              {problemId ? 'Update your coding challenge details' : 'Create a new challenge for the platform'}
+              {problemId
+                ? 'Update your coding challenge details'
+                : 'Create a new challenge for the platform'}
             </p>
           </div>
         </div>
@@ -187,7 +192,9 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
             </CardHeader>
             <CardContent className="p-6 space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-sm font-semibold">Title</Label>
+                <Label htmlFor="title" className="text-sm font-semibold">
+                  Title
+                </Label>
                 <Input
                   id="title"
                   value={formData.title}
@@ -198,7 +205,9 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-semibold">Description</Label>
+                <Label htmlFor="description" className="text-sm font-semibold">
+                  Description
+                </Label>
                 <Textarea
                   id="description"
                   value={formData.description}
@@ -209,7 +218,9 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="statementMd" className="text-sm font-semibold">Statement (Markdown)</Label>
+                <Label htmlFor="statementMd" className="text-sm font-semibold">
+                  Statement (Markdown)
+                </Label>
                 <Textarea
                   id="statementMd"
                   value={formData.statementMd}
@@ -227,7 +238,13 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                 <CardTitle className="text-lg">Test Cases</CardTitle>
                 <CardDescription>Configure validation tests</CardDescription>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={addTestCase} className="rounded-lg">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addTestCase}
+                className="rounded-lg"
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Add
               </Button>
@@ -241,10 +258,15 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                   </div>
                 ) : (
                   formData.testCases?.map((tc, index) => (
-                    <div key={index} className="border border-slate-100 rounded-xl p-5 bg-slate-50/30 space-y-4">
+                    <div
+                      key={index}
+                      className="border border-slate-100 rounded-xl p-5 bg-slate-50/30 space-y-4"
+                    >
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold text-slate-400 uppercase">Input</Label>
+                          <Label className="text-xs font-bold text-slate-400 uppercase">
+                            Input
+                          </Label>
                           <Textarea
                             value={tc.input}
                             onChange={(e) => updateTestCase(index, 'input', e.target.value)}
@@ -252,20 +274,26 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold text-slate-400 uppercase">Output</Label>
+                          <Label className="text-xs font-bold text-slate-400 uppercase">
+                            Output
+                          </Label>
                           <Textarea
                             value={tc.expectedOutput}
-                            onChange={(e) => updateTestCase(index, 'expectedOutput', e.target.value)}
+                            onChange={(e) =>
+                              updateTestCase(index, 'expectedOutput', e.target.value)
+                            }
                             className="min-h-[80px] rounded-lg border-slate-200 bg-white font-mono text-xs"
                           />
                         </div>
                       </div>
                       <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                         <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-6">
                           <div className="flex items-center gap-2">
                             <Switch
                               checked={tc.isHidden}
-                              onCheckedChange={(checked) => updateTestCase(index, 'isHidden', checked)}
+                              onCheckedChange={(checked) =>
+                                updateTestCase(index, 'isHidden', checked)
+                              }
                             />
                             <Label className="text-sm font-medium">
                               {tc.isHidden ? 'Hidden' : 'Public'}
@@ -276,12 +304,19 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                             <Input
                               type="number"
                               value={tc.weight}
-                              onChange={(e) => updateTestCase(index, 'weight', Number(e.target.value))}
+                              onChange={(e) =>
+                                updateTestCase(index, 'weight', Number(e.target.value))
+                              }
                               className="w-16 h-8 rounded-lg text-center font-bold"
                             />
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => removeTestCase(index)} className="text-rose-500 hover:bg-rose-50">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeTestCase(index)}
+                          className="text-rose-500 hover:bg-rose-50"
+                        >
                           <Trash2 className="w-4 h-4 mr-1.5" />
                           Remove
                         </Button>
@@ -319,14 +354,16 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                   <div className="space-y-2">
+                  <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1">
                       <Clock className="w-3 h-3" /> Time (ms)
                     </Label>
                     <Input
                       type="number"
                       value={formData.timeLimitMs}
-                      onChange={(e) => setFormData({ ...formData, timeLimitMs: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, timeLimitMs: Number(e.target.value) })
+                      }
                       className="rounded-lg font-bold"
                     />
                   </div>
@@ -337,21 +374,12 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                     <Input
                       type="number"
                       value={formData.memoryLimitMb}
-                      onChange={(e) => setFormData({ ...formData, memoryLimitMb: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, memoryLimitMb: Number(e.target.value) })
+                      }
                       className="rounded-lg font-bold"
                     />
                   </div>
-                </div>
-
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-sm font-semibold">Publicly Visible</Label>
-                    <p className="text-xs text-slate-500">Enable for everyone</p>
-                  </div>
-                  <Switch
-                    checked={formData.visibility === 'PUBLIC'}
-                    onCheckedChange={(checked) => setFormData({ ...formData, visibility: checked ? 'PUBLIC' : 'PRIVATE' })}
-                  />
                 </div>
 
                 <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
@@ -361,7 +389,9 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                   </div>
                   <Switch
                     checked={formData.isPublished}
-                    onCheckedChange={(checked) => setFormData({ ...formData, isPublished: checked })}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, isPublished: checked })
+                    }
                   />
                 </div>
 
@@ -389,7 +419,9 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                           className={`cursor-pointer transition-all hover:scale-105 ${isSelected ? 'bg-indigo-600' : 'text-slate-400'}`}
                           onClick={() => {
                             const current = formData.supportedLanguages || [];
-                            const next = isSelected ? current.filter(l => l !== lang) : [...current, lang];
+                            const next = isSelected
+                              ? current.filter((l) => l !== lang)
+                              : [...current, lang];
                             setFormData({ ...formData, supportedLanguages: next });
                           }}
                         >

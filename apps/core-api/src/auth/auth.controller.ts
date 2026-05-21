@@ -34,18 +34,29 @@ import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Cookie options shared across set/clear. */
-const COOKIE_OPTS = (secure: boolean) =>
-  ({
+const COOKIE_OPTS = (secure: boolean, domain?: string) => {
+  // Cùng registrable domain (COOKIE_DOMAIN=.example.com): dùng Lax — Chrome chặn cookie SameSite=None
+  // giữa subdomain (coi như third-party). Chỉ dùng None khi API và web là domain khác hẳn.
+  const sameSite = secure ? (domain ? ('lax' as const) : ('none' as const)) : ('lax' as const);
+  const base = {
     httpOnly: true,
     secure,
-    sameSite: secure ? 'none' : 'lax',
+    sameSite,
     path: '/',
-  }) as const;
+  };
+  return domain ? ({ ...base, domain } as const) : base;
+};
+
+/** Lấy origin frontend đầu tiên (FRONTEND_URL có thể là danh sách phân tách bằng dấu phẩy). */
+function primaryFrontendUrl(raw: string | undefined): string {
+  return (raw ?? 'http://localhost:3001').split(',')[0]?.trim() || 'http://localhost:3001';
+}
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   private readonly isProduction: boolean;
+  private readonly cookieDomain: string | undefined;
 
   constructor(
     private readonly auth: AuthService,
@@ -53,6 +64,12 @@ export class AuthController {
     private readonly prisma: PrismaService,
   ) {
     this.isProduction = process.env.NODE_ENV === 'production';
+    const domain = this.config.get<string>('COOKIE_DOMAIN')?.trim();
+    this.cookieDomain = domain || undefined;
+  }
+
+  private cookieOpts() {
+    return COOKIE_OPTS(this.isProduction, this.cookieDomain);
   }
 
   // ---------------------------------------------------------------------------
@@ -118,7 +135,7 @@ export class AuthController {
     // Set HttpOnly refresh token and access token cookies
     this.setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
 
-    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3001';
+    const frontendUrl = primaryFrontendUrl(this.config.get<string>('FRONTEND_URL'));
 
     // NO accessToken in URL
     res.redirect(`${frontendUrl}/auth/callback`);
@@ -161,7 +178,7 @@ export class AuthController {
   @Public()
   @Post('logout')
   logout(@Res({ passthrough: true }) res: Response) {
-    const opts = COOKIE_OPTS(this.isProduction);
+    const opts = this.cookieOpts();
 
     res.clearCookie('refreshToken', opts);
     res.clearCookie('accessToken', opts);
@@ -174,7 +191,7 @@ export class AuthController {
   // ---------------------------------------------------------------------------
 
   private setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
-    const opts = COOKIE_OPTS(this.isProduction);
+    const opts = this.cookieOpts();
 
     // Refresh token (7 days)
     res.cookie('refreshToken', refreshToken, {

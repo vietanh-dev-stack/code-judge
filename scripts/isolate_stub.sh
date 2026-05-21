@@ -4,6 +4,35 @@
 
 ARGS="$@"
 
+now_seconds() {
+    date +%s.%N
+}
+
+elapsed_seconds() {
+    awk -v start="$1" -v end="$2" 'BEGIN { printf "%.3f", end - start }'
+}
+
+run_with_limits() {
+    local cmd="$1"
+    local time_limit="$2"
+    local mem_file="$3"
+    local exit_code=0
+
+    if [ -n "$time_limit" ] && command -v /usr/bin/time >/dev/null 2>&1; then
+        if [ -n "$mem_file" ]; then
+            /usr/bin/time -f '%M' -o "$mem_file" timeout "$time_limit" bash -lc "$cmd" || exit_code=$?
+        else
+            timeout "$time_limit" bash -lc "$cmd" || exit_code=$?
+        fi
+    elif [ -n "$time_limit" ]; then
+        timeout "$time_limit" bash -lc "$cmd" || exit_code=$?
+    else
+        bash -lc "$cmd" || exit_code=$?
+    fi
+
+    return "$exit_code"
+}
+
 # 1. Xử lý Init
 if [[ "$ARGS" == *"--init"* ]]; then
     BOX_ID=0
@@ -45,15 +74,23 @@ if [[ "$ARGS" =~ .*" -- ".* ]]; then
         CMD_TO_RUN=$(echo "$CMD_TO_RUN" | sed 's| > /stdout.txt| > stdout.txt|g')
         CMD_TO_RUN=$(echo "$CMD_TO_RUN" | sed 's| 2> /stderr.txt| 2> stderr.txt|g')
         CMD_TO_RUN=$(echo "$CMD_TO_RUN" | sed 's| > /compile_output.txt| > compile_output.txt|g')
-        
-        # Thực thi với timeout nếu có giới hạn
-        if [ -n "$TIME_LIMIT" ]; then
-            # Linux timeout hỗ trợ số thực trực tiếp (vd: 2.0)
-            eval "timeout $TIME_LIMIT $CMD_TO_RUN"
-        else
-            eval "$CMD_TO_RUN"
+
+        MEM_FILE=""
+        if [ -n "$METADATA_PATH" ]; then
+            MEM_FILE="$(dirname "$METADATA_PATH")/.isolate_mem_kb"
         fi
+
+        START=$(now_seconds)
+        run_with_limits "$CMD_TO_RUN" "$TIME_LIMIT" "$MEM_FILE"
         EXIT_CODE=$?
+        END=$(now_seconds)
+        ACTUAL_TIME=$(elapsed_seconds "$START" "$END")
+
+        MAX_RSS=0
+        if [ -n "$MEM_FILE" ] && [ -f "$MEM_FILE" ]; then
+            MAX_RSS=$(tr -d '[:space:]' < "$MEM_FILE")
+            rm -f "$MEM_FILE"
+        fi
         
         # Ghi Metadata
         if [ -n "$METADATA_PATH" ]; then
@@ -61,14 +98,14 @@ if [[ "$ARGS" =~ .*" -- ".* ]]; then
             if [ $EXIT_CODE -eq 124 ]; then
                 echo "status:TO" > "$METADATA_PATH"
                 echo "message:Time limit exceeded" >> "$METADATA_PATH"
-                # Ghi đè exitcode 124 cho Judge0
                 echo "exitcode:124" >> "$METADATA_PATH"
+                echo "time:${TIME_LIMIT:-$ACTUAL_TIME}" >> "$METADATA_PATH"
             else
                 echo "status:OK" > "$METADATA_PATH"
                 echo "exitcode:$EXIT_CODE" >> "$METADATA_PATH"
+                echo "time:$ACTUAL_TIME" >> "$METADATA_PATH"
             fi
-            echo "time:${TIME_LIMIT:-0.00}" >> "$METADATA_PATH"
-            echo "max-rss:1024" >> "$METADATA_PATH"
+            echo "max-rss:${MAX_RSS:-0}" >> "$METADATA_PATH"
         fi
     fi
 else

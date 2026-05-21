@@ -5,12 +5,12 @@ import type { UserProfileStats } from '@/services/profile.apis';
 function formatRelativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'Vừa xong';
-  if (minutes < 60) return `${minutes} phút trước`;
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes} minutes ago`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} giờ trước`;
+  if (hours < 24) return `${hours} hours ago`;
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} ngày trước`;
+  if (days < 7) return `${days} days ago`;
   return new Date(iso).toLocaleDateString('vi-VN');
 }
 
@@ -24,7 +24,7 @@ export function ProfileOverview({ stats, loading, error }: ProfileOverviewProps)
   if (loading) {
     return (
       <div className="bg-card border border-border rounded-lg p-6 text-muted-foreground">
-        Đang tải hoạt động...
+        Loading activity...
       </div>
     );
   }
@@ -42,9 +42,9 @@ export function ProfileOverview({ stats, loading, error }: ProfileOverviewProps)
   if (activities.length === 0) {
     return (
       <div className="bg-card border border-border rounded-lg p-6">
-        <h3 className="font-bold text-lg mb-2">Hoạt động gần đây</h3>
+        <h3 className="font-bold text-lg mb-2">Recent Activity</h3>
         <p className="text-sm text-muted-foreground">
-          Chưa có hoạt động nào. Hãy giải bài tập để xem lịch sử tại đây.
+          No activity yet. Solve some problems to see your history here.
         </p>
       </div>
     );
@@ -52,7 +52,7 @@ export function ProfileOverview({ stats, loading, error }: ProfileOverviewProps)
 
   return (
     <div className="bg-card border border-border rounded-lg p-6">
-      <h3 className="font-bold text-lg mb-4">Hoạt động gần đây</h3>
+      <h3 className="font-bold text-lg mb-4">Recent Activity</h3>
       <div className="space-y-4">
         {activities.map((activity, idx) => (
           <div

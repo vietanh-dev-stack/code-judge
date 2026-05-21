@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
-import InviteModal from '@/components/dashboard/class-detail/invite-modal';
 import PersonItem from '@/components/dashboard/class-detail/person-item';
+import { useClassDetail } from '@/components/dashboard/class-detail/class-detail-context';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { toast } from 'sonner';
 
@@ -14,6 +14,7 @@ import { getClassroomPeople, removeMember } from '@/services/classroom.apis';
 export default function PeoplePage() {
   const params = useParams();
   const classRoomId = params.id as string;
+  const { canManage } = useClassDetail();
 
   const [data, setData] = useState<any>(null);
   const [me, setMe] = useState<any>(null);
@@ -46,7 +47,6 @@ export default function PeoplePage() {
       await removeMember(classRoomId, removingId);
       toast.success('Member removed successfully');
       setRemovingId(null);
-      // reload data
       await load();
     } catch (error: any) {
       if (error?.status !== 400 && error?.status !== 403) {
@@ -59,8 +59,6 @@ export default function PeoplePage() {
   };
 
   if (!data) return <div>Loading...</div>;
-
-  const isOwner = me?.id === data.ownerId;
 
   return (
     <div className="max-w-3xl mx-auto space-y-10 mt-8 px-4">
@@ -84,9 +82,6 @@ export default function PeoplePage() {
 
           <div className="flex gap-4 items-center">
             <span className="text-sm text-[#1967d2]">{data.students.length} students</span>
-
-            {/* chỉ owner mới thấy */}
-            {isOwner && <InviteModal classRoomId={classRoomId} />}
           </div>
         </div>
 
@@ -96,7 +91,7 @@ export default function PeoplePage() {
               key={s.id}
               name={s.name}
               avatarUrl={s.image}
-              showRemove={isOwner && s.id !== me?.id}
+              showRemove={canManage && s.id !== me?.id}
               onRemove={() => setRemovingId(s.id)}
             />
           ))}

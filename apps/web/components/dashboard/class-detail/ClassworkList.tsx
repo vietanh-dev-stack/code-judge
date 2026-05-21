@@ -15,10 +15,12 @@ export default function ClassworkList({
   classId,
   initialProblems,
   isOwner,
+  canManage,
 }: {
   classId: string;
   initialProblems: Problem[];
   isOwner: boolean;
+  canManage: boolean;
 }) {
   const router = useRouter();
   const [problems, setProblems] = useState<Problem[]>(initialProblems);
@@ -79,13 +81,11 @@ export default function ClassworkList({
     return p.title.toLowerCase().includes(debouncedSearch.toLowerCase());
   });
 
-  console.log(filteredProblems);
-
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         {/* Only Owner of the Class has the access to create new problem */}
-        {isOwner && (
+        {canManage && (
           <Link
             href={`/dashboard/${classId}/classwork/create`}
             className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg transition-all hover:scale-105 active:scale-95"
@@ -114,7 +114,7 @@ export default function ClassworkList({
               {...problem}
               onEdit={handleEdit}
               onDelete={handleDelete}
-              showActions={isOwner}
+              showActions={canManage}
             />
           ))
         ) : (

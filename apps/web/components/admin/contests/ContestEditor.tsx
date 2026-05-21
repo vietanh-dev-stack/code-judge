@@ -14,21 +14,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  Plus, 
-  ArrowLeft, 
-  Save, 
-  Trash2, 
-  Clock, 
-  Trophy, 
+import {
+  Plus,
+  ArrowLeft,
+  Save,
+  Trash2,
+  Clock,
+  Trophy,
   Search,
   Calendar,
   Lock,
-  ChevronRight
+  ChevronRight,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { contestsApi, CreateContestDto, UpdateContestDto } from '@/services/contest.apis';
 import { problemsApi, Problem } from '@/services/problem.apis';
+import { dateTimeLocalToUtcIso, utcIsoToDateTimeLocal } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function AdminContestEditor({ contestId }: { contestId?: string }) {
@@ -56,9 +57,7 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
 
   const loadData = async () => {
     try {
-      const [problemsResult] = await Promise.all([
-        problemsApi.findAllAdmin({ limit: 100 }),
-      ]);
+      const [problemsResult] = await Promise.all([problemsApi.findAllAdmin({ limit: 100 })]);
       setAvailableProblems(problemsResult.items);
 
       if (contestId) {
@@ -66,16 +65,17 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
         setFormData({
           title: data.title,
           description: data.description ?? '',
-          startAt: data.startAt.slice(0, 16),
-          endAt: data.endAt.slice(0, 16),
+          startAt: utcIsoToDateTimeLocal(data.startAt),
+          endAt: utcIsoToDateTimeLocal(data.endAt),
           testFeedbackPolicy: data.testFeedbackPolicy,
           maxSubmissionsPerProblem: data.maxSubmissionsPerProblem ?? undefined,
           password: '',
-          problems: data.problems?.map(p => ({
-            problemId: p.problemId,
-            points: p.points,
-            orderIndex: p.orderIndex,
-          })) || [],
+          problems:
+            data.problems?.map((p) => ({
+              problemId: p.problemId,
+              points: p.points,
+              orderIndex: p.orderIndex,
+            })) || [],
         });
       }
     } catch (error) {
@@ -86,13 +86,13 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
   };
 
   const addProblem = (problemId: string) => {
-    if (formData.problems?.some(p => p.problemId === problemId)) return;
+    if (formData.problems?.some((p) => p.problemId === problemId)) return;
     setFormData({
       ...formData,
       problems: [
         ...(formData.problems || []),
-        { problemId, points: 100, orderIndex: (formData.problems?.length || 0) + 1 }
-      ]
+        { problemId, points: 100, orderIndex: (formData.problems?.length || 0) + 1 },
+      ],
     });
     if (errors.problems) setErrors({ ...errors, problems: '' });
   };
@@ -100,7 +100,7 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
   const removeProblem = (problemId: string) => {
     setFormData({
       ...formData,
-      problems: formData.problems?.filter(p => p.problemId !== problemId) || []
+      problems: formData.problems?.filter((p) => p.problemId !== problemId) || [],
     });
   };
 
@@ -155,11 +155,17 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
 
     setLoading(true);
     try {
+      const payload = {
+        ...formData,
+        startAt: formData.startAt ? dateTimeLocalToUtcIso(formData.startAt) : undefined,
+        endAt: formData.endAt ? dateTimeLocalToUtcIso(formData.endAt) : undefined,
+      };
+
       if (contestId) {
-        await contestsApi.update(contestId, formData as UpdateContestDto);
+        await contestsApi.update(contestId, payload as UpdateContestDto);
         toast.success('Contest updated');
       } else {
-        await contestsApi.create(formData as CreateContestDto);
+        await contestsApi.create(payload as CreateContestDto);
         toast.success('Contest created');
       }
       router.push('/admin/contests');
@@ -179,16 +185,22 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
     );
   }
 
-  const filteredAvailable = availableProblems.filter(p => 
-    p.title.toLowerCase().includes(problemSearch.toLowerCase()) &&
-    !formData.problems?.some(cp => cp.problemId === p.id)
+  const filteredAvailable = availableProblems.filter(
+    (p) =>
+      p.title.toLowerCase().includes(problemSearch.toLowerCase()) &&
+      !formData.problems?.some((cp) => cp.problemId === p.id),
   );
 
   return (
     <div className="max-w-6xl mx-auto p-8 space-y-8 animate-in fade-in duration-500 pb-20">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+            className="rounded-full"
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
@@ -198,7 +210,11 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
             <p className="text-slate-500">Configure your programming competition</p>
           </div>
         </div>
-        <Button onClick={handleSave} disabled={loading} className="bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-100 min-w-[140px]">
+        <Button
+          onClick={handleSave}
+          disabled={loading}
+          className="bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-100 min-w-[140px]"
+        >
           {loading ? (
             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
           ) : (
@@ -284,9 +300,12 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
                   </Label>
                   <Input
                     type="datetime-local"
-                    min={formData.startAt || new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000)
-                      .toISOString()
-                      .slice(0, 16)}
+                    min={
+                      formData.startAt ||
+                      new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000)
+                        .toISOString()
+                        .slice(0, 16)
+                    }
                     value={formData.endAt}
                     onChange={(e) => {
                       setFormData({ ...formData, endAt: e.target.value });
@@ -302,7 +321,9 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
             </CardContent>
           </Card>
 
-          <Card className={`border-slate-200 shadow-sm overflow-hidden ${errors.problems ? 'border-red-300 bg-red-50/5' : ''}`}>
+          <Card
+            className={`border-slate-200 shadow-sm overflow-hidden ${errors.problems ? 'border-red-300 bg-red-50/5' : ''}`}
+          >
             <CardHeader className="bg-slate-50/50 border-b border-slate-100">
               <CardTitle className="text-lg">Contest Problems</CardTitle>
               <CardDescription>Select problems for this contest</CardDescription>
@@ -326,7 +347,7 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[300px] overflow-y-auto p-1">
                   {filteredAvailable.map((problem) => (
-                    <div 
+                    <div
                       key={problem.id}
                       className="flex items-center justify-between p-3 border border-slate-100 rounded-xl hover:bg-slate-50 group cursor-pointer transition-colors"
                       onClick={() => addProblem(problem.id)}
@@ -353,18 +374,23 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
                       </div>
                     ) : (
                       formData.problems?.map((cp, idx) => {
-                        const problem = availableProblems.find(p => p.id === cp.problemId);
+                        const problem = availableProblems.find((p) => p.id === cp.problemId);
                         return (
-                          <div key={cp.problemId} className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
+                          <div
+                            key={cp.problemId}
+                            className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl shadow-sm"
+                          >
                             <div className="flex items-center gap-4">
                               <span className="text-xs font-bold text-slate-400">#{idx + 1}</span>
                               <div className="flex flex-col">
-                                <span className="font-semibold text-slate-900">{problem?.title}</span>
+                                <span className="font-semibold text-slate-900">
+                                  {problem?.title}
+                                </span>
                                 <span className="text-xs text-slate-500">{cp.points} points</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                               <div className="flex items-center gap-2 mr-4">
+                              <div className="flex items-center gap-2 mr-4">
                                 <Label className="text-xs font-bold text-slate-400">Points</Label>
                                 <Input
                                   type="number"
@@ -377,7 +403,12 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
                                   className="w-20 h-8 rounded-lg text-center"
                                 />
                               </div>
-                              <Button variant="ghost" size="icon" onClick={() => removeProblem(cp.problemId)} className="text-rose-500 hover:bg-rose-50 rounded-full">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeProblem(cp.problemId)}
+                                className="text-rose-500 hover:bg-rose-50 rounded-full"
+                              >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </div>
@@ -403,7 +434,9 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
                   <Label className="text-sm font-semibold">Feedback Policy</Label>
                   <Select
                     value={formData.testFeedbackPolicy}
-                    onValueChange={(value: any) => setFormData({ ...formData, testFeedbackPolicy: value })}
+                    onValueChange={(value: any) =>
+                      setFormData({ ...formData, testFeedbackPolicy: value })
+                    }
                   >
                     <SelectTrigger className="rounded-lg">
                       <SelectValue />
@@ -420,7 +453,14 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
                   <Input
                     type="number"
                     value={formData.maxSubmissionsPerProblem || ''}
-                    onChange={(e) => setFormData({ ...formData, maxSubmissionsPerProblem: e.target.value ? Number(e.target.value) : undefined })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        maxSubmissionsPerProblem: e.target.value
+                          ? Number(e.target.value)
+                          : undefined,
+                      })
+                    }
                     placeholder="Unlimited"
                     className="rounded-lg"
                   />

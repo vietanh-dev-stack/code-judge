@@ -97,7 +97,7 @@ export default function ConsolePanel({ isRunning, result, problem }: ConsolePane
                   Memory
                 </p>
                 <p className="text-2xl font-bold">
-                  {result.memoryMb ?? '--'} <span className="text-xs text-muted-foreground font-medium uppercase">mb</span>
+                  {result.memoryMb != null && result.memoryMb > 0 ? result.memoryMb : '--'}{' '}<span className="text-xs text-muted-foreground font-medium uppercase">mb</span>
                 </p>
               </div>
             </div>
@@ -180,7 +180,7 @@ export default function ConsolePanel({ isRunning, result, problem }: ConsolePane
                           {tc.runtimeMs !== undefined && tc.runtimeMs !== null && (
                             <span>Runtime: <strong>{tc.runtimeMs} ms</strong></span>
                           )}
-                          {tc.memoryMb !== undefined && tc.memoryMb !== null && (
+                          {tc.memoryMb != null && tc.memoryMb > 0 && (
                             <span>Memory: <strong>{tc.memoryMb} MB</strong></span>
                           )}
                         </div>

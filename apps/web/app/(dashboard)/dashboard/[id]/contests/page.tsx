@@ -41,10 +41,11 @@ export default async function ClassContestsPage({ params }: { params: Promise<{ 
   }
 
   const isOwner = classroom.ownerId === user.id;
+  const canManage = isOwner && classroom.isActive !== false;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <ClassContestsTab classId={id} isOwner={isOwner} />
+      <ClassContestsTab classId={id} isOwner={isOwner} canManage={canManage} />
     </div>
   );
 }

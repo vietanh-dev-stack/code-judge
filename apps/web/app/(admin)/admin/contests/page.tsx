@@ -23,8 +23,7 @@ import {
   Trophy,
   MoreVertical,
   ChevronLeft,
-  ChevronRight,
-  Layout
+  ChevronRight
 } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -33,7 +32,6 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
 import Link from 'next/link';
 

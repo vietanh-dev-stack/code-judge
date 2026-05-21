@@ -59,11 +59,6 @@ export class CreateAdminProblemDto {
   @IsBoolean()
   isPublished?: boolean;
 
-  @ApiPropertyOptional({ enum: ['PRIVATE', 'PUBLIC', 'CONTEST_ONLY'], default: 'PUBLIC' })
-  @IsOptional()
-  @IsIn(['PRIVATE', 'PUBLIC', 'CONTEST_ONLY'])
-  visibility?: 'PRIVATE' | 'PUBLIC' | 'CONTEST_ONLY';
-
   @ApiPropertyOptional({ example: ['PYTHON', 'JAVASCRIPT'] })
   @IsOptional()
   @IsArray()

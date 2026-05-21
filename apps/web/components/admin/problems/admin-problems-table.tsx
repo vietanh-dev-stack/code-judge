@@ -14,7 +14,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Search, MoreHorizontal, Pencil, Trash2, Loader2, RefreshCw, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiRequestError } from '@/services/api-client';
@@ -53,8 +60,7 @@ export default function AdminProblemsTable() {
       setTotal(res.total);
     } catch (e) {
       console.error(e);
-      const msg =
-        e instanceof ApiRequestError ? e.body.message : 'Không tải được danh sách problem.';
+      const msg = e instanceof ApiRequestError ? e.body.message : 'Failed to fetch problems.';
       setListError(msg);
       setItems([]);
       setTotal(0);
@@ -71,15 +77,17 @@ export default function AdminProblemsTable() {
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const handleDelete = async (p: Problem) => {
-    if (!confirm(`Xóa problem "${p.title}"? Hành động không hoàn tác.`)) return;
+    if (!confirm(`Delete problem "${p.title}"? This action cannot be undone.`)) return;
     try {
       await problemsApi.delete(p.id);
-      toast.success('Đã xóa problem.', { position: 'top-center' });
+      toast.success('Problem deleted successfully.', { position: 'top-center' });
       fetchProblems();
     } catch (e) {
       console.error(e);
       const msg =
-        e instanceof ApiRequestError ? e.body.message : 'Không xóa được problem. Thử lại sau.';
+        e instanceof ApiRequestError
+          ? e.body.message
+          : 'Failed to delete problem. Please try again later.';
       toast.error(msg, { position: 'top-center' });
     }
   };
@@ -129,7 +137,7 @@ export default function AdminProblemsTable() {
           <Button asChild className="gap-2">
             <Link href="/admin/problems/create">
               <Plus className="h-4 w-4" />
-              Tạo problem
+              Create Problem
             </Link>
           </Button>
         </div>
@@ -156,7 +164,7 @@ export default function AdminProblemsTable() {
             ) : items.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                  {listError ? 'Không có dữ liệu. Thử làm mới hoặc kiểm tra kết nối.' : 'Không có problem nào.'}
+                  {listError ? listError : 'No problems found.'}
                 </TableCell>
               </TableRow>
             ) : (
@@ -189,7 +197,9 @@ export default function AdminProblemsTable() {
                       ) : null}
                     </div>
                   </TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{p.slug}</TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {p.slug}
+                  </TableCell>
                   <TableCell>
                     <Badge variant="secondary">{p.difficulty}</Badge>
                   </TableCell>
@@ -198,7 +208,6 @@ export default function AdminProblemsTable() {
                       <Badge variant={p.isPublished ? 'outline' : 'destructive'}>
                         {p.isPublished ? 'Published' : 'Draft'}
                       </Badge>
-                      <Badge variant="outline">{p.visibility}</Badge>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -212,9 +221,12 @@ export default function AdminProblemsTable() {
                         <DropdownMenuLabel>Tùy chọn</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                          <Link href={`/admin/problems/create?edit=${p.id}`} className="cursor-pointer">
+                          <Link
+                            href={`/admin/problems/create?edit=${p.id}`}
+                            className="cursor-pointer"
+                          >
                             <Pencil className="mr-2 h-4 w-4" />
-                            Sửa
+                            Update
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -223,7 +235,7 @@ export default function AdminProblemsTable() {
                           onClick={() => handleDelete(p)}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Xóa
+                          Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

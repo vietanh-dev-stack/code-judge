@@ -67,6 +67,10 @@ export const EnvKeys = {
   MINIO_REGION: 'MINIO_REGION',
   /** Base URL public để dựng URL hiển thị (tuỳ chọn). */
   MINIO_PUBLIC_BASE_URL: 'MINIO_PUBLIC_BASE_URL',
+  /** Gmail (nodemailer `service: 'gmail'`) — địa chỉ gửi. */
+  MAIL_ACCOUNT: 'MAIL_ACCOUNT',
+  /** App password hoặc credential SMTP tương ứng (không commit). */
+  MAIL_PASSWORD: 'MAIL_PASSWORD',
 } as const;
 
 export type EnvKey = (typeof EnvKeys)[keyof typeof EnvKeys];

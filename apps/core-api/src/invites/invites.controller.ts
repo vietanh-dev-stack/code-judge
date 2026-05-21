@@ -2,7 +2,6 @@ import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { InvitesService } from './invites.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateClassInviteDto } from './dto/create-class-invite.dto';
-import { User } from '@prisma/client';
 
 @Controller('invites')
 export class InvitesController {

@@ -11,6 +11,9 @@ export const metadata: Metadata = {
   description: 'Participate in programming contests and compete with others',
 };
 
+// Fetch runs against NEXT_PUBLIC_CORE_URL; docker/next build has no reachable API (localhost or VPS).
+export const dynamic = 'force-dynamic';
+
 export default async function ContestsPage() {
   const { items: contests } = await contestsApi.findAll({ limit: 50 });
 

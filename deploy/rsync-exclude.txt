@@ -1,0 +1,16 @@
+# Dùng với rsync (WSL/Git Bash): rsync -avz --delete --exclude-from=deploy/rsync-exclude.txt ...
+.git/
+.github/
+node_modules/
+apps/*/node_modules/
+apps/*/.next/
+apps/*/dist/
+**/coverage/
+**/.turbo/
+**/.eslintcache
+.env
+.env.production
+.env.local
+apps/*/.env
+apps/*/.env.*
+*.log

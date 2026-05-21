@@ -14,6 +14,9 @@ export default tseslint.config(
       '**/.next/**',
       '**/coverage/**',
       'ci/**',
+      'scripts/**',
+      'ecosystem.config.cjs',
+      'deploy/**',
       // Next/PostCSS config dùng CommonJS (`module.exports`) — bỏ qua ESLint mặc định browser.
       '**/next.config.js',
       '**/postcss.config.js',

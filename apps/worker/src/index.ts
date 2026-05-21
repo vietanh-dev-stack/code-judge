@@ -16,8 +16,21 @@ import path from 'path';
 import { execa } from 'execa';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
+import { parseJudge0MemoryMb, parseJudge0RuntimeMs } from './lib/judge0-metrics';
 
 const log = createWorkerLogger('worker');
+
+/** Judge0 trả `memory` theo kilobyte; DB/UI dùng MB (làm tròn lên để tránh 0MB với bài nhẹ). */
+function judge0MemoryKbToMb(memoryKb: number | null | undefined): number {
+  if (memoryKb == null || memoryKb <= 0) return 0;
+  return Math.max(1, Math.ceil(memoryKb / 1024));
+}
+
+/** Judge0 trả `time` theo giây (float). */
+function judge0TimeSecToMs(timeSec: number | null | undefined): number {
+  if (timeSec == null || timeSec < 0) return 0;
+  return Math.round(timeSec * 1000);
+}
 
 // Redis: BullMQ yêu cầu `maxRetriesPerRequest: null` khi dùng làm connection.
 const redisUrl = getOptionalEnv(process.env.REDIS_URL, 'redis://localhost:6379');
@@ -198,7 +211,9 @@ async function processSubmission(job: any) {
     throw new Error(`Problem not found: ${existingSubmission.problemId}`);
   }
 
-  let testCasesToRun = problem.testCases;
+  const testCasesToRun = existingSubmission.isDryRun
+    ? problem.testCases.filter((tc) => !tc.isHidden)
+    : problem.testCases;
 
   await prisma.submission.update({
     where: { id: submissionId },
@@ -262,7 +277,7 @@ async function processSubmission(job: any) {
     let maxMemory = 0;
     let combinedLogs = '';
     let finalStatus: SubmissionStatus = SubmissionStatus.Accepted;
-    let stopEarly = false;
+    const stopEarly = false;
 
     const languageId = getJudge0LanguageId(existingSubmission.language as string);
     job.updateProgress({ pct: 20, log: `Judging with Judge0 (ID: ${languageId})...` });
@@ -291,7 +306,8 @@ async function processSubmission(job: any) {
         const encodedInput = Buffer.from(testCase.input || '').toString('base64');
         const encodedExpected = Buffer.from(testCase.expectedOutput || '').toString('base64');
 
-        console.log('problem', problem)
+        const cpuTimeLimitSec = problem.timeLimitMs / 1000;
+        const wallTimeLimitSec = Math.max(cpuTimeLimitSec + 2, 5);
 
         // 1. Submit
         const submitResponse = await axios.post(`${judge0Url}/submissions?base64_encoded=true`, {
@@ -299,7 +315,9 @@ async function processSubmission(job: any) {
           language_id: languageId,
           stdin: encodedInput,
           expected_output: encodedExpected,
-          cpu_time_limit: problem.timeLimitMs / 1000,
+          cpu_time_limit: cpuTimeLimitSec,
+          wall_time_limit: wallTimeLimitSec,
+          cpu_extra_time: 0.5,
           memory_limit: problem.memoryLimitMb * 1024,
         }, { timeout: 10000 });
 
@@ -325,16 +343,14 @@ async function processSubmission(job: any) {
         const stderr = result.stderr ? Buffer.from(result.stderr, 'base64').toString('utf-8') : '';
         const compileOut = result.compile_output ? Buffer.from(result.compile_output, 'base64').toString('utf-8') : '';
         
-        const runtimeMs = Math.round((result.time || 0) * 1000);
-        const memoryMb = Math.round((result.memory || 0) / 1024);
+        const runtimeMs = parseJudge0RuntimeMs(result, cpuTimeLimitSec);
+        const memoryMb = parseJudge0MemoryMb(result);
         maxTime = Math.max(maxTime, runtimeMs);
         maxMemory = Math.max(maxMemory, memoryMb);
 
         const normalizedActual = normalizeOutput(stdout);
         const normalizedExpected = normalizeOutput(testCase.expectedOutput || '');
         const isMatch = normalizedActual === normalizedExpected;
-
-        console.log('result', result)
 
         let caseStatus: string = 'Wrong';
         const sId = result.status?.id;

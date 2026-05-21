@@ -30,7 +30,7 @@ function ProfilePageContent() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setStatsError(err instanceof Error ? err.message : 'Không tải được thống kê');
+          setStatsError(err instanceof Error ? err.message : 'Failed to load stats');
         }
       })
       .finally(() => {
@@ -44,7 +44,7 @@ function ProfilePageContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Đang tải profile...</p>
+        <p className="text-muted-foreground">Loading profile...</p>
       </div>
     );
   }
@@ -52,17 +52,17 @@ function ProfilePageContent() {
   if (!user) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">Không tìm thấy phiên đăng nhập.</p>
+        <p className="text-muted-foreground">User not found.</p>
         <Link href="/login" className="text-primary underline">
-          Đăng nhập
+          Login
         </Link>
       </div>
     );
   }
 
   const tabs: { id: ProfileTab; label: string }[] = [
-    { id: 'overview', label: 'Tổng quan' },
-    { id: 'stats', label: 'Thống kê' },
+    { id: 'overview', label: 'Overview' },
+    { id: 'stats', label: 'Stats' },
   ];
 
   return (
@@ -107,7 +107,7 @@ export default function ProfilePage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-background flex items-center justify-center">
-          <p className="text-muted-foreground">Đang tải...</p>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       }
     >

@@ -58,7 +58,7 @@ services:
       - RAILS_MAX_THREADS=5
       - RAILS_MIN_THREADS=5
       - SECRET_KEY_BASE=7726487263487263487263487263487263487263487263487263487263487263
-      - JUDGE0_USE_CGROUP=false
+      - JUDGE0_USE_CGROUP=false # Dev/Windows: memory metrics unavailable; runtime uses isolate_stub actual timing
       - JUDGE0_MAX_MAX_FILE_SIZE=10485760
     ports:
       - '2358:2358'
@@ -87,7 +87,7 @@ services:
       - RAILS_MAX_THREADS=5
       - RAILS_MIN_THREADS=5
       - SECRET_KEY_BASE=7726487263487263487263487263487263487263487263487263487263487263
-      - JUDGE0_USE_CGROUP=false
+      - JUDGE0_USE_CGROUP=false # Dev/Windows: memory metrics unavailable; runtime uses isolate_stub actual timing
       - JUDGE0_MAX_MAX_FILE_SIZE=10485760
     volumes:
       - judge0_box:/box

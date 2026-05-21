@@ -31,7 +31,7 @@ require_ubuntu_2404
 
 echo "==> System packages"
 sudo apt-get update
-sudo apt-get install -y ca-certificates curl gnupg ufw git
+sudo apt-get install -y ca-certificates curl gnupg ufw
 
 echo "==> Docker Engine + Compose plugin (official install script)"
 if ! command -v docker >/dev/null 2>&1; then
@@ -66,8 +66,9 @@ fi
 echo ""
 echo "Setup done."
 echo "  1. Log out and SSH back in (docker group: $USER)"
-echo "  2. Clone repo → cp .env.production.example .env.production → edit secrets"
-echo "  3. ./deploy/production-up.sh"
+echo "  2. Đồng bộ code từ máy dev qua SSH (deploy/sync-to-vps.ps1 hoặc rsync/WinSCP) — không dùng git clone GitHub"
+echo "  3. cp .env.production.example .env.production → chỉnh secret"
+echo "  4. ./deploy/production-up.sh"
 echo ""
 echo "Verify after deploy:"
 echo "  docker compose -f docker-compose.production.yml --env-file .env.production ps"

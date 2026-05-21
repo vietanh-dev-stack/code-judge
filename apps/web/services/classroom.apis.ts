@@ -1,11 +1,52 @@
 import { apiFetch } from './api-client';
 
+export type ProblemVisibility = 'PRIVATE' | 'PUBLIC' | 'CONTEST_ONLY';
+
+export type ClassroomAssignmentProblem = {
+  id: string;
+  slug: string;
+  visibility: ProblemVisibility;
+};
+
+export type ClassroomAssignment = {
+  id: string;
+  title: string;
+  description: string | null;
+  dueAt: string | null;
+  problemId: string | null;
+  contestId: string | null;
+  publishedAt: string;
+  problem?: ClassroomAssignmentProblem;
+  contest?: {
+    id: string;
+    slug: string;
+    startAt?: string;
+    endAt?: string;
+  };
+};
+
+/** Lớp trong danh sách `/classroom/me` (ít field hơn `Classroom` chi tiết). */
+export type ClassroomListItem = {
+  id: string;
+  name: string;
+  academicYear?: string | null;
+  classCode: string;
+  isActive: boolean;
+  owner: {
+    id: string;
+    name: string;
+    image?: string | null;
+  };
+  assignments: ClassroomAssignment[];
+};
+
 export interface Classroom {
   id: string;
   name: string;
   description?: string | null;
   academicYear?: string | null;
   classCode: string;
+  /** false when the class is archived */
   isActive: boolean;
   owner: {
     id: string;
@@ -16,23 +57,7 @@ export interface Classroom {
     createdAt: string;
     updatedAt: string;
   };
-  assignments: Array<{
-    id: string;
-    title: string;
-    description: string | null;
-    dueAt: string | null;
-    problemId: string | null;
-    contestId: string | null;
-    publishedAt: string;
-    problem?: {
-      id: string;
-      slug: string;
-    };
-    contest?: {
-      id: string;
-      slug: string;
-    };
-  }>;
+  assignments: ClassroomAssignment[];
   ownerId: string;
   createdAt: string;
   updatedAt: string;
@@ -66,38 +91,7 @@ export interface AdminClassroomListItem {
 export interface MyClassroomItem {
   role: 'OWNER' | 'MEMBER';
 
-  classRoom: {
-    id: string;
-    name: string;
-    academicYear?: string | null;
-    classCode: string;
-    isActive: boolean;
-
-    owner: {
-      id: string;
-      name: string;
-      image?: string | null;
-    };
-    assignments: Array<{
-      id: string;
-      title: string;
-      description: string | null;
-      dueAt: string | null;
-      problemId: string | null;
-      contestId: string | null;
-      publishedAt: string;
-      problem?: {
-        id: string;
-        slug: string;
-      };
-      contest?: {
-        id: string;
-        slug: string;
-        startAt: string;
-        endAt: string;
-      };
-    }>;
-  };
+  classRoom: ClassroomListItem;
 }
 
 export interface ClassroomPeopleResponse {

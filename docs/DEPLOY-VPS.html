@@ -78,7 +78,9 @@
         <a class="sub" href="#ssh-key">SSH key</a>
         <a class="sub" href="#ssh-scp">SCP / WinSCP</a>
         <a href="#vps-setup">Chuẩn bị VPS</a>
-        <a href="#get-code">Đưa code lên VPS</a>
+        <a href="#readiness">Sẵn sàng deploy?</a>
+        <a href="#get-code">Đưa code lên VPS (SSH)</a>
+        <a class="sub" href="#sync-windows">sync-to-vps.ps1</a>
         <a href="#env-file">File .env.production</a>
         <a class="sub" href="#env-create">Tạo file trên VPS</a>
         <a class="sub" href="#env-scenarios">Kịch bản domain / IP</a>
@@ -99,6 +101,8 @@
       </nav>
       <h2 style="margin-top:1.5rem">Docs khác</h2>
       <nav>
+        <a href="UPDATE-DEPLOY.html">UPDATE-DEPLOY</a>
+        <a href="DEBUG-CONTAINERS.html">DEBUG-CONTAINERS</a>
         <a href="MINIO.html">MINIO</a>
         <a href="PRISMA-SEED.html">PRISMA SEED</a>
         <a href="JUDGE0-WINDOWS-WSL.html">JUDGE0 WINDOWS</a>
@@ -113,17 +117,37 @@
         <p class="meta">
           <span class="badge">Ubuntu 24.04 LTS x64</span>
           <span>Docker Compose production</span>
-          <span>Cập nhật: 2026-05-18</span>
+          <span>Cập nhật: 2026-05-20</span>
         </p>
         <p style="color:var(--muted);max-width:720px;margin-top:1rem">
-          Hướng dẫn đầy đủ: kết nối SSH từ Windows → tạo <code>.env.production</code> từng biến →
-          build và chạy toàn bộ stack trên VPS bằng <code>docker-compose.production.yml</code>.
-          Không cần cài Node/PM2 trên host (container tự build).
+          Hướng dẫn đầy đủ: SSH từ Windows → <strong>đồng bộ mã nguồn lên VPS (không git clone GitHub)</strong> →
+          <code>.env.production</code> → build stack <code>docker-compose.production.yml</code> trên VPS.
+          Không cần Node/PM2 trên host (Docker build trong container).
         </p>
+        <div class="callout callout-ok">
+          <strong>Đánh giá DevOps (2026-05):</strong> Code Judge <strong>sẵn sàng deploy test trên VPS</strong>
+          (Ubuntu 24.04 x64, RAM ≥ 4 GB). CI pass lint/test/build. Production compose gồm migrate, Judge0, nginx.
+          Script: <code>deploy/sync-to-vps.ps1</code>, <code>deploy/README.md</code>.
+        </div>
       </header>
 
+      <section id="readiness">
+        <h2>1. Có thể deploy test trên VPS chưa?</h2>
+        <p><strong>Có.</strong> Repo đã có stack production hoàn chỉnh; build ứng dụng pass CI. Điều kiện:</p>
+        <table>
+          <thead><tr><th>Yêu cầu</th><th>Ghi chú</th></tr></thead>
+          <tbody>
+            <tr><td>Ubuntu 24.04 LTS x64</td><td>Judge0 cần <code>linux/amd64</code> + privileged</td></tr>
+            <tr><td>RAM ≥ 4 GB</td><td>8 GB khuyến nghị; script tự tạo swap 2G nếu RAM &lt; 6G</td></tr>
+            <tr><td>Đưa code qua SSH</td><td><strong>Không</strong> dùng <code>git clone</code> / GitHub — xem mục 5</td></tr>
+            <tr><td><code>.env.production</code></td><td>Secret + <code>FRONTEND_URL</code> + <code>NEXT_PUBLIC_CORE_URL</code> đúng IP/domain</td></tr>
+          </tbody>
+        </table>
+        <p>Tóm tắt nhanh: <code>deploy/README.md</code> trong repo.</p>
+      </section>
+
       <section id="overview">
-        <h2>1. Tổng quan kiến trúc</h2>
+        <h2>2. Tổng quan kiến trúc</h2>
         <table>
           <thead>
             <tr><th>Thành phần</th><th>Container</th><th>Ra internet?</th></tr>
@@ -149,12 +173,14 @@
           <li><code>.env.production.example</code> — mẫu biến (copy → <code>.env.production</code>)</li>
           <li><code>deploy/ubuntu-24.04-setup.sh</code> — cài Docker + UFW lần đầu</li>
           <li><code>deploy/production-up.sh</code> — build &amp; khởi động</li>
+          <li><code>deploy/sync-to-vps.ps1</code> — đồng bộ code Windows → VPS (SSH)</li>
+          <li><code>deploy/README.md</code> — tóm tắt DevOps</li>
           <li><code>deploy/nginx/conf.d/code-judge.conf</code> — reverse proxy</li>
         </ul>
       </section>
 
       <section id="requirements">
-        <h2>2. Yêu cầu</h2>
+        <h2>3. Yêu cầu</h2>
         <h3>VPS</h3>
         <ul>
           <li><strong>OS:</strong> Ubuntu <strong>24.04 LTS</strong>, kiến trúc <strong>x86_64</strong> (amd64)</li>
@@ -179,7 +205,7 @@
       </section>
 
       <section id="ssh">
-        <h2>3. Kết nối SSH từ Windows</h2>
+        <h2>4. Kết nối SSH từ Windows</h2>
         <p>Mọi lệnh trong mục 4–8 chạy <strong>trên VPS</strong> sau khi SSH thành công, trừ khi ghi rõ “trên Windows”.</p>
 
         <h3 id="ssh-key">3.1. Tạo SSH key (khuyến nghị)</h3>
@@ -211,13 +237,28 @@
       </section>
 
       <section id="vps-setup">
-        <h2>4. Chuẩn bị VPS lần đầu (Ubuntu 24.04)</h2>
-        <p><strong>Trên VPS</strong> (đã SSH vào):</p>
-        <pre><code>cd ~
-git clone https://github.com/&lt;ORG&gt;/code-judge.git
-cd code-judge
+        <h2>5. Chuẩn bị VPS lần đầu (Ubuntu 24.04)</h2>
+        <div class="callout callout-warn">
+          <strong>Lỗi <code>cd ~/code-judge: No such file or directory</code>?</strong>
+          Thư mục chưa tồn tại — bạn chưa làm <strong>mục 6</strong> (đồng bộ code từ Windows).
+          Làm mục 6 trước, rồi quay lại mục 5.
+        </div>
+        <p><strong>Thứ tự bắt buộc:</strong></p>
+        <ol>
+          <li><strong>Mục 6</strong> — trên Windows: <code>sync-to-vps.ps1</code> (hoặc WinSCP) đưa code lên VPS</li>
+          <li><strong>Mục 5</strong> — trên VPS: <code>cd</code> vào đúng thư mục → <code>ubuntu-24.04-setup.sh</code></li>
+        </ol>
+        <h3>Đăng nhập bằng <code>root</code> (DigitalOcean / VPS của bạn)</h3>
+        <p>Prompt <code>root@ubuntu-...</code> → thư mục repo là <code>/root/code-judge</code>, không phải <code>/home/ubuntu/</code>.</p>
+        <p><strong>Trên Windows</strong> (thay <code>VPS_IP</code> bằng IP thật):</p>
+        <pre><code>cd C:\Users\ADMIN\Documents\GitHub\code-judge
+.\deploy\sync-to-vps.ps1 -VpsHost VPS_IP -VpsUser root -RemoteDir /root/code-judge</code></pre>
+        <p><strong>Trên VPS</strong> (sau khi sync xong):</p>
+        <pre><code>cd /root/code-judge
+ls deploy/ubuntu-24.04-setup.sh   # phải thấy file — nếu không, chưa sync
 chmod +x deploy/ubuntu-24.04-setup.sh deploy/production-up.sh
 ./deploy/ubuntu-24.04-setup.sh</code></pre>
+        <p>Nếu đăng nhập user <code>ubuntu</code> thì dùng <code>cd ~/code-judge</code> (= <code>/home/ubuntu/code-judge</code>) và sync với <code>-VpsUser ubuntu</code>.</p>
         <p>Script trên sẽ:</p>
         <ul>
           <li>Cài Docker Engine + Compose plugin</li>
@@ -236,35 +277,58 @@ lsb_release -a   # phải thấy Ubuntu 24.04</code></pre>
       </section>
 
       <section id="get-code">
-        <h2>5. Đưa mã nguồn lên VPS</h2>
-        <h3>5.1. Git clone (khuyến nghị)</h3>
-        <pre><code>cd ~
-git clone https://github.com/&lt;ORG&gt;/code-judge.git
-cd code-judge</code></pre>
-        <h3>5.2. SCP từ Windows (không dùng Git)</h3>
-        <p><strong>Trên Windows</strong> — không upload <code>node_modules</code>:</p>
-        <pre><code>cd C:\Users\ADMIN\Documents\GitHub
-scp -r code-judge ubuntu@VPS_IP:/home/ubuntu/</code></pre>
+        <h2>6. Đưa mã nguồn lên VPS (SSH — không GitHub)</h2>
+        <div class="callout callout-warn">
+          <strong>Không dùng</strong> <code>git clone</code> / <code>git pull</code> từ GitHub. Chỉ đồng bộ từ máy dev (SCP, rsync, WinSCP, hoặc script).
+        </div>
+
+        <h3 id="sync-windows">6.1. Script PowerShell (khuyến nghị)</h3>
+        <p><strong>Trên Windows</strong> — mở <strong>PowerShell</strong> hoặc Windows Terminal (profile PowerShell), <strong>không</strong> dùng Command Prompt (<code>cmd.exe</code>): trong <code>cmd</code>, gõ <code>.ps1</code> thường không chạy script và không có log.</p>
+        <p><strong>Trong thư mục repo:</strong></p>
+        <pre><code>cd C:\Users\ADMIN\Documents\GitHub\code-judge
+# User ubuntu (mặc định script):
+.\deploy\sync-to-vps.ps1 -VpsHost VPS_IP -VpsUser ubuntu
+# User root (DigitalOcean):
+.\deploy\sync-to-vps.ps1 -VpsHost VPS_IP -VpsUser root -RemoteDir /root/code-judge</code></pre>
+        <p>Nếu chỉ có <code>cmd</code>, gọi PowerShell rõ ràng:</p>
+        <pre><code>cd C:\Users\ADMIN\Documents\GitHub\code-judge
+powershell -NoProfile -ExecutionPolicy Bypass -File .\deploy\sync-to-vps.ps1 -VpsHost VPS_IP -VpsUser root -RemoteDir /root/code-judge</code></pre>
+        <p>Script đóng gói <code>tar.gz</code> (bỏ <code>node_modules</code>, <code>.next</code>, <code>.env</code>), upload qua <code>scp</code>, giải nén vào thư mục đích (mặc định <code>/home/ubuntu/code-judge</code> hoặc <code>-RemoteDir</code> bạn truyền).</p>
+
+        <h3>6.2. WinSCP / SFTP</h3>
+        <p>Kéo thả cả thư mục <code>code-judge</code> lên <code>/home/ubuntu/code-judge</code>. <strong>Bỏ qua:</strong> <code>node_modules</code>, <code>apps/web/.next</code>, file <code>.env</code> local.</p>
+
+        <h3>6.3. rsync (WSL hoặc Git Bash)</h3>
+        <pre><code>cd /mnt/c/Users/ADMIN/Documents/GitHub/code-judge
+rsync -avz --delete --exclude-from=deploy/rsync-exclude.txt \
+  ./ ubuntu@VPS_IP:/home/ubuntu/code-judge/</code></pre>
+
         <p>Trên VPS nếu lỡ có <code>node_modules</code> từ Windows:</p>
-        <pre><code>rm -rf ~/code-judge/node_modules ~/code-judge/apps/*/node_modules</code></pre>
-        <h3>5.3. Cập nhật code sau này</h3>
-        <pre><code>cd ~/code-judge
-git pull
+        <pre><code>rm -rf /root/code-judge/node_modules /root/code-judge/apps/*/node_modules</code></pre>
+
+        <h3>6.4. Cập nhật code sau này</h3>
+        <p>Chạy lại sync từ Windows, rồi trên VPS:</p>
+        <pre><code>cd /root/code-judge
+sed -i 's/\r$//' scripts/isolate_stub.sh scripts/sudo_stub.sh
+chmod +x scripts/isolate_stub.sh scripts/sudo_stub.sh
+chmod +x deploy/production-up.sh
 ./deploy/production-up.sh</code></pre>
+        <p>Chi tiết từng lệnh: <a href="UPDATE-DEPLOY.html">UPDATE-DEPLOY.html</a>.</p>
       </section>
 
       <section id="env-file">
-        <h2>6. File <code>.env.production</code> trên VPS</h2>
+        <h2>7. File <code>.env.production</code> trên VPS</h2>
 
         <h3 id="env-create">6.1. Tạo và chỉnh file trên VPS</h3>
         <p><strong>Trên VPS</strong>, trong thư mục repo:</p>
-        <pre><code>cd ~/code-judge
+        <pre><code>cd /root/code-judge
 cp .env.production.example .env.production
 nano .env.production</code></pre>
         <p>Hoặc chỉnh trên Windows rồi upload:</p>
-        <pre><code>scp C:\path\to\.env.production ubuntu@VPS_IP:/home/ubuntu/code-judge/.env.production</code></pre>
+        <pre><code>cd C:\Users\ADMIN\Documents\GitHub\code-judge
+scp .env.production root@VPS_IP:/root/code-judge/.env.production</code></pre>
         <p>Bảo vệ quyền file:</p>
-        <pre><code>chmod 600 ~/code-judge/.env.production</code></pre>
+        <pre><code>chmod 600 /root/code-judge/.env.production</code></pre>
         <div class="callout">
           Git <strong>không</strong> commit <code>.env.production</code> (đã có trong <code>.gitignore</code>).
           Mỗi lần đổi secret hoặc URL public, sửa file trên VPS rồi chạy lại <code>./deploy/production-up.sh</code>.
@@ -289,10 +353,14 @@ openssl rand -base64 24</code></pre>
           <li><code>your-domain.com</code> → <code>VPS_IP</code></li>
           <li><code>api.your-domain.com</code> → <code>VPS_IP</code></li>
         </ul>
-        <pre><code>FRONTEND_URL=https://your-domain.com
+        <pre><code>FRONTEND_URL=https://your-domain.com,https://www.your-domain.com
 NEXT_PUBLIC_CORE_URL=https://api.your-domain.com
+COOKIE_DOMAIN=.your-domain.com
+MINIO_PUBLIC_BASE_URL=https://your-domain.com
 GOOGLE_CALLBACK_URL=https://api.your-domain.com/auth/google/callback</code></pre>
-        <p>User mở web: <code>https://your-domain.com</code> (sau khi gắn HTTPS — mục 10).</p>
+        <p><code>COOKIE_DOMAIN</code> có dấu chấm đầu (VD <code>.code-judge.io.vn</code>) để cookie JWT dùng chung giữa <code>your-domain.com</code> và <code>api.your-domain.com</code>.</p>
+        <p><code>MINIO_PUBLIC_BASE_URL</code> = domain web (HTTPS), không <code>:9000</code> — nginx proxy path <code>/codejudge/</code> tới MinIO.</p>
+        <p>User mở web: <code>https://your-domain.com</code> (sau khi gắn HTTPS — mục 11).</p>
 
         <h4>B — Chỉ có IP (test nhanh)</h4>
         <pre><code>FRONTEND_URL=http://203.0.113.10
@@ -308,7 +376,7 @@ NEXT_PUBLIC_CORE_URL=http://203.0.113.10:8080</code></pre>
       </section>
 
       <section id="env-fields">
-        <h2>7. Chi tiết từng biến trong <code>.env.production</code></h2>
+        <h2>8. Chi tiết từng biến trong <code>.env.production</code></h2>
         <p>Tham chiếu mẫu: <code>.env.production.example</code>. Cột “Bắt buộc” áp dụng cho production thật.</p>
 
         <h3 id="env-postgres">7.1. Postgres (<code>app-db</code>)</h3>
@@ -353,8 +421,8 @@ NEXT_PUBLIC_CORE_URL=http://203.0.113.10:8080</code></pre>
               <td>Region SDK (MinIO không bắt buộc đúng region).</td>
             </tr>
             <tr>
-              <td><code>MINIO_PUBLIC_BASE_URL</code></td><td>Tuỳ chọn</td><td><code>https://minio.domain.com</code></td>
-              <td>URL public để trình duyệt tải file trực tiếp (khi có reverse proxy MinIO). Để trống nếu chỉ dùng presigned URL.</td>
+              <td><code>MINIO_PUBLIC_BASE_URL</code></td><td>Khuyến nghị (HTTPS)</td><td><code>https://your-domain.com</code></td>
+              <td>URL trình duyệt tải file (presigned). Production: cùng domain web, path <code>/codejudge/</code> qua nginx — <strong>không</strong> dùng <code>http://IP:9000</code> trên trang HTTPS.</td>
             </tr>
           </tbody>
         </table>
@@ -375,7 +443,13 @@ NEXT_PUBLIC_CORE_URL=http://203.0.113.10:8080</code></pre>
           </tbody>
         </table>
         <p>Worker dùng <code>JUDGE0_URL=http://judge0-server:2358</code> (compose inject) — không cần khai báo trong <code>.env.production</code>.</p>
-        <p>Ubuntu 24.04: Judge0 chạy <strong>isolate thật</strong> (privileged), không dùng stub như <code>docker-compose.yml</code> dev trên Windows.</p>
+        <p>Ubuntu 24.04 (cgroup v2): production mặc định <code>JUDGE0_USE_CGROUP=false</code> + mount <code>scripts/isolate_stub.sh</code> (privileged). Sau sync từ Windows:</p>
+        <pre><code>cd /root/code-judge
+sed -i 's/\r$//' scripts/isolate_stub.sh scripts/sudo_stub.sh
+chmod +x scripts/isolate_stub.sh scripts/sudo_stub.sh
+docker compose -f docker-compose.production.yml --env-file .env.production up -d --force-recreate judge0-server judge0-worker
+docker compose -f docker-compose.production.yml --env-file .env.production exec judge0-worker /usr/local/bin/isolate --init</code></pre>
+        <p>Isolate thật (sandbox mạnh hơn): bật cgroup v1 trên host — xem <code>deploy/README.md</code> § Judge0 cgroup, đặt <code>JUDGE0_USE_CGROUP=true</code> và bỏ mount stub.</p>
 
         <h3 id="env-app">7.4. JWT, URL web/API, nginx</h3>
         <table>
@@ -398,8 +472,20 @@ NEXT_PUBLIC_CORE_URL=http://203.0.113.10:8080</code></pre>
               <td>Refresh token TTL (7 ngày).</td>
             </tr>
             <tr>
-              <td><code>FRONTEND_URL</code></td><td><span class="required">CÓ</span></td><td><code>https://your-domain.com</code></td>
-              <td>Core API dùng cho <strong>CORS</strong> và redirect OAuth/email. Phải khớp origin trình duyệt (scheme + host + port).</td>
+              <td><code>FRONTEND_URL</code></td><td><span class="required">CÓ</span></td><td><code>https://a.com,https://www.a.com</code></td>
+              <td>CORS, OAuth redirect, email links. Nhiều origin cách nhau bởi dấu phẩy nếu dùng cả www và non-www.</td>
+            </tr>
+            <tr>
+              <td><code>COOKIE_DOMAIN</code></td><td>Khuyến nghị (subdomain)</td><td><code>.your-domain.com</code></td>
+              <td>Cookie JWT dùng chung web + <code>api.</code> subdomain. Sau đổi: <code>force-recreate core-api</code>, xóa cookie cũ trên trình duyệt.</td>
+            </tr>
+            <tr>
+              <td><code>MAIL_ACCOUNT</code></td><td>Tuỳ chọn</td><td><code>you@gmail.com</code></td>
+              <td>Gmail gửi mời lớp / thông báo. Cần bật 2FA + tạo App Password.</td>
+            </tr>
+            <tr>
+              <td><code>MAIL_PASSWORD</code></td><td>Tuỳ chọn</td><td><code>xxxx-xxxx-xxxx-xxxx</code></td>
+              <td>App Password 16 ký tự (không phải mật khẩu Gmail thường). Compose inject vào <code>core-api</code>.</td>
             </tr>
             <tr>
               <td><code>NEXT_PUBLIC_CORE_URL</code></td><td><span class="required">CÓ</span></td><td><code>https://api.your-domain.com</code></td>
@@ -457,9 +543,12 @@ NEXT_PUBLIC_CORE_URL=http://203.0.113.10:8080</code></pre>
       </section>
 
       <section id="deploy">
-        <h2>8. Build và deploy trên VPS</h2>
+        <h2>9. Build và deploy trên VPS</h2>
         <p><strong>Trên VPS</strong> — đảm bảo đã có <code>.env.production</code> hợp lệ:</p>
-        <pre><code>cd ~/code-judge
+        <pre><code>cd /root/code-judge
+sed -i 's/\r$//' scripts/isolate_stub.sh scripts/sudo_stub.sh
+chmod +x scripts/isolate_stub.sh scripts/sudo_stub.sh
+chmod +x deploy/production-up.sh deploy/production-down.sh
 ./deploy/production-up.sh</code></pre>
         <p>Tương đương:</p>
         <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production up -d --build</code></pre>
@@ -484,7 +573,7 @@ docker compose -f docker-compose.production.yml --env-file .env.production logs 
       </section>
 
       <section id="verify">
-        <h2>9. Kiểm tra sau triển khai</h2>
+        <h2>10. Kiểm tra sau triển khai</h2>
         <table>
           <thead><tr><th>Kiểm tra</th><th>Lệnh / hành động</th></tr></thead>
           <tbody>
@@ -499,34 +588,48 @@ docker compose -f docker-compose.production.yml --env-file .env.production logs 
       </section>
 
       <section id="https">
-        <h2>10. HTTPS (Let's Encrypt)</h2>
-        <p>Nginx trong Docker đang listen 80/8080. Có hai hướng:</p>
+        <h2>11. HTTPS (Let's Encrypt)</h2>
+        <p>Nginx trong container map 80/443 (web) và 8080/443 (api). Cert thường mount vào container (xem <code>deploy/nginx/</code> và <code>deploy/README.md</code>).</p>
+        <p>Sau khi có HTTPS, cập nhật <code>.env.production</code>:</p>
+        <pre><code>FRONTEND_URL=https://code-judge.io.vn,https://www.code-judge.io.vn
+NEXT_PUBLIC_CORE_URL=https://api.code-judge.io.vn
+COOKIE_DOMAIN=.code-judge.io.vn
+MINIO_PUBLIC_BASE_URL=https://code-judge.io.vn</code></pre>
+        <p><strong>Trên VPS</strong> — áp dụng env và rebuild web (URL API nhúng lúc build):</p>
+        <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production up -d --force-recreate core-api
+docker compose -f docker-compose.production.yml --env-file .env.production build web --no-cache
+docker compose -f docker-compose.production.yml --env-file .env.production up -d web nginx
+docker compose -f docker-compose.production.yml --env-file .env.production exec nginx nginx -t
+docker compose -f docker-compose.production.yml --env-file .env.production exec nginx nginx -s reload</code></pre>
+        <p>Kiểm tra:</p>
+        <pre><code>curl -sI https://code-judge.io.vn | head -5
+curl -sI https://api.code-judge.io.vn/tags | head -5</code></pre>
         <details>
-          <summary>A — Certbot trên host + proxy host Nginx (phổ biến)</summary>
-          <p>Cài Nginx/Certbot trên Ubuntu host, proxy tới <code>127.0.0.1:80</code> map từ container, hoặc publish web/api port khác. Sau khi có cert, cập nhật:</p>
-          <pre><code>FRONTEND_URL=https://your-domain.com
-NEXT_PUBLIC_CORE_URL=https://api.your-domain.com</code></pre>
-          <p>Rồi <code>./deploy/production-up.sh</code> để rebuild web.</p>
-        </details>
-        <details>
-          <summary>B — Chỉ HTTP + IP (lab / nội bộ)</summary>
-          <p>Dùng kịch bản mục 6.3.B — không cần certbot.</p>
+          <summary>Chỉ HTTP + IP (lab / nội bộ)</summary>
+          <p>Dùng kịch bản mục env-scenarios B — không cần <code>COOKIE_DOMAIN</code> subdomain; không dùng <code>MINIO_PUBLIC_BASE_URL</code> HTTPS.</p>
         </details>
       </section>
 
       <section id="update">
-        <h2>11. Cập nhật phiên bản</h2>
-        <pre><code>cd ~/code-judge
-git pull
+        <h2>12. Cập nhật phiên bản</h2>
+        <p><strong>Trên Windows:</strong></p>
+        <pre><code>cd C:\Users\ADMIN\Documents\GitHub\code-judge
+powershell -NoProfile -ExecutionPolicy Bypass -File .\deploy\sync-to-vps.ps1 -VpsHost VPS_IP -VpsUser root -RemoteDir /root/code-judge</code></pre>
+        <p><strong>Trên VPS:</strong></p>
+        <pre><code>cd /root/code-judge
+sed -i 's/\r$//' scripts/isolate_stub.sh scripts/sudo_stub.sh
+chmod +x scripts/isolate_stub.sh scripts/sudo_stub.sh
 # Sửa .env.production nếu cần
 ./deploy/production-up.sh</code></pre>
         <p>Nếu chỉ đổi secret/URL trong env (không đổi code):</p>
-        <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production up -d</code></pre>
-        <p>Đổi <code>NEXT_PUBLIC_CORE_URL</code> → bắt buộc có <code>--build</code> (script <code>production-up.sh</code> đã bao gồm).</p>
+        <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production up -d --force-recreate core-api</code></pre>
+        <p>Đổi <code>NEXT_PUBLIC_CORE_URL</code> → <code>build web --no-cache</code> rồi <code>up -d web</code>. Xem <a href="UPDATE-DEPLOY.html">UPDATE-DEPLOY.html</a>.</p>
       </section>
 
       <section id="troubleshoot">
-        <h2>12. Xử lý lỗi thường gặp</h2>
+        <h2>13. Xử lý lỗi thường gặp</h2>
         <h3>Không SSH được</h3>
         <ul>
           <li>Kiểm tra security group / firewall nhà cung cấp (port 22).</li>
@@ -537,22 +640,34 @@ git pull
 # logout SSH, login lại</code></pre>
         <h3><code>Set POSTGRES_PASSWORD in .env.production</code></h3>
         <p>Thiếu biến bắt buộc — mở <code>.env.production</code> và set đủ các dòng có <code>?Set</code> trong compose.</p>
-        <h3>Web lỗi API / CORS</h3>
+        <h3>Web lỗi API / CORS / Mixed Content</h3>
         <ul>
-          <li><code>NEXT_PUBLIC_CORE_URL</code> phải là URL API từ trình duyệt user (không phải <code>http://core-api:3000</code>).</li>
-          <li><code>FRONTEND_URL</code> khớp URL web (VD <code>http://IP</code> không port nếu nginx :80).</li>
+          <li><code>NEXT_PUBLIC_CORE_URL</code> = URL API từ trình duyệt (VD <code>https://api.domain.com</code>), không <code>http://core-api:3000</code>.</li>
+          <li><code>FRONTEND_URL</code> khớp origin web (kể cả <code>www</code> nếu dùng).</li>
           <li>Rebuild web sau khi sửa <code>NEXT_PUBLIC_*</code>.</li>
+          <li><code>MINIO_PUBLIC_BASE_URL</code> phải HTTPS cùng domain web khi trang HTTPS — không <code>:9000</code>.</li>
         </ul>
-        <h3>Worker không chấm</h3>
-        <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production logs worker --tail 80
-docker compose -f docker-compose.production.yml --env-file .env.production logs judge0-server --tail 80</code></pre>
+        <h3>Login OK nhưng /dashboard hoặc /auth/me 401</h3>
+        <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production exec core-api printenv COOKIE_DOMAIN FRONTEND_URL
+docker compose -f docker-compose.production.yml --env-file .env.production up -d --force-recreate core-api</code></pre>
+        <p>Trong <code>.env.production</code>: <code>COOKIE_DOMAIN=.your-domain.com</code>. Xóa cookie cũ trên trình duyệt, đăng nhập lại.</p>
+        <h3>Worker / Judge0 không chấm</h3>
+        <pre><code>cd /root/code-judge
+sed -i 's/\r$//' scripts/isolate_stub.sh scripts/sudo_stub.sh
+chmod +x scripts/isolate_stub.sh scripts/sudo_stub.sh
+docker compose -f docker-compose.production.yml --env-file .env.production up -d --force-recreate judge0-server judge0-worker
+docker compose -f docker-compose.production.yml --env-file .env.production logs worker --tail 80
+docker compose -f docker-compose.production.yml --env-file .env.production logs judge0-worker --tail 80
+docker compose -f docker-compose.production.yml --env-file .env.production exec judge0-worker /usr/local/bin/isolate --init</code></pre>
+        <p>Debug chi tiết: <a href="DEBUG-CONTAINERS.html">DEBUG-CONTAINERS.html</a>.</p>
         <h3>migrate failed</h3>
         <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production logs migrate</code></pre>
         <p>Thường do <code>app-db</code> chưa sẵn sàng hoặc <code>POSTGRES_*</code> sai.</p>
       </section>
 
       <section id="security">
-        <h2>13. Bảo mật</h2>
+        <h2>14. Bảo mật</h2>
         <ul>
           <li><code>chmod 600 .env.production</code> — chỉ owner đọc được.</li>
           <li>Không mở port 5432, 6379, 9000, 2358 ra internet (compose production không publish các port này).</li>
@@ -575,25 +690,30 @@ docker compose -f docker-compose.production.yml --env-file .env.production logs 
       </section>
 
       <section id="checklist">
-        <h2>14. Checklist nhanh</h2>
+        <h2>15. Checklist nhanh</h2>
         <pre><code>[ ] VPS Ubuntu 24.04 x64, RAM ≥ 4GB
-[ ] SSH từ Windows OK
+[ ] SSH từ Windows OK (root hoặc ubuntu)
+[ ] powershell -File .\deploy\sync-to-vps.ps1 -VpsHost IP -VpsUser root -RemoteDir /root/code-judge
 [ ] ./deploy/ubuntu-24.04-setup.sh (Docker + UFW)
-[ ] git clone + cd code-judge
 [ ] cp .env.production.example .env.production
-[ ] Đã set: POSTGRES_PASSWORD, MINIO_ROOT_*, JUDGE0_SECRET_KEY_BASE, JWT_SECRET
-[ ] Đã set: FRONTEND_URL, NEXT_PUBLIC_CORE_URL (domain hoặc IP:8080)
+[ ] POSTGRES_PASSWORD, MINIO_ROOT_*, JUDGE0_SECRET_KEY_BASE, JWT_SECRET
+[ ] FRONTEND_URL, NEXT_PUBLIC_CORE_URL, COOKIE_DOMAIN (nếu subdomain HTTPS)
+[ ] MINIO_PUBLIC_BASE_URL=https://domain (nếu HTTPS)
+[ ] MAIL_ACCOUNT + MAIL_PASSWORD (nếu cần email)
 [ ] chmod 600 .env.production
+[ ] sed + chmod scripts/*.sh stub
 [ ] ./deploy/production-up.sh
+[ ] docker compose ... exec core-api printenv COOKIE_DOMAIN
 [ ] curl http://127.0.0.1:8080/tags
-[ ] Mở web trên trình duyệt, test login + submit
-[ ] (Tuỳ chọn) HTTPS + seed</code></pre>
+[ ] Mở web: login → dashboard; submit ALGO
+[ ] (HTTPS) rebuild web + force-recreate core-api</code></pre>
       </section>
 
       <footer>
-        <p>Tài liệu liên quan: <a href="../README.md">README.md</a> ·
-        <a href="MINIO.html">MINIO.html</a> ·
-        <a href="plans/PROJECT-TESTCASE-TEST-LAB.html">Lab /test PROJECT</a></p>
+        <p>Tài liệu liên quan: <a href="UPDATE-DEPLOY.html">UPDATE-DEPLOY.html</a> ·
+        <a href="DEBUG-CONTAINERS.html">DEBUG-CONTAINERS.html</a> ·
+        <a href="../deploy/README.md">deploy/README.md</a> ·
+        <a href="MINIO.html">MINIO.html</a></p>
       </footer>
     </main>
   </div>

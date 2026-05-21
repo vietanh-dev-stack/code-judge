@@ -1,6 +1,7 @@
 # Production stack — Ubuntu 24.04 LTS x64 (VPS).
 #
-# First time on VPS:
+# First time on VPS (code via SSH — không git clone GitHub):
+#   deploy/sync-to-vps.ps1 từ Windows (hoặc rsync/WinSCP)
 #   ./deploy/ubuntu-24.04-setup.sh
 #   cp .env.production.example .env.production   # edit secrets
 #   ./deploy/production-up.sh
@@ -69,12 +70,19 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD}
     command: server /data --console-address ":9001"
+    ports:
+      # Presigned PUT/GET từ trình duyệt cần host thật (vd. localhost), không dùng hostname Docker
+      - "${MINIO_HOST_PORT:-9000}:9000"
     volumes:
       - minio_data:/data
     networks:
       - cj-internal
 
-  # ─── Judge0 (Ubuntu 24.04 + cgroup v2 — isolate thật, không mount stub) ───
+  # ─── Judge0 ─────────────────────────────────────────────────────────────
+  # Ubuntu 24.04 mặc định dùng cgroup v2 → isolate thật lỗi:
+  #   "Cannot write /sys/fs/cgroup/memory/box-*" / Internal Error, stdout null.
+  # Mặc định production: JUDGE0_USE_CGROUP=false + isolate_stub (chấm được, sandbox yếu hơn isolate thật).
+  # Isolate thật: trên VPS host bật cgroup v1 (xem deploy/README.md § Judge0 cgroup) rồi đặt JUDGE0_USE_CGROUP=true và bỏ mount stub.
   judge0-db:
     <<: *linux_amd64
     image: postgres:16-alpine
@@ -115,7 +123,7 @@ services:
     container_name: cj-prod-judge0-server
     restart: unless-stopped
     privileged: true
-    # Ubuntu 24.04: cần quyền privileged cho isolate; không set JUDGE0_USE_CGROUP=false
+    user: root
     logging: *default-logging
     environment:
       RAILS_ENV: production
@@ -126,8 +134,14 @@ services:
       SECRET_KEY_BASE: ${JUDGE0_SECRET_KEY_BASE:?Set JUDGE0_SECRET_KEY_BASE}
       RAILS_MAX_THREADS: 5
       RAILS_MIN_THREADS: 5
+      JUDGE0_USE_CGROUP: ${JUDGE0_USE_CGROUP:-false}
+      JUDGE0_MAX_MAX_FILE_SIZE: ${JUDGE0_MAX_MAX_FILE_SIZE:-10485760}
     volumes:
       - judge0_box:/box
+      # Host file phải chmod +x; sau sync Windows chạy: sed -i 's/\r$//' scripts/*.sh && chmod +x scripts/*.sh
+      - ./scripts/isolate_stub.sh:/usr/local/bin/isolate:ro
+      - ./scripts/isolate_stub.sh:/usr/bin/isolate:ro
+      - ./scripts/sudo_stub.sh:/usr/bin/sudo:ro
     networks:
       - cj-internal
     depends_on:
@@ -142,6 +156,7 @@ services:
     container_name: cj-prod-judge0-worker
     restart: unless-stopped
     privileged: true
+    user: root
     logging: *default-logging
     command: ["./scripts/workers"]
     environment:
@@ -153,8 +168,13 @@ services:
       SECRET_KEY_BASE: ${JUDGE0_SECRET_KEY_BASE:?Set JUDGE0_SECRET_KEY_BASE}
       RAILS_MAX_THREADS: 5
       RAILS_MIN_THREADS: 5
+      JUDGE0_USE_CGROUP: ${JUDGE0_USE_CGROUP:-false}
+      JUDGE0_MAX_MAX_FILE_SIZE: ${JUDGE0_MAX_MAX_FILE_SIZE:-10485760}
     volumes:
       - judge0_box:/box
+      - ./scripts/isolate_stub.sh:/usr/local/bin/isolate:ro
+      - ./scripts/isolate_stub.sh:/usr/bin/isolate:ro
+      - ./scripts/sudo_stub.sh:/usr/bin/sudo:ro
     networks:
       - cj-internal
     depends_on:
@@ -174,6 +194,8 @@ services:
     restart: "no"
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-codejudge}:${POSTGRES_PASSWORD}@app-db:5432/${POSTGRES_DB:-codejudge}
+      # Sau `migrate deploy`, mặc định chạy `prisma db seed`. Tắt (VPS production): RUN_SEED=0 trong .env.production
+      RUN_SEED: ${RUN_SEED:-}
     networks:
       - cj-internal
     depends_on:
@@ -186,6 +208,7 @@ services:
     build:
       context: .
       dockerfile: apps/core-api/Dockerfile
+      target: runner
     container_name: cj-prod-core-api
     restart: unless-stopped
     logging: *default-logging
@@ -199,6 +222,8 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-604800}
       FRONTEND_URL: ${FRONTEND_URL:?Set FRONTEND_URL}
+      # Bắt buộc khi web + API khác subdomain (vd. code-judge.io.vn + api.code-judge.io.vn)
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-}
@@ -209,7 +234,8 @@ services:
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKET: ${MINIO_BUCKET:-codejudge}
       MINIO_REGION: ${MINIO_REGION:-us-east-1}
-      MINIO_PUBLIC_BASE_URL: ${MINIO_PUBLIC_BASE_URL:-}
+      # Bắt buộc với upload từ trình duyệt: URL host phải truy cập được từ máy user (Docker Desktop: http://localhost:9000). VPS: http://IP_or_domain:9000 — ghi đè trong .env.production
+      MINIO_PUBLIC_BASE_URL: ${MINIO_PUBLIC_BASE_URL:-http://localhost:9000}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       GOOGLE_GENERATIVE_AI_API_KEY: ${GOOGLE_GENERATIVE_AI_API_KEY:-}
       AI_DEFAULT_PROVIDER: ${AI_DEFAULT_PROVIDER:-google}
@@ -219,6 +245,9 @@ services:
       AI_MAX_TOKENS: ${AI_MAX_TOKENS:-10000}
       AI_FAST_MODE: ${AI_FAST_MODE:-auto}
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-0}
+      # Gmail (nodemailer service 'gmail') — mời lớp / thông báo bài tập. Để trống = không gửi mail.
+      MAIL_ACCOUNT: ${MAIL_ACCOUNT:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
     networks:
       - cj-internal
     depends_on:
@@ -314,8 +343,14 @@ services:
     ports:
       - "${HTTP_PORT:-80}:80"
       - "${API_HTTP_PORT:-8080}:8080"
+      # HTTPS — mount /etc/letsencrypt từ host (sau certbot). Xem deploy/README.md mục HTTPS.
+      - "${HTTPS_PORT:-443}:443"
     volumes:
       - ./deploy/nginx/conf.d:/etc/nginx/conf.d:ro
+      # Chứng chỉ Let’s Encrypt trên VPS (certbot --webroot hoặc standalone trên host)
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      # ACME HTTP-01: certbot -w .../deploy/nginx/certbot-webroot trên host (khớp volume này)
+      - ./deploy/nginx/certbot-webroot:/var/www/certbot:ro
     networks:
       - cj-internal
     depends_on:

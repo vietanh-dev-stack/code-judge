@@ -26,7 +26,7 @@ function DifficultyBar({
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium">{label}</span>
         <span className="text-sm text-muted-foreground">
-          {solved}/{attempted} bài ({pct}%)
+          {solved}/{attempted} problems ({pct}%)
         </span>
       </div>
       <div className="w-full bg-secondary rounded-full h-2">
@@ -36,7 +36,9 @@ function DifficultyBar({
         />
       </div>
       {attempted === 0 && (
-        <p className="text-xs text-muted-foreground mt-1">Chưa làm bài ở mức này</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          No problems attempted at this difficulty level
+        </p>
       )}
     </div>
   );
@@ -44,7 +46,7 @@ function DifficultyBar({
 
 export function ProfileStatsTab({ stats, loading, error }: ProfileStatsTabProps) {
   if (loading) {
-    return <div className="text-muted-foreground p-6">Đang tải thống kê...</div>;
+    return <div className="text-muted-foreground p-6">Loading statistics...</div>;
   }
 
   if (error) {
@@ -52,7 +54,7 @@ export function ProfileStatsTab({ stats, loading, error }: ProfileStatsTabProps)
   }
 
   if (!stats) {
-    return <div className="text-muted-foreground p-6">Chưa có dữ liệu thống kê.</div>;
+    return <div className="text-muted-foreground p-6">No statistics available.</div>;
   }
 
   return (
@@ -60,10 +62,10 @@ export function ProfileStatsTab({ stats, loading, error }: ProfileStatsTabProps)
       <div className="bg-card border border-border rounded-lg p-6">
         <h3 className="font-bold text-lg mb-1 flex items-center gap-2">
           <Target className="w-5 h-5" />
-          Tiến độ theo độ khó
+          Progress by Difficulty
         </h3>
         <p className="text-xs text-muted-foreground mb-4">
-          Số bài đã giải (Accepted) trên số bài bạn đã nộp submission
+          Number of problems solved (Accepted) out of the total problems attempted
         </p>
         <div className="space-y-4">
           <DifficultyBar
@@ -90,29 +92,29 @@ export function ProfileStatsTab({ stats, loading, error }: ProfileStatsTabProps)
       <div className="bg-card border border-border rounded-lg p-6">
         <h3 className="font-bold text-lg mb-1 flex items-center gap-2">
           <Zap className="w-5 h-5" />
-          Hiệu suất
+          Performance
         </h3>
         <p className="text-xs text-muted-foreground mb-4">
-          Tỷ lệ = bài đã pass hết testcase ÷ bài đã từng làm (có submission)
+          Success Rate = Problems Accepted / Problems Attempted (with submissions)
         </p>
         <div className="space-y-4">
           <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
-            <span className="text-sm font-medium">Tỷ lệ giải được</span>
+            <span className="text-sm font-medium">Success Rate</span>
             <span className="text-lg font-bold">{stats.successRate}%</span>
           </div>
           <p className="text-xs text-muted-foreground px-1 -mt-2">
-            {stats.problemsSolved} / {stats.problemsAttempted} bài
+            {stats.problemsSolved} / {stats.problemsAttempted} problems
           </p>
           <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
-            <span className="text-sm font-medium">Bài đã làm</span>
+            <span className="text-sm font-medium">Problems Attempted</span>
             <span className="text-lg font-bold">{stats.problemsAttempted}</span>
           </div>
           <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
-            <span className="text-sm font-medium">Bài đã giải (Accepted)</span>
+            <span className="text-sm font-medium">Problems Solved (Accepted)</span>
             <span className="text-lg font-bold">{stats.problemsSolved}</span>
           </div>
           <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
-            <span className="text-sm font-medium">Thời gian chạy TB (bài Accepted)</span>
+            <span className="text-sm font-medium">Average Runtime (Accepted)</span>
             <span className="text-lg font-bold">
               {stats.avgRuntimeMs != null ? `${stats.avgRuntimeMs}ms` : '—'}
             </span>

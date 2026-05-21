@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cập nhật deploy — từng lệnh chi tiết — code-judge</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #58a6ff;
+      --accent-dim: #388bfd33;
+      --ok: #3fb950;
+      --partial: #d29922;
+      --border: #30363d;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --sidebar-w: 300px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; font-size: 15px; }
+    a { color: var(--accent); }
+    a:hover { text-decoration: underline; }
+    .layout { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative !important; height: auto !important; }
+    }
+    .sidebar {
+      position: sticky; top: 0; height: 100vh; overflow-y: auto;
+      padding: 1.25rem 1rem; background: var(--surface); border-right: 1px solid var(--border);
+    }
+    .sidebar h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 0.75rem; }
+    .sidebar nav a { display: block; padding: 0.35rem 0.5rem; border-radius: 6px; color: var(--muted); font-size: 0.88rem; text-decoration: none; }
+    .sidebar nav a:hover { background: var(--surface2); color: var(--text); }
+    .sidebar nav .sub { padding-left: 1rem; font-size: 0.82rem; }
+    main { max-width: 960px; padding: 2rem 2.5rem 4rem; }
+    header.doc-header { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+    header.doc-header h1 { font-size: 1.55rem; margin: 0 0 0.5rem; }
+    .meta { font-size: 0.85rem; color: var(--muted); }
+    section { margin-bottom: 2.5rem; scroll-margin-top: 1rem; }
+    h2 { font-size: 1.25rem; margin: 0 0 1rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1.05rem; margin: 1.5rem 0 0.75rem; }
+    h4 { font-size: 0.95rem; margin: 1rem 0 0.5rem; color: var(--muted); }
+    p { margin: 0 0 1rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.88rem; }
+    th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+    th { background: var(--surface2); }
+    tr:nth-child(even) td { background: #1a233260; }
+    pre, code { font-family: var(--mono); font-size: 0.84rem; }
+    pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; margin: 0.5rem 0 0; }
+    code { background: var(--surface2); padding: 0.15rem 0.35rem; border-radius: 4px; }
+    pre code { background: transparent; padding: 0; }
+    .callout { background: var(--accent-dim); border-left: 4px solid var(--accent); padding: 0.75rem 1rem; margin: 1rem 0; border-radius: 0 8px 8px 0; }
+    .callout-warn { background: #9e6a0322; border-left-color: var(--partial); }
+    .callout-ok { background: #23863622; border-left-color: var(--ok); }
+    .cmd { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.15rem; margin: 1rem 0; }
+    .cmd h4 { margin: 0 0 0.5rem; color: var(--accent); font-size: 0.9rem; }
+    .cmd .when { font-size: 0.88rem; color: var(--muted); margin: 0 0 0.75rem; }
+    .cmd .when strong { color: var(--text); }
+    .cmd .where { font-size: 0.82rem; color: var(--partial); margin: 0.5rem 0 0; }
+    .tag { display: inline-block; font-size: 0.72rem; padding: 0.1rem 0.45rem; border-radius: 4px; margin-right: 0.35rem; font-weight: 600; }
+    .tag-win { background: #388bfd33; color: #79c0ff; }
+    .tag-vps { background: #23863633; color: #56d364; }
+    .tag-both { background: #9e6a0333; color: #e3b341; }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Mục lục</h2>
+      <nav>
+        <a href="#overview">Tổng quan &amp; quyết định nhanh</a>
+        <a href="#paths">Chuẩn bị đường dẫn</a>
+        <a href="#windows">Lệnh trên Windows</a>
+        <a class="sub" href="#cmd-sync">sync-to-vps.ps1</a>
+        <a class="sub" href="#cmd-scp-env">scp .env.production</a>
+        <a href="#env-edit">Sửa .env trên VPS</a>
+        <a href="#env-commands">Lệnh theo loại env đổi</a>
+        <a class="sub" href="#env-next-public">NEXT_PUBLIC_CORE_URL</a>
+        <a class="sub" href="#env-core-api">FRONTEND_URL, COOKIE, JWT, mail…</a>
+        <a class="sub" href="#env-judge0">Judge0 stub</a>
+        <a class="sub" href="#env-postgres">POSTGRES_PASSWORD</a>
+        <a class="sub" href="#env-minio">MinIO</a>
+        <a class="sub" href="#env-nginx">Cổng nginx</a>
+        <a href="#code-update">Cập nhật code (không migration)</a>
+        <a href="#migration-update">Cập nhật migrations</a>
+        <a href="#verify">Kiểm tra sau cập nhật</a>
+        <a href="#errors">Lỗi &amp; lệnh sửa</a>
+        <a href="#links">Liên kết</a>
+        <a href="DEBUG-CONTAINERS.html">Debug container →</a>
+      </nav>
+    </aside>
+    <main>
+      <header class="doc-header">
+        <h1>Cập nhật deploy — từng lệnh chi tiết</h1>
+        <p class="meta">Mỗi lệnh kèm <strong>khi nào dùng</strong>, chạy trên <strong>Windows</strong> hay <strong>VPS</strong>. Stack: <code>docker-compose.production.yml</code> + <code>.env.production</code>.</p>
+      </header>
+
+      <section id="overview">
+        <h2>Tổng quan &amp; quyết định nhanh</h2>
+        <table>
+          <thead>
+            <tr><th>Bạn vừa thay đổi gì?</th><th>Làm gì (tóm tắt)</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Chỉ <code>.env.production</code> (không đổi <code>NEXT_PUBLIC_*</code>)</td>
+              <td><code>scp</code> hoặc <code>nano</code> trên VPS → <code>up -d --force-recreate</code> service liên quan (<strong>không</strong> chỉ <code>restart</code>)</td>
+            </tr>
+            <tr>
+              <td>Judge0 không chấm / Internal Error</td>
+              <td>Sync code → <code>sed</code> + <code>chmod +x scripts/*.sh</code> → <code>force-recreate judge0-*</code></td>
+            </tr>
+            <tr>
+              <td><code>NEXT_PUBLIC_CORE_URL</code> (URL API cho trình duyệt)</td>
+              <td>Sửa env → <strong>build lại <code>web</code></strong> → <code>up -d web</code></td>
+            </tr>
+            <tr>
+              <td>Code TypeScript/React/API (không đụng <code>prisma/migrations</code>)</td>
+              <td>Windows: <code>sync-to-vps.ps1</code> → VPS: <code>production-up.sh</code></td>
+            </tr>
+            <tr>
+              <td>Thêm/sửa thư mục trong <code>prisma/migrations</code></td>
+              <td>Sync code → kiểm tra <code>migration.sql</code> → <code>build migrate</code> → <code>run --rm migrate</code> → <code>production-up.sh</code></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="callout callout-warn">
+          <strong>Quan trọng:</strong> <code>sync-to-vps.ps1</code> <strong>không</strong> đưa <code>.env.production</code> lên VPS. Env phải sửa trên VPS hoặc copy bằng <code>scp</code> riêng.
+        </div>
+      </section>
+
+      <section id="paths">
+        <h2>Chuẩn bị đường dẫn (VPS)</h2>
+        <p>Thay <code>/root/code-judge</code> và IP nếu bạn dùng user <code>ubuntu</code> hoặc thư mục khác.</p>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> cd /root/code-judge</h4>
+          <p class="when"><strong>Khi nào:</strong> Trước mọi lệnh <code>docker compose</code> trên VPS — phải đứng ở thư mục có file <code>docker-compose.production.yml</code>.</p>
+          <pre><code>cd /root/code-judge</code></pre>
+        </div>
+
+        <div class="callout callout-warn">
+          <strong>Lệnh trong doc này đều gõ đầy đủ</strong> — không dùng <code>$COMPOSE</code>. Nếu biến <code>COMPOSE</code> chưa được export, gõ <code>$COMPOSE ps</code> có thể gọi nhầm lệnh <code>ps</code> của hệ thống.
+        </div>
+        <p>Mẫu lệnh (mọi khối bên dưới đều bắt đầu bằng <code>cd</code> + <code>docker compose -f docker-compose.production.yml --env-file .env.production</code>):</p>
+        <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production ps</code></pre>
+      </section>
+
+      <section id="windows">
+        <h2>Lệnh trên Windows (PowerShell)</h2>
+
+        <div class="cmd" id="cmd-sync">
+          <h4><span class="tag tag-win">Windows</span> cd vào thư mục repo</h4>
+          <p class="when"><strong>Khi nào:</strong> Trước khi chạy <code>sync-to-vps.ps1</code> hoặc <code>scp</code> env — phải ở gốc monorepo (cùng cấp <code>docker-compose.production.yml</code>).</p>
+          <pre><code>cd C:\Users\ADMIN\Documents\GitHub\code-judge</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-win">Windows</span> sync-to-vps.ps1 (PowerShell)</h4>
+          <p class="when"><strong>Khi nào:</strong> Bạn đổi <strong>mã nguồn</strong> trên máy (API, web, worker, nginx, prisma, docker-compose, scripts stub, …). <strong>Không</strong> đưa <code>.env.production</code> — dùng <code>scp</code> riêng.</p>
+          <pre><code>cd C:\Users\ADMIN\Documents\GitHub\code-judge
+powershell -NoProfile -ExecutionPolicy Bypass -File .\deploy\sync-to-vps.ps1 `
+  -VpsHost 129.212.237.24 `
+  -VpsUser root `
+  -RemoteDir /root/code-judge</code></pre>
+          <p class="where">Mặc định script dùng <code>ubuntu</code> — VPS chỉ có <code>root</code> thì bắt buộc <code>-VpsUser root -RemoteDir /root/code-judge</code>. Chờ <strong>Sync done</strong>. Sau sync: <a href="#env-judge0">sed + chmod</a> trên VPS.</p>
+        </div>
+
+        <div class="cmd" id="cmd-scp-env">
+          <h4><span class="tag tag-win">Windows</span> scp .env.production</h4>
+          <p class="when"><strong>Khi nào:</strong> Bạn sửa <code>.env.production</code> trên máy Windows và muốn ghi đè file env trên VPS (không cần sync cả repo).</p>
+          <pre><code>scp .env.production root@129.212.237.24:/root/code-judge/.env.production</code></pre>
+          <p class="where">Sau <code>scp</code>, trên VPS chạy lệnh áp dụng env theo <a href="#env-commands">mục env</a> (restart / rebuild service).</p>
+        </div>
+      </section>
+
+      <section id="env-edit">
+        <h2>Sửa .env.production trên VPS</h2>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> nano .env.production</h4>
+          <p class="when"><strong>Khi nào:</strong> Sửa secret/URL trực tiếp trên server (không copy từ Windows).</p>
+          <pre><code>cd /root/code-judge
+nano .env.production</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> chmod 600 .env.production</h4>
+          <p class="when"><strong>Khi nào:</strong> Sau khi tạo hoặc copy env — chỉ user owner đọc được (bảo mật).</p>
+          <pre><code>chmod 600 .env.production</code></pre>
+        </div>
+      </section>
+
+      <section id="env-commands">
+        <h2>Lệnh theo loại env đổi</h2>
+
+        <h3 id="env-next-public">Đổi NEXT_PUBLIC_CORE_URL (URL API cho trình duyệt)</h3>
+        <p>Ví dụ: từ <code>http://...:8080</code> sang <code>https://api.code-judge.io.vn</code> — tránh mixed content trên HTTPS.</p>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> build web --no-cache</h4>
+          <p class="when"><strong>Khi nào:</strong> Sau khi sửa <code>NEXT_PUBLIC_CORE_URL</code> trong <code>.env.production</code>. Biến này được nhúng lúc <strong>build</strong> image Next.js — restart thường không đủ.</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production build web --no-cache</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> up -d web nginx</h4>
+          <p class="when"><strong>Khi nào:</strong> Ngay sau <code>build web</code> — chạy container web mới và nginx (proxy).</p>
+          <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production up -d web nginx</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> ./deploy/production-up.sh (thay cho build web riêng)</h4>
+          <p class="when"><strong>Khi nào:</strong> Không chắc service nào cần rebuild — script build <strong>tất cả</strong> image và <code>up -d --build</code> (an toàn, lâu hơn).</p>
+          <pre><code>cd /root/code-judge
+./deploy/production-up.sh</code></pre>
+        </div>
+
+        <h3 id="env-core-api">Đổi FRONTEND_URL, COOKIE_DOMAIN, JWT_*, MAIL_*, GOOGLE_*, MINIO_PUBLIC_BASE_URL</h3>
+        <p>Các biến này được <code>core-api</code> đọc lúc <strong>khởi tạo container</strong>. Sau khi sửa <code>.env.production</code> dùng <code>--force-recreate</code> — <code>restart</code> thường <strong>không</strong> nạp env mới.</p>
+        <p>Ví dụ HTTPS subdomain (thay domain của bạn):</p>
+        <pre><code>FRONTEND_URL=https://code-judge.io.vn,https://www.code-judge.io.vn
+COOKIE_DOMAIN=.code-judge.io.vn
+MINIO_PUBLIC_BASE_URL=https://code-judge.io.vn
+MAIL_ACCOUNT=your@gmail.com
+MAIL_PASSWORD=xxxx-xxxx-xxxx-xxxx</code></pre>
+        <p><code>MAIL_PASSWORD</code> = Gmail App Password (16 ký tự), không phải mật khẩu đăng nhập Gmail thường.</p>
+
+        <div class="cmd">
+          <h4><span class="tag tag-win">Windows</span> scp .env.production lên VPS</h4>
+          <p class="when"><strong>Khi nào:</strong> Sửa env trên máy dev, cần ghi đè file trên VPS.</p>
+          <pre><code>cd C:\Users\ADMIN\Documents\GitHub\code-judge
+scp .env.production root@129.212.237.24:/root/code-judge/.env.production</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> force-recreate core-api</h4>
+          <p class="when"><strong>Khi nào:</strong> Sau khi sửa/scp env (CORS, cookie, mail, JWT, MinIO public URL).</p>
+          <pre><code>cd /root/code-judge
+chmod 600 .env.production
+docker compose -f docker-compose.production.yml --env-file .env.production up -d --force-recreate core-api
+docker compose -f docker-compose.production.yml --env-file .env.production exec core-api printenv COOKIE_DOMAIN MINIO_PUBLIC_BASE_URL MAIL_ACCOUNT</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> Kiểm tra compose đã map env</h4>
+          <p class="when"><strong>Khi nào:</strong> <code>printenv</code> trong container trống nhưng file <code>.env</code> đã có giá trị — xác nhận bước recreate đã chạy.</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production config | grep -E 'COOKIE_DOMAIN|MINIO_PUBLIC|MAIL_'</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> Sau đổi MINIO_PUBLIC_BASE_URL — reload nginx</h4>
+          <p class="when"><strong>Khi nào:</strong> Upload/ảnh Mixed Content — cần proxy <code>/codejudge/</code> trong nginx (đã có trong repo) và URL public HTTPS.</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production up -d --force-recreate nginx
+docker compose -f docker-compose.production.yml --env-file .env.production exec nginx nginx -t
+docker compose -f docker-compose.production.yml --env-file .env.production exec nginx nginx -s reload</code></pre>
+        </div>
+
+        <h3 id="env-postgres">Đổi POSTGRES_PASSWORD / POSTGRES_USER</h3>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> Kiểm tra psql vào DB</h4>
+          <p class="when"><strong>Khi nào:</strong> Migrate báo <strong>P1000</strong> hoặc sau khi đổi mật khẩu trong env — kiểm tra user có vào được DB không.</p>
+          <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production exec -T app-db \
+  psql -U codejudge -d codejudge -c 'SELECT 1;'</code></pre>
+          <p class="where">Nếu lỗi authentication → mật khẩu trong <code>.env</code> không khớp volume Postgres cũ.</p>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> ALTER USER (đồng bộ mật khẩu DB với .env)</h4>
+          <p class="when"><strong>Khi nào:</strong> Bạn đổi <code>POSTGRES_PASSWORD</code> trong env nhưng <strong>giữ dữ liệu</strong> volume — phải đặt lại mật khẩu user trong Postgres cho khớp env (thay <code>MAT_KHAU_TRONG_ENV</code> bằng giá trị thật trong file).</p>
+          <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production exec -T app-db \
+  psql -U codejudge -d codejudge \
+  -c "ALTER USER codejudge WITH PASSWORD 'MAT_KHAU_TRONG_ENV';"</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> down -v (xóa DB — chỉ khi chấp nhận mất data)</h4>
+          <p class="when"><strong>Khi nào:</strong> Môi trường test, không cần giữ DB; muốn Postgres init lại với <code>POSTGRES_PASSWORD</code> mới trong env. <strong>Cảnh báo:</strong> xóa volume → mất toàn bộ dữ liệu app DB.</p>
+          <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production down -v
+./deploy/production-up.sh</code></pre>
+        </div>
+
+        <h3 id="env-minio">Đổi MINIO_ROOT_* / MINIO_PUBLIC_BASE_URL</h3>
+        <p>Production HTTPS: <code>MINIO_PUBLIC_BASE_URL=https://code-judge.io.vn</code> (cùng domain web, path <code>/codejudge/</code> qua nginx). <strong>Không</strong> dùng <code>http://IP:9000</code> trên trang HTTPS.</p>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> force-recreate minio core-api worker</h4>
+          <p class="when"><strong>Khi nào:</strong> Đổi credential MinIO hoặc URL public presigned.</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production up -d --force-recreate minio core-api worker</code></pre>
+        </div>
+
+        <h3 id="env-judge0">Judge0 — stub isolate sau sync code</h3>
+        <p>Ubuntu 24.04 production dùng <code>JUDGE0_USE_CGROUP=false</code> và mount <code>scripts/isolate_stub.sh</code>. Sau sync từ Windows, file .sh có thể mất quyền thực thi hoặc CRLF.</p>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> sed + chmod stub scripts</h4>
+          <p class="when"><strong>Khi nào:</strong> Log judge0: <code>sudo: Permission denied</code>, <code>No such file - isolate</code>, hoặc submit Internal Error.</p>
+          <pre><code>cd /root/code-judge
+sed -i 's/\r$//' scripts/isolate_stub.sh scripts/sudo_stub.sh
+chmod +x scripts/isolate_stub.sh scripts/sudo_stub.sh
+ls -la scripts/isolate_stub.sh scripts/sudo_stub.sh</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> force-recreate judge0-server judge0-worker</h4>
+          <p class="when"><strong>Khi nào:</strong> Sau chmod/sed hoặc sau khi sync <code>docker-compose.production.yml</code> mới (mount <code>/usr/bin/isolate</code>).</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production up -d --force-recreate judge0-server judge0-worker
+docker compose -f docker-compose.production.yml --env-file .env.production logs judge0-worker --tail 40
+docker compose -f docker-compose.production.yml --env-file .env.production exec judge0-worker /usr/local/bin/isolate --init</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> Test API Judge0</h4>
+          <p class="when"><strong>Khi nào:</strong> Kiểm tra judge0-server đã listen (port nội bộ Docker, không publish ra host).</p>
+          <pre><code>curl -s http://127.0.0.1:2358/languages | head</code></pre>
+          <p class="where">Nếu connection refused — container judge0-server chưa healthy; xem <code>logs judge0-server</code>.</p>
+        </div>
+
+        <h3 id="env-nginx">Đổi HTTP_PORT / API_HTTP_PORT / HTTPS_PORT</h3>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> up -d nginx</h4>
+          <p class="when"><strong>Khi nào:</strong> Đổi map cổng host (80, 8080, 443) trong env. Nhớ mở cổng tương ứng trên UFW và DigitalOcean Cloud Firewall.</p>
+          <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production up -d nginx</code></pre>
+        </div>
+
+        <h3>Chỉ đổi env “nhẹ” (không đụng NEXT_PUBLIC_*, không đổi code)</h3>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> up -d (cả stack)</h4>
+          <p class="when"><strong>Khi nào:</strong> Đổi vài biến env, muốn Docker áp dụng lại cấu hình cho các service (không rebuild image). Nhanh nhưng vẫn có thể trigger migrate nếu compose phụ thuộc.</p>
+          <pre><code>cd /root/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production up -d</code></pre>
+        </div>
+      </section>
+
+      <section id="code-update">
+        <h2>Cập nhật code (không đổi prisma/migrations)</h2>
+        <p>Luồng: Windows sync → VPS build &amp; up.</p>
+
+        <div class="cmd">
+          <h4><span class="tag tag-win">Windows</span> sync-to-vps.ps1</h4>
+          <p class="when"><strong>Khi nào:</strong> Sửa file trong repo (API, web, worker, Dockerfile, nginx conf, …) trên máy dev.</p>
+          <pre><code>cd C:\Users\ADMIN\Documents\GitHub\code-judge
+.\deploy\sync-to-vps.ps1 -VpsHost VPS_IP -VpsUser root -RemoteDir /root/code-judge</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> chmod stub + ./deploy/production-up.sh</h4>
+          <p class="when"><strong>Khi nào:</strong> Sau sync — build lại image và khởi động stack. Nên chmod stub trước nếu có Judge0.</p>
+          <pre><code>cd /root/code-judge
+sed -i 's/\r$//' scripts/isolate_stub.sh scripts/sudo_stub.sh
+chmod +x scripts/isolate_stub.sh scripts/sudo_stub.sh
+chmod +x deploy/production-up.sh deploy/production-down.sh
+./deploy/production-up.sh</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> build + up chỉ core-api</h4>
+          <p class="when"><strong>Khi nào:</strong> Chỉ sửa code backend, <strong>không</strong> đổi migration, <strong>không</strong> đổi <code>NEXT_PUBLIC_*</code> — tiết kiệm thời gian.</p>
+          <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production build core-api
+docker compose -f docker-compose.production.yml --env-file .env.production up -d core-api</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> build + up chỉ web</h4>
+          <p class="when"><strong>Khi nào:</strong> Chỉ sửa frontend Next.js (và/hoặc đã đổi <code>NEXT_PUBLIC_CORE_URL</code> trong env).</p>
+          <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production build web
+docker compose -f docker-compose.production.yml --env-file .env.production up -d web</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> build + up chỉ worker</h4>
+          <p class="when"><strong>Khi nào:</strong> Chỉ sửa logic chấm bài / queue worker.</p>
+          <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production build worker
+docker compose -f docker-compose.production.yml --env-file .env.production up -d worker</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> up -d nginx (sau khi đổi deploy/nginx/conf.d)</h4>
+          <p class="when"><strong>Khi nào:</strong> Chỉ sửa cấu hình nginx (SSL, redirect, proxy) — không cần rebuild app.</p>
+          <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production up -d --force-recreate nginx</code></pre>
+        </div>
+      </section>
+
+      <section id="migration-update">
+        <h2>Cập nhật thư mục prisma/migrations</h2>
+        <p>Dùng khi thêm migration mới, sửa <code>migration.sql</code>, hoặc sync migrations từ máy dev.</p>
+
+        <div class="cmd">
+          <h4><span class="tag tag-win">Windows</span> sync-to-vps.ps1</h4>
+          <p class="when"><strong>Khi nào:</strong> Thư mục <code>apps/core-api/prisma/migrations</code> đổi trên máy dev — phải đẩy lên VPS trước khi chạy migrate.</p>
+          <pre><code>.\deploy\sync-to-vps.ps1 -VpsHost VPS_IP -VpsUser root -RemoteDir /root/code-judge</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> find migration.sql</h4>
+          <p class="when"><strong>Khi nào:</strong> Trước migrate — đảm bảo mỗi thư mục <code>20xxxxxxxx_*</code> có file <code>migration.sql</code>. Tránh lỗi <strong>P3015</strong>.</p>
+          <pre><code>cd /root/code-judge
+find apps/core-api/prisma/migrations -name migration.sql -print</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> ls từng thư mục migration</h4>
+          <p class="when"><strong>Khi nào:</strong> Nghi ngờ có thư mục migration rỗng / thiếu file (hay gặp sau sync lỗi).</p>
+          <pre><code>for d in apps/core-api/prisma/migrations/20*; do echo "==== $d"; ls -la "$d"; done</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> rm -rf thư mục migration không có .sql</h4>
+          <p class="when"><strong>Khi nào:</strong> Thư mục con <strong>không</strong> có <code>migration.sql</code> và là thư mục tạo nhầm — <strong>không</strong> xóa nếu DB đã ghi migration đó trong <code>_prisma_migrations</code>.</p>
+          <pre><code>rm -rf apps/core-api/prisma/migrations/20260519073615_db_v1
+rm -rf apps/core-api/prisma/migrations/20260520120000_user_profile_fields</code></pre>
+          <p class="where">Ví dụ tên thư mục — thay bằng tên thật trên VPS của bạn.</p>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> RUN_SEED=0 trong .env</h4>
+          <p class="when"><strong>Khi nào:</strong> DB production đã có dữ liệu thật — tránh <code>prisma db seed</code> ghi đè sau migrate.</p>
+          <pre><code>nano .env.production
+# thêm hoặc sửa dòng:
+RUN_SEED=0</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> build migrate</h4>
+          <p class="when"><strong>Khi nào:</strong> Sau sync migrations mới — build image one-shot chứa thư mục <code>prisma/migrations</code> mới nhất.</p>
+          <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production build migrate</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> run --rm migrate</h4>
+          <p class="when"><strong>Khi nào:</strong> Chạy <code>prisma migrate deploy</code> (+ seed nếu không có <code>RUN_SEED=0</code>) một lần; in log ra terminal để debug.</p>
+          <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production run --rm migrate</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> logs migrate</h4>
+          <p class="when"><strong>Khi nào:</strong> Job migrate fail trong <code>up -d</code> — xem lỗi P1000, P3015, seed, …</p>
+          <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production logs migrate --tail 120</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> production-up.sh (sau migrate OK)</h4>
+          <p class="when"><strong>Khi nào:</strong> Migrate thành công — khởi động lại <code>core-api</code>, <code>worker</code> và các service phụ thuộc.</p>
+          <pre><code>./deploy/production-up.sh</code></pre>
+        </div>
+      </section>
+
+      <section id="verify">
+        <h2>Kiểm tra sau cập nhật</h2>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> docker compose ps</h4>
+          <p class="when"><strong>Khi nào:</strong> Sau mọi lần <code>up</code> — xem service nào running/healthy, migrate đã completed chưa.</p>
+          <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production ps</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> curl API tags</h4>
+          <p class="when"><strong>Khi nào:</strong> Kiểm tra API sống (HTTP qua localhost hoặc HTTPS qua domain).</p>
+          <pre><code>curl -s http://127.0.0.1:8080/tags | head
+curl -sI https://api.code-judge.io.vn/tags | head -5</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> curl HTTPS web</h4>
+          <p class="when"><strong>Khi nào:</strong> Sau đổi nginx SSL hoặc deploy web.</p>
+          <pre><code>curl -sI https://code-judge.io.vn | head -5</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4><span class="tag tag-vps">VPS</span> docker logs (khi lỗi)</h4>
+          <p class="when"><strong>Khi nào:</strong> Service unhealthy hoặc 502/401 — xem log từng service.</p>
+          <pre><code>docker compose -f docker-compose.production.yml --env-file .env.production logs core-api --tail 50
+docker compose -f docker-compose.production.yml --env-file .env.production logs nginx --tail 30
+docker compose -f docker-compose.production.yml --env-file .env.production logs migrate --tail 50</code></pre>
+        </div>
+      </section>
+
+      <section id="errors">
+        <h2>Lỗi thường gặp &amp; lệnh sửa</h2>
+        <table>
+          <thead>
+            <tr><th>Lỗi</th><th>Nguyên nhân</th><th>Lệnh / hành động</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>P1000</strong></td>
+              <td><code>POSTGRES_PASSWORD</code> env ≠ mật khẩu trong volume</td>
+              <td><code>ALTER USER</code> trong <code>app-db</code> hoặc khớp lại env; xem <a href="#env-postgres">mục Postgres</a></td>
+            </tr>
+            <tr>
+              <td><strong>P3015</strong></td>
+              <td>Thư mục migration thiếu <code>migration.sql</code></td>
+              <td><code>find</code> + sync lại + <code>rm -rf</code> thư mục rỗng + <code>build migrate</code></td>
+            </tr>
+            <tr>
+              <td><strong>Mixed Content</strong></td>
+              <td>Web HTTPS gọi API HTTP (<code>:8080</code>)</td>
+              <td>Sửa <code>NEXT_PUBLIC_CORE_URL=https://api...</code> → <code>build web --no-cache</code> → <code>up -d web</code></td>
+            </tr>
+            <tr>
+              <td><strong>CORS</strong></td>
+              <td><code>FRONTEND_URL</code> ≠ origin trình duyệt</td>
+              <td>Sửa env → <code>up -d core-api</code></td>
+            </tr>
+            <tr>
+              <td><strong>401 /auth/me</strong> sau login</td>
+              <td>Thiếu <code>COOKIE_DOMAIN</code> trong container; cookie cũ; web gọi sai API</td>
+              <td><code>COOKIE_DOMAIN=.domain</code> → <code>force-recreate core-api</code>; xóa cookie; kiểm <code>NEXT_PUBLIC_CORE_URL</code></td>
+            </tr>
+            <tr>
+              <td><strong>Mixed Content :9000</strong></td>
+              <td><code>MINIO_PUBLIC_BASE_URL</code> trỏ HTTP :9000</td>
+              <td>Đặt <code>https://domain</code> + nginx <code>/codejudge/</code> → recreate core-api + reload nginx</td>
+            </tr>
+            <tr>
+              <td><strong>Judge0 Internal Error</strong></td>
+              <td>Stub không executable / CRLF</td>
+              <td><code>sed</code> + <code>chmod +x scripts/*.sh</code> → recreate judge0-*</td>
+            </tr>
+            <tr>
+              <td><strong>Mail không gửi</strong></td>
+              <td><code>MAIL_*</code> chưa vào container</td>
+              <td>scp env → <code>force-recreate core-api</code>; dùng Gmail App Password</td>
+            </tr>
+            <tr>
+              <td><strong>Connection refused :443</strong></td>
+              <td>Nginx chưa map 443 hoặc chưa cert</td>
+              <td>Sync compose mới → certbot → <code>up -d --force-recreate nginx</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="links">
+        <h2>Liên kết</h2>
+        <ul>
+          <li><a href="DEPLOY-VPS.html">DEPLOY-VPS.html</a> — triển khai lần đầu</li>
+          <li><a href="DEBUG-CONTAINERS.html">DEBUG-CONTAINERS.html</a> — debug, xác định lỗi theo container</li>
+          <li><a href="../deploy/README.md">deploy/README.md</a> — sync, HTTPS, MinIO</li>
+          <li><a href="../deploy/LOCAL-PRODUCTION-WINDOWS.md">LOCAL-PRODUCTION-WINDOWS.md</a> — test production trên Windows</li>
+        </ul>
+      </section>
+
+      <footer>
+        <p>code-judge — <code>docs/UPDATE-DEPLOY.html</code>. Mỗi khối lệnh gồm: <strong>Khi nào</strong> + lệnh copy-paste + ghi chú nơi chạy (Windows / VPS).</p>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

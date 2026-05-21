@@ -16,7 +16,7 @@ export class TagsService {
   }
 
   async create(dto: CreateTagDto) {
-    let slug = (dto.slug?.trim() || slugifyTagName(dto.name)).toLowerCase();
+    const slug = (dto.slug?.trim() || slugifyTagName(dto.name)).toLowerCase();
     const exists = await this.prisma.tag.findUnique({ where: { slug } });
     if (exists) {
       throw new ConflictException(`Tag với slug "${slug}" đã tồn tại`);

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useState, use } from 'react';
 import { contestsApi } from '@/services/contest.apis';
 import { useSocket } from '@/providers/socket-provider';
@@ -15,11 +16,7 @@ import {
 import { Trophy, Clock, Medal, CheckCircle2, XCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
-export default function LeaderboardPage({
-  params,
-}: {
-  params: Promise<{ contestId: string }>;
-}) {
+export default function LeaderboardPage({ params }: { params: Promise<{ contestId: string }> }) {
   const { contestId } = use(params);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -98,7 +95,9 @@ export default function LeaderboardPage({
         <div className="relative z-10 space-y-4">
           <div className="flex items-center gap-3">
             <Trophy className="text-amber-400 w-10 h-10" />
-            <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight">{contest.title}</h1>
+            <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight">
+              {contest.title}
+            </h1>
           </div>
           <div className="flex flex-wrap items-center gap-6 text-gray-400 font-medium">
             <span className="flex items-center gap-2">
@@ -117,13 +116,26 @@ export default function LeaderboardPage({
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50/80 hover:bg-gray-50/80 border-b border-gray-100">
-              <TableHead className="py-6 pl-8 font-black text-black text-xs uppercase tracking-widest w-20">Rank</TableHead>
-              <TableHead className="py-6 font-black text-black text-xs uppercase tracking-widest">Participant</TableHead>
-              <TableHead className="py-6 font-black text-black text-xs uppercase tracking-widest text-center">Solved</TableHead>
-              <TableHead className="py-6 font-black text-black text-xs uppercase tracking-widest text-center">Score</TableHead>
-              <TableHead className="py-6 font-black text-black text-xs uppercase tracking-widest text-center">Penalty</TableHead>
+              <TableHead className="py-6 pl-8 font-black text-black text-xs uppercase tracking-widest w-20">
+                Rank
+              </TableHead>
+              <TableHead className="py-6 font-black text-black text-xs uppercase tracking-widest">
+                Participant
+              </TableHead>
+              <TableHead className="py-6 font-black text-black text-xs uppercase tracking-widest text-center">
+                Solved
+              </TableHead>
+              <TableHead className="py-6 font-black text-black text-xs uppercase tracking-widest text-center">
+                Score
+              </TableHead>
+              <TableHead className="py-6 font-black text-black text-xs uppercase tracking-widest text-center">
+                Penalty
+              </TableHead>
               {leaderboard[0]?.problems.map((p: any, idx: number) => (
-                <TableHead key={p.problemId} className="py-6 font-black text-black text-xs uppercase tracking-widest text-center">
+                <TableHead
+                  key={p.problemId}
+                  className="py-6 font-black text-black text-xs uppercase tracking-widest text-center"
+                >
                   Problem {String.fromCharCode(65 + idx)}
                 </TableHead>
               ))}
@@ -131,21 +143,40 @@ export default function LeaderboardPage({
           </TableHeader>
           <TableBody>
             {leaderboard.map((row: any, index: number) => (
-              <TableRow key={row.userId} className="group hover:bg-gray-50/50 transition-colors border-b border-gray-50 last:border-0">
+              <TableRow
+                key={row.userId}
+                className="group hover:bg-gray-50/50 transition-colors border-b border-gray-50 last:border-0"
+              >
                 <TableCell className="py-6 pl-8">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${
-                    index === 0 ? 'bg-amber-100 text-amber-700' : 
-                    index === 1 ? 'bg-slate-100 text-slate-700' :
-                    index === 2 ? 'bg-orange-100 text-orange-700' :
-                    'text-gray-400'
-                  }`}>
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${
+                      index === 0
+                        ? 'bg-amber-100 text-amber-700'
+                        : index === 1
+                          ? 'bg-slate-100 text-slate-700'
+                          : index === 2
+                            ? 'bg-orange-100 text-orange-700'
+                            : 'text-gray-400'
+                    }`}
+                  >
                     {index + 1}
                   </div>
                 </TableCell>
                 <TableCell className="py-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center text-white font-bold text-sm">
-                      {row.userName.charAt(0)}
+                    <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                      {row.userAvatar ? (
+                        <Image
+                          src={row.userAvatar}
+                          alt={row.userName}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full rounded-full bg-black text-white flex items-center justify-center font-bold text-sm">
+                          {row.userName?.charAt(0) ?? '?'}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <span className="font-bold text-gray-900 block">{row.userName}</span>
@@ -185,8 +216,10 @@ export default function LeaderboardPage({
                           <div className="w-5 h-5" />
                         </div>
                       )}
-                      <span className={`text-[10px] font-bold ${p.isSolved ? 'text-emerald-600' : p.isPending ? 'text-amber-600' : p.attempts > 0 ? 'text-rose-600' : 'text-gray-300'}`}>
-                        {p.isPending ? 'grading...' : p.attempts > 0 ? `${p.attempts} tries` : '-'}
+                      <span
+                        className={`text-[10px] font-bold ${p.isSolved ? 'text-emerald-600' : p.attempts > 0 ? 'text-rose-600' : 'text-gray-300'}`}
+                      >
+                        {p.attempts > 0 ? `${p.attempts} tries` : '-'}
                       </span>
                     </div>
                   </TableCell>
