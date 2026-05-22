@@ -11,6 +11,16 @@ export const EnvKeys = {
   DATABASE_URL: 'DATABASE_URL',
   /** Redis URL cho BullMQ / cache. */
   REDIS_URL: 'REDIS_URL',
+  /** Số lần đăng nhập tối đa (theo IP hoặc email) trong cửa sổ AUTH_LOGIN_WINDOW_SECONDS. */
+  AUTH_LOGIN_MAX_ATTEMPTS: 'AUTH_LOGIN_MAX_ATTEMPTS',
+  /** Cửa sổ rate limit đăng nhập (giây). Mặc định 900 (15 phút). */
+  AUTH_LOGIN_WINDOW_SECONDS: 'AUTH_LOGIN_WINDOW_SECONDS',
+  /** Số lần đăng ký tối đa mỗi IP trong AUTH_REGISTER_WINDOW_SECONDS. */
+  AUTH_REGISTER_MAX_PER_IP: 'AUTH_REGISTER_MAX_PER_IP',
+  /** Cửa sổ rate limit đăng ký theo IP (giây). Mặc định 3600. */
+  AUTH_REGISTER_WINDOW_SECONDS: 'AUTH_REGISTER_WINDOW_SECONDS',
+  /** Bật HTTP security headers qua helmet (`true`/`false`). Mặc định: bật trên production. */
+  HELMET_ENABLED: 'HELMET_ENABLED',
   /** Secret ký JWT (bắt buộc khi bật module auth). */
   JWT_SECRET: 'JWT_SECRET',
   /** Thời hạn access token tính bằng giây (ví dụ `3600`). Mặc định trong code: 604800 (7 ngày). */
@@ -72,6 +82,11 @@ export const EnvKeys = {
   MINIO_REGION: 'MINIO_REGION',
   /** Base URL public để dựng URL hiển thị (tuỳ chọn). */
   MINIO_PUBLIC_BASE_URL: 'MINIO_PUBLIC_BASE_URL',
+  /**
+   * Bucket policy public read cho s3:GetObject (`true`/`false`).
+   * Mặc định: `false` trên production, `true` khi dev (trừ khi set rõ).
+   */
+  MINIO_ALLOW_PUBLIC_READ: 'MINIO_ALLOW_PUBLIC_READ',
   /** Gmail (nodemailer `service: 'gmail'`) — địa chỉ gửi. */
   MAIL_ACCOUNT: 'MAIL_ACCOUNT',
   /** App password hoặc credential SMTP tương ứng (không commit). */

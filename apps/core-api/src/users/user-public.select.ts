@@ -14,3 +14,13 @@ export const PUBLIC_USER_SELECT = {
 } satisfies Prisma.UserSelect;
 
 export type PublicUser = Prisma.UserGetPayload<{ select: typeof PUBLIC_USER_SELECT }>;
+
+/** Internal select — includes object key for presigned avatar resolution (not returned to clients). */
+export const PUBLIC_USER_WITH_AVATAR_KEY_SELECT = {
+  ...PUBLIC_USER_SELECT,
+  imageObjectKey: true,
+} satisfies Prisma.UserSelect;
+
+export type UserWithAvatarKey = Prisma.UserGetPayload<{
+  select: typeof PUBLIC_USER_WITH_AVATAR_KEY_SELECT;
+}>;

@@ -38,9 +38,17 @@ export class UsersController {
     return this.users.findAll(query);
   }
 
+  @ApiOperation({
+    summary:
+      'Tìm user để mời lớp (ADMIN hoặc chủ lớp/OWNER — bắt buộc classRoomId trừ ADMIN)',
+  })
   @Get('search')
-  searchUsers(@Query('q') q: string) {
-    return this.users.searchByEmail(q);
+  searchUsers(
+    @CurrentUser() user: RequestUser,
+    @Query('q') q: string,
+    @Query('classRoomId') classRoomId?: string,
+  ) {
+    return this.users.searchByEmail(q, user, classRoomId);
   }
 
   @ApiOperation({ summary: 'Lấy thông tin user hiện tại' })

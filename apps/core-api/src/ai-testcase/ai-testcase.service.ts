@@ -15,6 +15,7 @@ import {
   type AiLlmPlan,
 } from '../common';
 import type { RequestUser } from '../common/interfaces/request-user.interface';
+import { ProblemStorageAccessService } from '../storage/problem-storage-access.service';
 import { buildAiGeneratedTestcaseObjectKeys } from '../storage/storage-key.builder';
 import { StorageService } from '../storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -152,6 +153,7 @@ export class AiTestcaseService {
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly problemStorageAccess: ProblemStorageAccessService,
   ) {}
 
   async generateProblemStatement(
@@ -705,7 +707,7 @@ export class AiTestcaseService {
 
     let title = dto.title?.trim() ?? '';
     let statement = dto.statement?.trim() ?? '';
-    let ioSpec = dto.ioSpec?.trim() ?? '';
+    const ioSpec = dto.ioSpec?.trim() ?? '';
 
     if (dto.problemId) {
       const problem = await this.prisma.problem.findUnique({
@@ -1122,19 +1124,21 @@ export class AiTestcaseService {
       },
     });
 
-    return {
-      problemId,
-      documents: jobs.map((job) => ({
+    const documents = await Promise.all(
+      jobs.map(async (job) => ({
         jobId: job.id,
         uploadedAt: job.createdAt,
         objectKey: job.inputDocObjectKey,
         fileName: job.inputDocFileName,
         contentType: job.inputDocContentType,
         sizeBytes: job.inputDocSizeBytes,
-        viewUrl:
-          job.inputDocUrl ??
-          (job.inputDocObjectKey ? this.storage.getObjectUrl(job.inputDocObjectKey) : null),
+        viewUrl: await this.storage.resolveDisplayUrl(job.inputDocObjectKey, job.inputDocUrl),
       })),
+    );
+
+    return {
+      problemId,
+      documents,
     };
   }
 
@@ -1157,30 +1161,14 @@ export class AiTestcaseService {
       throw new NotFoundException('AI generation job not found');
     }
 
-    const problem = await this.prisma.problem.findUnique({
-      where: { id: job.problemId },
-      select: { creatorId: true },
-    });
-    if (!problem) {
-      throw new NotFoundException('Problem not found');
-    }
-
-    const allowed =
-      user.role === Role.ADMIN ||
-      job.createdById === user.userId ||
-      problem.creatorId === user.userId;
-    if (!allowed) {
-      throw new ForbiddenException('Không có quyền tải tài liệu job này');
-    }
+    await this.problemStorageAccess.assertAiJobSharedRead(jobId, user);
 
     if (!job.inputDocObjectKey) {
       throw new NotFoundException('No input document has been attached to this job');
     }
 
-    const downloadUrl = await this.storage.createPresignedDownloadUrl(
-      job.inputDocObjectKey,
-      expiresInSeconds ?? 900,
-    );
+    const ttl = expiresInSeconds ?? 900;
+    const downloadUrl = await this.storage.createPresignedDownloadUrl(job.inputDocObjectKey, ttl);
 
     return {
       jobId: job.id,
@@ -1188,9 +1176,9 @@ export class AiTestcaseService {
       fileName: job.inputDocFileName,
       contentType: job.inputDocContentType,
       sizeBytes: job.inputDocSizeBytes,
-      viewUrl: job.inputDocUrl ?? this.storage.getObjectUrl(job.inputDocObjectKey),
+      viewUrl: downloadUrl,
       downloadUrl,
-      expiresInSeconds: expiresInSeconds ?? 900,
+      expiresInSeconds: ttl,
     };
   }
 

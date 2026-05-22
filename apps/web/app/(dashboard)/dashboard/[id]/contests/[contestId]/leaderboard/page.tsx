@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import { UserAvatar } from '@/components/shared/user-avatar';
 import { useEffect, useState, use } from 'react';
 import { contestsApi } from '@/services/contest.apis';
 import { useSocket } from '@/providers/socket-provider';
@@ -163,18 +163,11 @@ export default function LeaderboardPage({ params }: { params: Promise<{ contestI
                 <TableCell className="py-6">
                   <div className="flex items-center gap-3">
                     <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
-                      {row.userAvatar ? (
-                        <Image
-                          src={row.userAvatar}
-                          alt={row.userName}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full rounded-full bg-black text-white flex items-center justify-center font-bold text-sm">
-                          {row.userName?.charAt(0) ?? '?'}
-                        </div>
-                      )}
+                      <UserAvatar
+                        name={row.userName ?? '?'}
+                        imageUrl={row.userAvatar}
+                        fallbackClassName="bg-black text-white text-sm"
+                      />
                     </div>
                     <div>
                       <span className="font-bold text-gray-900 block">{row.userName}</span>

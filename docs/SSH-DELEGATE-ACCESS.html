@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Thêm quyền quản lý VPS — SSH key người khác — code-judge</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #58a6ff;
+      --accent-dim: #388bfd33;
+      --ok: #3fb950;
+      --partial: #d29922;
+      --border: #30363d;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --sidebar-w: 300px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; font-size: 15px; }
+    a { color: var(--accent); }
+    a:hover { text-decoration: underline; }
+    .layout { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative !important; height: auto !important; }
+    }
+    .sidebar {
+      position: sticky; top: 0; height: 100vh; overflow-y: auto;
+      padding: 1.25rem 1rem; background: var(--surface); border-right: 1px solid var(--border);
+    }
+    .sidebar h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 0.75rem; }
+    .sidebar nav a { display: block; padding: 0.35rem 0.5rem; border-radius: 6px; color: var(--muted); font-size: 0.88rem; text-decoration: none; }
+    .sidebar nav a:hover { background: var(--surface2); color: var(--text); }
+    .sidebar nav .sub { padding-left: 1rem; font-size: 0.82rem; }
+    main { max-width: 960px; padding: 2rem 2.5rem 4rem; }
+    header.doc-header { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+    header.doc-header h1 { font-size: 1.55rem; margin: 0 0 0.5rem; }
+    .meta { font-size: 0.85rem; color: var(--muted); }
+    section { margin-bottom: 2.5rem; scroll-margin-top: 1rem; }
+    h2 { font-size: 1.25rem; margin: 0 0 1rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1.05rem; margin: 1.5rem 0 0.75rem; }
+    h4 { font-size: 0.95rem; margin: 1rem 0 0.5rem; color: var(--muted); }
+    p { margin: 0 0 1rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.88rem; }
+    th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+    th { background: var(--surface2); }
+    tr:nth-child(even) td { background: #1a233260; }
+    pre, code { font-family: var(--mono); font-size: 0.84rem; }
+    pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; margin: 0.5rem 0 0; }
+    code { background: var(--surface2); padding: 0.15rem 0.35rem; border-radius: 4px; }
+    pre code { background: transparent; padding: 0; }
+    .callout { background: var(--accent-dim); border-left: 4px solid var(--accent); padding: 0.75rem 1rem; margin: 1rem 0; border-radius: 0 8px 8px 0; }
+    .callout-warn { background: #9e6a0322; border-left-color: var(--partial); }
+    .callout-ok { background: #23863622; border-left-color: var(--ok); }
+    .cmd { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.15rem; margin: 1rem 0; }
+    .cmd h4 { margin: 0 0 0.5rem; color: var(--accent); font-size: 0.9rem; }
+    .cmd .when { font-size: 0.88rem; color: var(--muted); margin: 0 0 0.75rem; }
+    .tag { display: inline-block; font-size: 0.72rem; padding: 0.1rem 0.45rem; border-radius: 4px; margin-right: 0.35rem; font-weight: 600; }
+    .tag-win { background: #388bfd33; color: #79c0ff; }
+    .tag-vps { background: #23863633; color: #56d364; }
+    .tag-both { background: #9e6a0333; color: #e3b341; }
+    .flow { font-family: var(--mono); font-size: 0.82rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; white-space: pre; line-height: 1.5; }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Mục lục</h2>
+      <nav>
+        <a href="#overview">Tổng quan</a>
+        <a href="#roles">Vai trò &amp; quyền</a>
+        <a href="#flow">Luồng tóm tắt</a>
+        <a href="#monitor-key">Bước 1 — Monitor tạo key</a>
+        <a href="#send-pub">Bước 2 — Gửi public key</a>
+        <a href="#admin-add">Bước 3 — Admin thêm key</a>
+        <a class="sub" href="#add-same-user">Cùng user (root/ubuntu)</a>
+        <a class="sub" href="#add-separate-user">User Linux riêng</a>
+        <a href="#monitor-test">Bước 4 — Monitor kiểm tra</a>
+        <a href="#monitor-work">Việc monitor thường làm</a>
+        <a class="sub" href="#sync-script">sync-to-vps.ps1</a>
+        <a class="sub" href="#ssh-config">~/.ssh/config</a>
+        <a href="#revoke">Thu hồi quyền</a>
+        <a href="#security">Bảo mật</a>
+        <a href="#errors">Lỗi thường gặp</a>
+        <a href="#links">Liên kết</a>
+        <a href="DEPLOY-VPS.html">Deploy VPS →</a>
+      </nav>
+    </aside>
+    <main>
+      <header class="doc-header">
+        <h1>Thêm quyền quản lý VPS — SSH key của người khác</h1>
+        <p class="meta">
+          Hướng dẫn cấp cho <strong>monitor / người vận hành</strong> quyền SSH vào VPS Code Judge
+          (sync code, xem log Docker, cập nhật deploy) <strong>mà không chia sẻ private key</strong> của admin.
+          Bổ sung cho mục SSH lần đầu trong <a href="DEPLOY-VPS.html#ssh-key">DEPLOY-VPS.html</a>.
+        </p>
+      </header>
+
+      <section id="overview">
+        <h2>Tổng quan</h2>
+        <p>
+          Sau khi VPS đã deploy (thường admin dùng <code>root</code> và thư mục <code>/root/code-judge</code>),
+          bạn có thể thêm <strong>một hoặc nhiều người</strong> cùng quản lý bằng cách đưa <strong>public key</strong> của họ
+          vào <code>~/.ssh/authorized_keys</code> trên VPS.
+        </p>
+        <div class="callout callout-warn">
+          <strong>Không bao giờ</strong> gửi file private (<code>id_ed25519</code>, không có đuôi <code>.pub</code>)
+          qua chat, email hay Git. Mỗi người tự tạo cặp key trên máy mình.
+        </div>
+        <table>
+          <thead>
+            <tr><th>Thuật ngữ</th><th>Ý nghĩa trong doc này</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Admin / chủ VPS</strong></td><td>Đã SSH được, có quyền sửa <code>authorized_keys</code> trên VPS</td></tr>
+            <tr><td><strong>Monitor</strong></td><td>Người được thêm key — vận hành, sync, debug (không nhất thiết là tài khoản app Code Judge)</td></tr>
+            <tr><td><code>VPS_IP</code></td><td>IP public VPS (ví dụ từ panel DigitalOcean)</td></tr>
+            <tr><td><code>VPS_USER</code></td><td><code>root</code> hoặc <code>ubuntu</code> — phải thống nhất với lúc deploy</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="roles">
+        <h2>Vai trò &amp; quyền sau khi thêm key</h2>
+        <table>
+          <thead>
+            <tr><th>Hành động</th><th>Cùng user <code>root</code></th><th>User Linux riêng + nhóm docker</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>SSH vào VPS</td><td>Có</td><td>Có</td></tr>
+            <tr><td><code>cd /root/code-judge</code></td><td>Có</td><td>Không (trừ khi đổi quyền thư mục)</td></tr>
+            <tr><td><code>docker compose</code> (không sudo)</td><td>Có (nếu root hoặc đã trong nhóm docker)</td><td>Có sau <code>usermod -aG docker</code></td></tr>
+            <tr><td>Sửa <code>.env.production</code></td><td>Có</td><td>Chỉ nếu được cấp quyền đọc/ghi file</td></tr>
+            <tr><td>Chạy <code>sync-to-vps.ps1</code> từ Windows</td><td>Có (đúng <code>-VpsUser</code> / <code>-RemoteDir</code>)</td><td>Cần <code>-RemoteDir</code> trỏ đúng home user</td></tr>
+          </tbody>
+        </table>
+        <p>
+          <strong>Khuyến nghị lab / team nhỏ:</strong> thêm public key của monitor vào cùng user <code>root</code>
+          (hoặc <code>ubuntu</code> nếu toàn bộ stack nằm ở <code>/home/ubuntu/code-judge</code>).
+          Cách tách user Linux phù hợp khi cần giới hạn quyền file sau này.
+        </p>
+      </section>
+
+      <section id="flow">
+        <h2>Luồng tóm tắt</h2>
+        <div class="flow">Monitor (Windows)                Admin (đã có SSH)              VPS
+     |                                    |                          |
+     | ssh-keygen (tạo cặp key)           |                          |
+     | gửi file *.pub ------------------->|                          |
+     |                                    | ssh vào VPS              |
+     |                                    | append vào authorized_keys
+     |                                    |                          |
+     | ssh VPS_IP (dùng key riêng) <------|--------------------------|
+     | sync / docker logs / deploy        |                          |</div>
+      </section>
+
+      <section id="monitor-key">
+        <h2>Bước 1 — Monitor tạo SSH key (Windows)</h2>
+        <p><span class="tag tag-win">Windows</span> Người được cấp quyền chạy trên máy của họ:</p>
+        <pre><code>ssh-keygen -t ed25519 -C "ten-monitor@cong-ty.example"</code></pre>
+        <p>
+          Nhấn Enter để dùng đường dẫn mặc định
+          <code>C:\Users\&lt;TEN&gt;\.ssh\id_ed25519</code>.
+          Có thể đặt passphrase (khuyến nghị).
+        </p>
+        <p>Xem public key (một dòng bắt đầu bằng <code>ssh-ed25519</code>):</p>
+        <pre><code>Get-Content $env:USERPROFILE\.ssh\id_ed25519.pub</code></pre>
+        <div class="callout">
+          Nếu monitor đã có key khác, có thể tạo thêm với tên file riêng:
+          <code>ssh-keygen -t ed25519 -f $env:USERPROFILE\.ssh\id_ed25519_codejudge -C "monitor-codejudge"</code>
+        </div>
+      </section>
+
+      <section id="send-pub">
+        <h2>Bước 2 — Gửi public key cho admin</h2>
+        <p>Monitor gửi cho admin <strong>chỉ</strong> nội dung file <code>*.pub</code> (một dòng), qua kênh tin cậy (chat nội bộ, ticket, v.v.).</p>
+        <p>Ví dụ dòng public key (minh họa — không dùng key thật từ doc):</p>
+        <pre><code>ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ten-monitor@example.com</code></pre>
+        <div class="callout callout-warn">
+          Admin <strong>không</strong> cần và <strong>không được</strong> yêu cầu monitor gửi file
+          <code>id_ed25519</code> (private) hoặc passphrase.
+        </div>
+      </section>
+
+      <section id="admin-add">
+        <h2>Bước 3 — Admin thêm key lên VPS</h2>
+        <p><span class="tag tag-vps">VPS</span> Admin SSH vào VPS bằng key hiện có, rồi chọn một trong hai cách dưới đây.</p>
+
+        <h3 id="add-same-user">3.1. Cùng user deploy (khuyến nghị: <code>root</code>)</h3>
+        <p>Dùng khi stack nằm tại <code>/root/code-judge</code> và monitor cần cùng quyền vận hành.</p>
+
+        <div class="cmd">
+          <h4>Cách A — Từ Windows của admin (một lệnh)</h4>
+          <p class="when"><strong>Khi nào:</strong> Admin có file <code>monitor.pub</code> trên máy Windows (monitor đã gửi nội dung, admin lưu thành file).</p>
+          <p><span class="tag tag-win">Windows</span></p>
+          <pre><code># Thay VPS_IP; file .pub do monitor cung cấp
+type C:\path\to\monitor.pub | ssh root@VPS_IP "mkdir -p ~/.ssh &amp;&amp; chmod 700 ~/.ssh &amp;&amp; cat &gt;&gt; ~/.ssh/authorized_keys &amp;&amp; chmod 600 ~/.ssh/authorized_keys"</code></pre>
+        </div>
+
+        <div class="cmd">
+          <h4>Cách B — Trực tiếp trên VPS</h4>
+          <p class="when"><strong>Khi nào:</strong> Admin đang SSH sẵn trên VPS.</p>
+          <p><span class="tag tag-vps">VPS</span></p>
+          <pre><code>mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+nano ~/.ssh/authorized_keys
+# Dán thêm MỘT DÒNG public key của monitor ở cuối file (mỗi key một dòng)
+chmod 600 ~/.ssh/authorized_keys</code></pre>
+        </div>
+
+        <p>Kiểm tra số dòng key (mỗi dòng = một key được phép):</p>
+        <pre><code>wc -l ~/.ssh/authorized_keys
+grep -c '^ssh-' ~/.ssh/authorized_keys</code></pre>
+
+        <h3 id="add-separate-user">3.2. User Linux riêng (tùy chọn)</h3>
+        <p>Dùng khi muốn tách tài khoản, repo ở <code>/home/ubuntu/code-judge</code>:</p>
+        <pre><code># Trên VPS — admin chạy với sudo/root
+adduser monitorops
+usermod -aG docker monitorops
+mkdir -p /home/monitorops/.ssh
+chmod 700 /home/monitorops/.ssh
+nano /home/monitorops/.ssh/authorized_keys
+# Dán public key monitor
+chmod 600 /home/monitorops/.ssh/authorized_keys
+chown -R monitorops:monitorops /home/monitorops/.ssh</code></pre>
+        <p>Monitor kết nối: <code>ssh monitorops@VPS_IP</code>. Cần đồng bộ code vào <code>/home/monitorops/code-judge</code> hoặc cấp quyền đọc thư mục deploy hiện có.</p>
+      </section>
+
+      <section id="monitor-test">
+        <h2>Bước 4 — Monitor kiểm tra kết nối</h2>
+        <p><span class="tag tag-win">Windows</span> Trên máy monitor (sau khi admin báo đã thêm key):</p>
+        <pre><code>ssh root@VPS_IP
+# hoặc: ssh ubuntu@VPS_IP</code></pre>
+        <p>Nếu dùng key không mặc định:</p>
+        <pre><code>ssh -i $env:USERPROFILE\.ssh\id_ed25519_codejudge root@VPS_IP</code></pre>
+        <p>Trên VPS, xác nhận vào đúng thư mục project:</p>
+        <pre><code>cd /root/code-judge
+ls docker-compose.production.yml .env.production
+docker compose -f docker-compose.production.yml --env-file .env.production ps</code></pre>
+        <div class="callout callout-ok">
+          Thấy danh sách container <code>Up</code> → SSH và quyền Docker ổn. Chi tiết deploy: <a href="UPDATE-DEPLOY.html">UPDATE-DEPLOY.html</a>.
+        </div>
+      </section>
+
+      <section id="monitor-work">
+        <h2>Việc monitor thường làm sau khi có quyền</h2>
+        <ul>
+          <li>SSH xem log: <code>docker compose ... logs core-api --tail 100</code></li>
+          <li>Cập nhật code từ Windows (mục dưới)</li>
+          <li>Đọc <a href="DEBUG-CONTAINERS.html">DEBUG-CONTAINERS.html</a> khi service lỗi</li>
+        </ul>
+
+        <h3 id="sync-script">sync-to-vps.ps1</h3>
+        <p><span class="tag tag-win">Windows</span> Monitor chạy trên máy có clone repo <code>code-judge</code>:</p>
+        <pre><code>cd C:\path\to\code-judge
+powershell -NoProfile -ExecutionPolicy Bypass -File .\deploy\sync-to-vps.ps1 `
+  -VpsHost VPS_IP -VpsUser root -RemoteDir /root/code-judge</code></pre>
+        <p>OpenSSH trên Windows tự dùng <code>%USERPROFILE%\.ssh\id_ed25519</code> (hoặc key trong <code>config</code>).</p>
+
+        <h3 id="ssh-config">~/.ssh/config (tuỳ chọn, Windows)</h3>
+        <p>File <code>C:\Users\&lt;TEN&gt;\.ssh\config</code> cho monitor:</p>
+        <pre><code>Host codejudge-vps
+    HostName VPS_IP
+    User root
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519</code></pre>
+        <pre><code>ssh codejudge-vps
+scp .env.production codejudge-vps:/root/code-judge/.env.production</code></pre>
+        <div class="callout callout-warn">
+          File <code>.env.production</code> chứa secret — chỉ copy qua SSH/SFTP tin cậy; trên VPS giữ <code>chmod 600 .env.production</code>.
+        </div>
+      </section>
+
+      <section id="revoke">
+        <h2>Thu hồi quyền (gỡ key)</h2>
+        <p><span class="tag tag-vps">VPS</span> Admin SSH vào VPS, mở <code>~/.ssh/authorized_keys</code>, <strong>xóa đúng một dòng</strong> public key của monitor, lưu file.</p>
+        <pre><code>nano ~/.ssh/authorized_keys
+# xóa dòng key của monitor, lưu
+chmod 600 ~/.ssh/authorized_keys</code></pre>
+        <p>Monitor sẽ không SSH được nữa (trừ khi còn key/password khác). Không cần reboot VPS.</p>
+        <p>Nếu dùng user riêng: <code>deluser --remove-home monitorops</code> (cẩn thận — xóa home và dữ liệu local của user đó).</p>
+      </section>
+
+      <section id="security">
+        <h2>Bảo mật</h2>
+        <ul>
+          <li>Mỗi người một cặp key; rotate khi máy monitor bị mất hoặc nhân viên rời team (gỡ dòng key cũ, tạo key mới).</li>
+          <li>Giữ port 22 (hoặc port SSH tùy chỉnh) trong firewall; cân nhắc giới hạn IP nguồn trên panel VPS nếu team cố định IP văn phòng.</li>
+          <li>Không thêm key vào VPS qua kênh công khai (issue GitHub công khai, pastebin).</li>
+          <li>Quyền <code>root</code> = toàn quyền host + đọc <code>.env.production</code>; chỉ cấp cho người tin cậy.</li>
+          <li>Sau khi thêm user vào nhóm <code>docker</code>: monitor phải <strong>đăng xuất SSH và vào lại</strong> thì <code>docker</code> không cần <code>sudo</code>.</li>
+        </ul>
+      </section>
+
+      <section id="errors">
+        <h2>Lỗi thường gặp</h2>
+        <table>
+          <thead>
+            <tr><th>Triệu chứng</th><th>Nguyên nhân / cách xử lý</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>Permission denied (publickey)</code></td>
+              <td>Sai user (<code>root</code> vs <code>ubuntu</code>); key chưa append; sai file private trên máy monitor; quyền <code>~/.ssh</code> không đúng (<code>700</code> thư mục, <code>600</code> <code>authorized_keys</code>)</td>
+            </tr>
+            <tr>
+              <td>Vẫn hỏi password</td>
+              <td>Public key dán thiếu ký tự / nhiều dòng gộp một dòng; hoặc monitor dùng sai <code>IdentityFile</code></td>
+            </tr>
+            <tr>
+              <td><code>permission denied</code> khi <code>docker compose</code></td>
+              <td>User chưa trong nhóm docker: <code>sudo usermod -aG docker $USER</code> rồi logout/login lại</td>
+            </tr>
+            <tr>
+              <td><code>cd /root/code-judge: Permission denied</code></td>
+              <td>Monitor SSH bằng user không phải root — dùng đúng user deploy hoặc đổi <code>RemoteDir</code> khi sync</td>
+            </tr>
+            <tr>
+              <td><code>sync-to-vps.ps1</code> lỗi SSH</td>
+              <td>Kiểm tra <code>-VpsHost</code>, <code>-VpsUser</code>, firewall port 22; thử <code>ssh root@VPS_IP</code> trước</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="links">
+        <h2>Liên kết</h2>
+        <ul>
+          <li><a href="DEPLOY-VPS.html">DEPLOY-VPS.html</a> — triển khai lần đầu, tạo key admin</li>
+          <li><a href="UPDATE-DEPLOY.html">UPDATE-DEPLOY.html</a> — cập nhật sau khi đã có quyền SSH</li>
+          <li><a href="DEBUG-CONTAINERS.html">DEBUG-CONTAINERS.html</a> — debug container</li>
+          <li><a href="../deploy/README.md">deploy/README.md</a> — sync, production-up</li>
+        </ul>
+      </section>
+
+      <footer>
+        <p>code-judge — <code>docs/SSH-DELEGATE-ACCESS.html</code>. Cấp quyền quản lý VPS bằng SSH public key; không chia sẻ private key.</p>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

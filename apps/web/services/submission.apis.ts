@@ -1,7 +1,8 @@
 import { apiFetch } from './api-client';
 
 export interface CreateSubmissionDto {
-  userId: string;
+  /** Deprecated — server uses JWT user id */
+  userId?: string;
   problemId: string;
   contestId?: string;
   mode: 'ALGO' | 'PROJECT';
@@ -10,6 +11,17 @@ export interface CreateSubmissionDto {
   sourceCodeObjectKey?: string;
   isDryRun?: boolean;
 }
+
+export interface ReserveSubmissionDto {
+  problemId: string;
+  contestId?: string;
+  mode: 'ALGO' | 'PROJECT';
+  language?: string;
+  isDryRun?: boolean;
+}
+
+/** Align with core-api SUBMISSION_SOURCE_INLINE_MAX_BYTES */
+export const SUBMISSION_SOURCE_INLINE_MAX_BYTES = 8192;
 
 export interface Submission {
   id: string;
@@ -30,6 +42,23 @@ export const submissionsApi = {
     return apiFetch('/submissions', {
       method: 'POST',
       body: dto,
+    });
+  },
+
+  async reserve(dto: ReserveSubmissionDto): Promise<{ submissionId: string; status: string }> {
+    return apiFetch('/submissions/reserve', {
+      method: 'POST',
+      body: dto,
+    });
+  },
+
+  async finalize(
+    submissionId: string,
+    sourceCodeObjectKey: string,
+  ): Promise<{ submissionId: string; status: string }> {
+    return apiFetch(`/submissions/${encodeURIComponent(submissionId)}/finalize`, {
+      method: 'POST',
+      body: { sourceCodeObjectKey },
     });
   },
 

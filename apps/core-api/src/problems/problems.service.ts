@@ -9,12 +9,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateProblemDto } from './dto/create-problem.dto';
 import { UpdateProblemDto } from './dto/update-problem.dto';
 import { buildUniqueProblemSlug } from './problem-slug.util';
+import { ProblemAccessService } from './problem-access.service';
 import { ProblemVisibilityService } from './problem-visibility.service';
 import { replaceProblemTags } from './problem-tag-sync.util';
 
 import { MailerService } from '../mail/mail.service';
 import { ConfigService } from '@nestjs/config';
-import * as jwt from 'jsonwebtoken';
 
 const PROBLEM_LIST_INCLUDE = {
   tags: { include: { tag: true } },
@@ -33,6 +33,7 @@ export class ProblemsService {
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
     private readonly visibilityService: ProblemVisibilityService,
+    private readonly problemAccess: ProblemAccessService,
   ) {}
 
   async create(dto: CreateProblemDto, creatorId: string, role?: Role): Promise<Problem> {
@@ -132,16 +133,19 @@ export class ProblemsService {
     });
   }
 
-  async findAll(query: {
-    search?: string;
-    page?: number;
-    limit?: number;
-    classRoomId?: string;
-    difficulty?: string;
-    mode?: string;
-    tagId?: string;
-    tagSlug?: string;
-  }) {
+  async findAll(
+    query: {
+      search?: string;
+      page?: number;
+      limit?: number;
+      classRoomId?: string;
+      difficulty?: string;
+      mode?: string;
+      tagId?: string;
+      tagSlug?: string;
+    },
+    req?: Parameters<ProblemAccessService['resolveViewer']>[0],
+  ) {
     const { page, limit, skip } = this.normalizeListPagination(query.page, query.limit);
     const search = query.search?.trim();
     const difficultyFilter =
@@ -151,18 +155,23 @@ export class ProblemsService {
     const modeFilter =
       query.mode === 'ALGO' || query.mode === 'PROJECT' ? { mode: query.mode as ProblemMode } : {};
 
-    // If classRoomId is provided (class context), show all problems including PRIVATE
-    // Otherwise (public bank), only show PUBLIC problems
-    const visibilityFilter = query.classRoomId
-      ? {} // No visibility filter for class context
-      : this.visibilityService.getPublicProblemBankVisibilityFilter(); // visibility: PUBLIC for public bank
+    const classRoomId = query.classRoomId?.trim();
+    const viewer = this.problemAccess.resolveViewer(req);
+
+    if (classRoomId) {
+      await this.problemAccess.assertCanListClassProblems(classRoomId, viewer);
+    }
+
+    const visibilityFilter = classRoomId
+      ? await this.problemAccess.buildClassListVisibilityFilter(classRoomId, viewer!)
+      : this.visibilityService.getPublicProblemBankVisibilityFilter();
 
     const where: Prisma.ProblemWhereInput = {
       isPublished: true,
       ...visibilityFilter,
       ...difficultyFilter,
       ...modeFilter,
-      ...(query.classRoomId ? { assignments: { some: { classRoomId: query.classRoomId } } } : {}),
+      ...(classRoomId ? { assignments: { some: { classRoomId } } } : {}),
       ...(query.tagId ? { tags: { some: { tagId: query.tagId } } } : {}),
       ...(query.tagSlug ? { tags: { some: { tag: { slug: query.tagSlug } } } } : {}),
       ...(search
@@ -227,7 +236,11 @@ export class ProblemsService {
     return { items, total, page, limit };
   }
 
-  async findById(problemId: string, req?: any) {
+  async findById(
+    problemId: string,
+    req?: Parameters<ProblemAccessService['resolveViewer']>[0],
+    opts?: { contestId?: string },
+  ) {
     const problem = await this.prisma.problem.findUnique({
       where: { id: problemId },
       include: PROBLEM_DETAIL_INCLUDE,
@@ -236,23 +249,14 @@ export class ProblemsService {
       throw new NotFoundException('Problem not found');
     }
 
-    // Check if the user is authorized to view raw, unsanitized test cases (admin/creator/teacher)
-    let isAuthorized = false;
-    if (req) {
-      const token = req.cookies?.accessToken;
-      if (token) {
-        try {
-          const decoded: any = jwt.decode(token);
-          if (decoded && decoded.sub) {
-            const userId = decoded.sub;
-            const role = decoded.role;
-            isAuthorized = await this.canManageProblem(problem, userId, role);
-          }
-        } catch (err) {
-          // Token decode fail, treat as unauthorized (student)
-        }
-      }
-    }
+    const viewer = this.problemAccess.resolveViewer(req);
+    await this.problemAccess.assertCanViewProblem(problem, viewer, opts);
+
+    const isAuthorized = await this.problemAccess.canManageProblem(
+      problem,
+      viewer?.userId,
+      viewer?.role,
+    );
 
     if (!isAuthorized && problem.testCases) {
       // Sanitize hidden test cases for students/guests!
@@ -288,7 +292,7 @@ export class ProblemsService {
       throw new NotFoundException('Problem not found');
     }
 
-    if (!(await this.canManageProblem(existing, updaterId, role))) {
+    if (!(await this.problemAccess.canManageProblem(existing, updaterId, role))) {
       throw new ForbiddenException('Only creator, class owner, or admin can update this problem');
     }
 
@@ -381,7 +385,7 @@ export class ProblemsService {
       throw new NotFoundException('Problem not found');
     }
 
-    if (!(await this.canManageProblem(existing, userId, role))) {
+    if (!(await this.problemAccess.canManageProblem(existing, userId, role))) {
       throw new ForbiddenException('Only creator, class owner, or admin can delete this problem');
     }
 
@@ -431,57 +435,6 @@ export class ProblemsService {
     if (!asOwnerEnrollment) {
       throw new ForbiddenException('Only the class owner can create problems for this class');
     }
-  }
-
-  /** Admin, creator, hoặc chủ lớp (ownerId / enrollment OWNER) của một lớp đang gán bài. */
-  private async canManageProblem(
-    existing: {
-      creatorId: string | null;
-      assignments: { classRoomId: string }[];
-    },
-    userId: string,
-    role?: Role,
-  ): Promise<boolean> {
-    if (role === Role.ADMIN) {
-      return true;
-    }
-    if (existing.creatorId === userId) {
-      return true;
-    }
-    for (const a of existing.assignments) {
-      if (await this.userIsClassOwnerForRoom(a.classRoomId, userId)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  private async userIsClassOwnerForRoom(classRoomId: string, userId: string): Promise<boolean> {
-    const classRoom = await this.prisma.classRoom.findUnique({
-      where: { id: classRoomId },
-      select: { ownerId: true, isActive: true },
-    });
-    if (!classRoom) {
-      return false;
-    }
-
-    // Nếu lớp học đã bị lưu trữ, không cho phép owner chỉnh sửa nữa
-    if (!classRoom.isActive) {
-      return false;
-    }
-
-    if (classRoom.ownerId === userId) {
-      return true;
-    }
-    const enrollment = await this.prisma.classEnrollment.findFirst({
-      where: {
-        classRoomId,
-        userId,
-        role: 'OWNER',
-        status: 'ACTIVE',
-      },
-    });
-    return Boolean(enrollment);
   }
 
   private async ensureClassExists(classRoomId: string) {

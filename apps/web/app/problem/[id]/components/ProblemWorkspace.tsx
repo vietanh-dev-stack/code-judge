@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuthStore } from '@/store/auth-store';
 import { Problem, problemsApi } from '@/services/problem.apis';
-import { submissionsApi, Submission } from '@/services/submission.apis';
+import {
+  submissionsApi,
+  Submission,
+  SUBMISSION_SOURCE_INLINE_MAX_BYTES,
+} from '@/services/submission.apis';
 import { storageApi } from '@/services/storage.apis';
 import { aiHintApi, type RequestHintResult } from '@/services/ai-hint.apis';
 import ProblemDescription from './ProblemDescription';
@@ -133,35 +137,26 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
     const fetchProblem = async () => {
       try {
         setLoadingProblem(true);
-        const data = await problemsApi.findById(activeProblemId);
-
-        // Validate classroom enrollment if this problem is assigned to a class
-        if (data.assignments && data.assignments.length > 0 && user?.role !== 'ADMIN') {
-          let hasAccess = false;
-          for (const assignment of data.assignments) {
-            try {
-              await getClassroomDetail(assignment.classRoomId);
-              hasAccess = true;
-              break;
-            } catch (err) {
-              // Not enrolled in this classroom
-            }
-          }
-
-          if (!hasAccess) {
-            toast.error('Unauthorized', {
-              description: 'This problem belongs to a class you are not enrolled in.',
-            });
-            router.push('/dashboard');
-            return;
-          }
-        }
+        const data = await problemsApi.findById(activeProblemId, {
+          contestId: contestId ?? undefined,
+        });
 
         setProblem(data);
         setCode('');
         setResult(null);
       } catch (err: any) {
         console.error('Failed to fetch problem:', err);
+        const status = err?.status;
+        if (status === 404 || status === 401 || status === 403) {
+          toast.error('Problem not available', {
+            description:
+              status === 404
+                ? 'This problem does not exist or you do not have access.'
+                : 'Sign in or enroll in the class to view this problem.',
+          });
+          router.push('/dashboard');
+          return;
+        }
         toast.error('Error loading problem', {
           description: err.message || 'Failed to load problem.',
         });
@@ -171,7 +166,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
     };
 
     fetchProblem();
-  }, [activeProblemId, user, router]);
+  }, [activeProblemId, contestId, router]);
 
   useEffect(() => {
     if (!contestId) {
@@ -306,7 +301,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
   const loadSubmissions = useCallback(async () => {
     if (!user || !problem?.id) return;
     try {
-      const data = await submissionsApi.findAll({ userId: user.id, problemId: problem.id });
+      const data = await submissionsApi.findAll({ problemId: problem.id });
       setSubmissions(data);
     } catch (error) {
       console.error('Failed to load submissions:', error);
@@ -538,46 +533,64 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
     pendingSubmissionIdRef.current = null;
 
     try {
-      const submissionId = `sub-${Math.random().toString(36).slice(2, 10)}-${Date.now()}`;
       const optionLang = language.toUpperCase();
-      const ext =
-        optionLang === 'PYTHON'
-          ? 'py'
-          : optionLang === 'JAVASCRIPT'
-            ? 'js'
-            : optionLang === 'TYPESCRIPT'
-              ? 'ts'
-              : optionLang === 'JAVA'
-                ? 'java'
-                : optionLang === 'GO'
-                  ? 'go'
-                  : optionLang === 'RUST'
-                    ? 'rs'
-                    : optionLang === 'CPP'
-                      ? 'cpp'
-                      : 'txt';
+      const contestIdOpt = contestId || undefined;
 
-      const presign = await storageApi.presignUpload({
-        resourceKind: 'submission-source',
-        submissionId,
-        fileName: `solution.${ext}`,
-      });
+      let created: { submissionId: string; status: string };
 
-      await fetch(presign.uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'text/plain' },
-        body: code,
-      });
+      if (code.length <= SUBMISSION_SOURCE_INLINE_MAX_BYTES) {
+        created = await submissionsApi.create({
+          problemId: problem.id,
+          contestId: contestIdOpt,
+          mode: problem.mode,
+          language: optionLang,
+          sourceCode: code,
+          isDryRun,
+        });
+      } else {
+        const ext =
+          optionLang === 'PYTHON'
+            ? 'py'
+            : optionLang === 'JAVASCRIPT'
+              ? 'js'
+              : optionLang === 'TYPESCRIPT'
+                ? 'ts'
+                : optionLang === 'JAVA'
+                  ? 'java'
+                  : optionLang === 'GO'
+                    ? 'go'
+                    : optionLang === 'RUST'
+                      ? 'rs'
+                      : optionLang === 'CPP'
+                        ? 'cpp'
+                        : 'txt';
 
-      const created = await submissionsApi.create({
-        userId: user.id,
-        problemId: problem.id,
-        contestId: (contestId || null) as string | undefined,
-        mode: problem.mode,
-        language: optionLang,
-        sourceCodeObjectKey: presign.objectKey,
-        isDryRun,
-      });
+        const reserved = await submissionsApi.reserve({
+          problemId: problem.id,
+          contestId: contestIdOpt,
+          mode: problem.mode,
+          language: optionLang,
+          isDryRun,
+        });
+
+        const presign = await storageApi.presignUpload({
+          resourceKind: 'submission-source',
+          submissionId: reserved.submissionId,
+          fileName: `solution.${ext}`,
+        });
+
+        const putRes = await fetch(presign.uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'text/plain' },
+          body: code,
+        });
+        if (!putRes.ok) {
+          throw new Error(`Upload to storage failed (${putRes.status})`);
+        }
+
+        created = await submissionsApi.finalize(reserved.submissionId, presign.objectKey);
+      }
+
       pendingSubmissionIdRef.current = created.submissionId;
       setLastSubmissionId(created.submissionId);
       lastSubmissionIdRef.current = created.submissionId;

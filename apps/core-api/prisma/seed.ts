@@ -110,8 +110,8 @@ const SEED_PROBLEMS: SeedProblemDef[] = [
     description: 'Calculate the n-th Fibonacci number using dynamic programming.',
     statementMd: 'The Fibonacci sequence is defined as $F_0 = 0, F_1 = 1, F_n = F_{n-1} + F_{n-2}$.\nGiven $n$, find $F_n$ modulo $10^9 + 7$.\n\n$0 \\le n \\le 10^6$',
     difficulty: 'MEDIUM',
-    tagSlugs: ['dp', 'math'],
     visibility: 'PUBLIC',
+    tagSlugs: ['math', 'dp'],
     testCases: [
       { input: '0', expectedOutput: '0', isHidden: false },
       { input: '1', expectedOutput: '1', isHidden: false },

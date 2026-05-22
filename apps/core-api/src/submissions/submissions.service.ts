@@ -1,14 +1,26 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubmissionGateway } from '../realtime/submission.gateway';
 import { JUDGE_QUEUE } from '../queues/tokens';
 import { JUDGE_JOB_MAX_ATTEMPTS } from '../common/constants/queue.constants';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
+import { FinalizeSubmissionDto } from './dto/finalize-submission.dto';
+import { ReserveSubmissionDto } from './dto/reserve-submission.dto';
+import type { RequestUser } from '../common/interfaces/request-user.interface';
 import { buildSubmissionSourceObjectKey } from '../storage/storage-key.builder';
+import { ContestAccessService } from '../contests/contest-access.service';
+import { ProblemAccessService } from '../problems/problem-access.service';
+import { ProblemStorageAccessService } from '../storage/problem-storage-access.service';
+import { SUBMISSION_SOURCE_INLINE_MAX_BYTES } from '../storage/storage-resource.constants';
 import { StorageService } from '../storage/storage.service';
 import { Role } from '@prisma/client';
-import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class SubmissionsService {
@@ -17,66 +29,113 @@ export class SubmissionsService {
     private readonly prisma: PrismaService,
     private readonly realtime: SubmissionGateway,
     private readonly storage: StorageService,
+    private readonly storageAccess: ProblemStorageAccessService,
+    private readonly problemAccess: ProblemAccessService,
+    private readonly contestAccess: ContestAccessService,
   ) {}
 
-  async createAndEnqueue(dto: CreateSubmissionDto) {
+  private async assertCanSubmitToProblem(
+    problemId: string,
+    user: RequestUser,
+    contestId?: string,
+  ): Promise<void> {
+    const viewer = { userId: user.userId, role: user.role };
+    if (contestId) {
+      await this.contestAccess.assertCanViewContestById(contestId, viewer);
+    }
+    await this.problemAccess.assertCanViewProblemById(problemId, viewer, { contestId });
+  }
+
+  /** JWT user reserves a row before presigned MinIO upload (large source). */
+  async reserve(dto: ReserveSubmissionDto, user: RequestUser) {
+    const { contestId, context } = await this.resolveContestContext(
+      dto.problemId,
+      user.userId,
+      dto.contestId,
+      dto.isDryRun ?? false,
+    );
+    await this.assertCanSubmitToProblem(dto.problemId, user, contestId);
+
+    const submission = await this.prisma.submission.create({
+      data: {
+        userId: user.userId,
+        problemId: dto.problemId,
+        mode: dto.mode as any,
+        context,
+        contestId,
+        language: dto.language ?? null,
+        attemptNumber: 1,
+        judgePriority: 0,
+        status: 'Pending',
+        sourceCode: null,
+        sourceCodeObjectKey: null,
+        isDryRun: dto.isDryRun ?? false,
+      },
+    });
+
+    return { submissionId: submission.id, status: submission.status };
+  }
+
+  /** Attach MinIO key after PUT, then enqueue judge. */
+  async finalize(submissionId: string, dto: FinalizeSubmissionDto, user: RequestUser) {
+    await this.storageAccess.assertSubmissionOwner(submissionId, user.userId);
+
+    const key = dto.sourceCodeObjectKey.trim();
+    const prefix = `submissions/${submissionId}/`;
+    if (!key.startsWith(prefix)) {
+      throw new ForbiddenException('sourceCodeObjectKey không khớp submission này');
+    }
+
+    const existing = await this.prisma.submission.findUnique({
+      where: { id: submissionId },
+      select: {
+        id: true,
+        userId: true,
+        problemId: true,
+        contestId: true,
+        status: true,
+        sourceCodeObjectKey: true,
+        isDryRun: true,
+      },
+    });
+    if (!existing) {
+      throw new NotFoundException('Submission không tồn tại');
+    }
+
+    const submission = await this.prisma.submission.update({
+      where: { id: submissionId },
+      data: { sourceCodeObjectKey: key },
+    });
+
+    await this.enqueueJudge(submission);
+
+    return { submissionId: submission.id, status: submission.status };
+  }
+
+  async createAndEnqueue(dto: CreateSubmissionDto, user: RequestUser) {
     if (!dto.sourceCode && !dto.sourceCodeObjectKey) {
       throw new BadRequestException('sourceCode or sourceCodeObjectKey is required');
     }
-
-    // Optimization: Use findUnique instead of upsert to reduce DB load during high concurrency
-    const user = await this.prisma.user.findUnique({ where: { id: dto.userId } });
-    if (!user) {
-      throw new BadRequestException(`User ${dto.userId} not found. Please seed the database.`);
+    if (dto.userId && dto.userId !== user.userId) {
+      throw new ForbiddenException('Không thể nộp bài thay user khác');
     }
 
-    const problem = await this.prisma.problem.findUnique({ where: { id: dto.problemId } });
-    if (!problem) {
-      throw new BadRequestException(`Problem ${dto.problemId} not found. Please seed the database.`);
-    }
-
-    let contestId: string | undefined;
-    let context: 'PRACTICE' | 'CONTEST' = 'PRACTICE';
-    if (dto.contestId) {
-      const contest = await this.prisma.contest.findUnique({
-        where: { id: dto.contestId },
-        include: {
-          problems: { where: { problemId: dto.problemId }, select: { problemId: true } },
-        },
-      });
-      if (!contest) {
-        throw new BadRequestException('Contest not found');
-      }
-      if (contest.problems.length === 0) {
-        throw new BadRequestException('Problem does not belong to this contest');
-      }
-      contestId = dto.contestId;
-      context = 'CONTEST';
-
-      // Validate maxSubmissionsPerProblem limit if it is a real submit (not dry run)
-      if (!dto.isDryRun && contest.maxSubmissionsPerProblem !== null && contest.maxSubmissionsPerProblem > 0) {
-        const count = await this.prisma.submission.count({
-          where: {
-            userId: dto.userId,
-            problemId: dto.problemId,
-            contestId: dto.contestId,
-            isDryRun: false,
-          },
-        });
-        if (count >= contest.maxSubmissionsPerProblem) {
-          throw new BadRequestException(
-            `You have reached the maximum submission limit (${contest.maxSubmissionsPerProblem} attempts) for this problem in this contest.`
-          );
-        }
-      }
-    }
+    const userId = user.userId;
+    const { contestId, context } = await this.resolveContestContext(
+      dto.problemId,
+      userId,
+      dto.contestId,
+      dto.isDryRun ?? false,
+    );
+    await this.assertCanSubmitToProblem(dto.problemId, user, contestId);
 
     const sourceCode = dto.sourceCode ?? null;
-    const shouldExternalizeCode = sourceCode !== null && sourceCode.length > 8192;
+    const shouldExternalizeCode =
+      sourceCode !== null && sourceCode.length > SUBMISSION_SOURCE_INLINE_MAX_BYTES;
     const externalizedObjectKey = dto.sourceCodeObjectKey ?? null;
     const submission = await this.prisma.submission.create({
       data: {
-        userId: dto.userId,
+        userId,
         problemId: dto.problemId,
         mode: dto.mode as any,
         context,
@@ -97,7 +156,7 @@ export class SubmissionsService {
         'Content-Type': 'text/plain',
         submissionId: submission.id,
         problemId: dto.problemId,
-        ownerId: dto.userId,
+        ownerId: userId,
       });
       await this.prisma.submission.update({
         where: { id: submission.id },
@@ -106,6 +165,18 @@ export class SubmissionsService {
       submission.sourceCodeObjectKey = objectKey;
     }
 
+    await this.enqueueJudge(submission, {
+      contestId,
+      isDryRun: dto.isDryRun ?? false,
+    });
+
+    return submission;
+  }
+
+  private async enqueueJudge(
+    submission: { id: string; userId: string; status: string },
+    opts?: { contestId?: string | null; isDryRun?: boolean },
+  ) {
     await this.judgeQueue.add(
       'judge',
       { submissionId: submission.id },
@@ -117,29 +188,73 @@ export class SubmissionsService {
       },
     );
 
-    // Immediate feedback for UI.
-    this.realtime.emitToUser(dto.userId, 'submission:created', {
+    this.realtime.emitToUser(submission.userId, 'submission:created', {
       submissionId: submission.id,
       status: submission.status,
     });
 
-    if (contestId && !dto.isDryRun) {
+    if (opts?.contestId && !opts.isDryRun) {
       this.realtime.emitToAll('submission:created', {
         submissionId: submission.id,
-        contestId,
-        userId: dto.userId,
+        contestId: opts.contestId,
+        userId: submission.userId,
         status: submission.status,
       });
     }
-
-    return submission;
   }
 
-  async findById(submissionId: string, req?: any) {
+  private async resolveContestContext(
+    problemId: string,
+    userId: string,
+    contestIdInput: string | undefined,
+    isDryRun: boolean,
+  ): Promise<{ contestId?: string; context: 'PRACTICE' | 'CONTEST' }> {
+    if (!contestIdInput) {
+      return { context: 'PRACTICE' };
+    }
+
+    const contest = await this.prisma.contest.findUnique({
+      where: { id: contestIdInput },
+      include: {
+        problems: { where: { problemId }, select: { problemId: true } },
+      },
+    });
+    if (!contest) {
+      throw new BadRequestException('Contest not found');
+    }
+    if (contest.problems.length === 0) {
+      throw new BadRequestException('Problem does not belong to this contest');
+    }
+
+    if (
+      !isDryRun &&
+      contest.maxSubmissionsPerProblem !== null &&
+      contest.maxSubmissionsPerProblem > 0
+    ) {
+      const count = await this.prisma.submission.count({
+        where: {
+          userId,
+          problemId,
+          contestId: contestIdInput,
+          isDryRun: false,
+        },
+      });
+      if (count >= contest.maxSubmissionsPerProblem) {
+        throw new BadRequestException(
+          `You have reached the maximum submission limit (${contest.maxSubmissionsPerProblem} attempts) for this problem in this contest.`,
+        );
+      }
+    }
+
+    return { contestId: contestIdInput, context: 'CONTEST' };
+  }
+
+  async findById(submissionId: string, user: RequestUser) {
     const submission = await this.prisma.submission.findUnique({
       where: { id: submissionId },
       select: {
         id: true,
+        userId: true,
         problemId: true,
         status: true,
         score: true,
@@ -162,23 +277,17 @@ export class SubmissionsService {
       throw new NotFoundException('Submission không tồn tại');
     }
 
-    // Check if the user is authorized to view raw, unsanitized hidden outputs (admin/creator/teacher)
-    let isAuthorized = false;
-    if (req) {
-      const token = req.cookies?.accessToken;
-      if (token) {
-        try {
-          const decoded: any = jwt.decode(token);
-          if (decoded && decoded.sub) {
-            const userId = decoded.sub;
-            const role = decoded.role;
-            isAuthorized = await this.canManageProblem(submission.problem, userId, role);
-          }
-        } catch (err) {
-          // Token decode fail, treat as unauthorized (student)
-        }
-      }
+    const isOwner = submission.userId === user.userId;
+    const isAuthorized =
+      isOwner ||
+      user.role === Role.ADMIN ||
+      (await this.canManageProblem(submission.problem, user.userId, user.role));
+
+    if (!isOwner && !isAuthorized) {
+      throw new ForbiddenException('Không có quyền xem submission này');
     }
+
+    const canSeeHiddenOutputs = isAuthorized;
 
     // Process caseResults and dynamically map isHidden from the database to bypass worker lag
     if (submission.caseResults) {
@@ -197,8 +306,8 @@ export class SubmissionsService {
               return {
                 ...tc,
                 isHidden: true,
-                output: isAuthorized ? tc.output : '[Hidden Test Case]',
-                error: isAuthorized ? tc.error : (tc.error ? '[Hidden Test Case]' : null),
+                output: canSeeHiddenOutputs ? tc.output : '[Hidden Test Case]',
+                error: canSeeHiddenOutputs ? tc.error : (tc.error ? '[Hidden Test Case]' : null),
               };
             }
             return {
@@ -267,19 +376,13 @@ export class SubmissionsService {
     return Boolean(enrollment);
   }
 
-  async findMany(filter: { userId?: string; problemId?: string }) {
+  async findMany(filter: { problemId?: string }, user: RequestUser) {
     const where: Record<string, unknown> = {
       isDryRun: false,
+      userId: user.userId,
     };
-    if (filter.userId) {
-      where.userId = filter.userId;
-    }
     if (filter.problemId) {
       where.problemId = filter.problemId;
-    }
-
-    if (Object.keys(where).length === 0) {
-      return [];
     }
 
     return this.prisma.submission.findMany({

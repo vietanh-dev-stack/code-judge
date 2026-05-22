@@ -22,7 +22,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Role, type User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { EnvKeys, hashPassword, verifyPassword } from '../common';
+import { EnvKeys, hashPassword, validatePasswordPolicy, verifyPassword } from '../common';
 import type { JwtPayload } from './interfaces/jwt-payload.interface';
 
 /** Shape returned by Google Passport strategy → `request.user`. */
@@ -66,6 +66,7 @@ export class AuthService {
   // ---------------------------------------------------------------------------
 
   async register(name: string, email: string, password: string): Promise<TokenPair> {
+    validatePasswordPolicy(password);
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) {
       throw new ConflictException('Email đã được sử dụng');
@@ -161,16 +162,23 @@ export class AuthService {
     });
 
     if (oauthAccount) {
-      const existingUser = oauthAccount.user;
+      let existingUser = oauthAccount.user;
       if (!existingUser.isActive) {
         throw new UnauthorizedException('Tài khoản đã bị khoá. Vui lòng liên hệ quản trị viên');
       }
-      // Existing linked user — update lastLoginAt (fire & forget)
-      this.prisma.user
-        .update({ where: { id: existingUser.id }, data: { lastLoginAt: new Date() } })
-        .catch(() => {
-          /* best effort */
+      // Cập nhật ảnh Google khi chưa upload MinIO (imageObjectKey)
+      if (!existingUser.imageObjectKey && image) {
+        existingUser = await this.prisma.user.update({
+          where: { id: existingUser.id },
+          data: { image, lastLoginAt: new Date() },
         });
+      } else {
+        this.prisma.user
+          .update({ where: { id: existingUser.id }, data: { lastLoginAt: new Date() } })
+          .catch(() => {
+            /* best effort */
+          });
+      }
       return this.issueTokenPair(existingUser);
     }
 
@@ -189,6 +197,12 @@ export class AuthService {
           providerUserId: googleId,
         },
       });
+      if (!user.imageObjectKey && image && !user.image) {
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: { image },
+        });
+      }
     } else {
       // Create brand new user + OAuth link in a single transaction
       user = await this.prisma.user.create({
@@ -233,6 +247,7 @@ export class AuthService {
       throw new UnauthorizedException('Mật khẩu hiện tại không đúng');
     }
 
+    validatePasswordPolicy(newPassword);
     const passwordHash = await hashPassword(newPassword);
     await this.prisma.user.update({
       where: { id: userId },

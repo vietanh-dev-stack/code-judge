@@ -259,8 +259,15 @@ export const problemsApi = {
     return apiFetch(`/problems/admin/all${queryString ? `?${queryString}` : ''}`, options);
   },
 
-  async findById(id: string, options?: RequestInit): Promise<Problem> {
-    return apiFetch(`/problems/${id}`, options);
+  async findById(
+    id: string,
+    query?: { contestId?: string },
+    options?: RequestInit,
+  ): Promise<Problem> {
+    const params = new URLSearchParams();
+    if (query?.contestId) params.set('contestId', query.contestId);
+    const qs = params.toString();
+    return apiFetch(`/problems/${encodeURIComponent(id)}${qs ? `?${qs}` : ''}`, options);
   },
 
   async create(dto: CreateProblemDto, options?: RequestInit): Promise<Problem> {

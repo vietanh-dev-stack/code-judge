@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, MaxLength, MinLength, ValidateIf } from 'class-validator';
+import { IsStrongPassword, PASSWORD_MAX_LENGTH } from '../../common';
 
 export class CreateUserDto {
   @ApiPropertyOptional({ example: 'custom-user-id-001' })
@@ -21,9 +22,12 @@ export class CreateUserDto {
   @IsEnum(Role)
   role?: Role;
 
-  @ApiPropertyOptional({ example: 's3cr3t123' })
+  @ApiPropertyOptional({ example: 'P@ssw0rd1!' })
   @IsOptional()
   @IsString()
-  @MinLength(6)
+  @MinLength(8)
+  @ValidateIf((o) => typeof o.password === 'string' && o.password.length > 0)
+  @IsStrongPassword()
+  @MaxLength(PASSWORD_MAX_LENGTH)
   password?: string;
 }

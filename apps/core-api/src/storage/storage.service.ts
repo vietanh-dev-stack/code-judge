@@ -18,7 +18,11 @@ export class StorageService {
   private readonly publicClient: Client;
   private readonly publicBaseUrl: string | null;
   private readonly fallbackPublicBaseUrl: string;
+  private readonly allowPublicRead: boolean;
   private bucketReadPolicyEnsured = false;
+
+  /** TTL presigned GET cho avatar trong API response (giây). */
+  static readonly AVATAR_PRESIGN_TTL_SECONDS = 3600;
 
   constructor(private readonly config: ConfigService) {
     const endPoint = this.config.get<string>(EnvKeys.MINIO_ENDPOINT) ?? 'localhost';
@@ -29,6 +33,7 @@ export class StorageService {
 
     this.bucket = this.config.get<string>(EnvKeys.MINIO_BUCKET) ?? STORAGE_DEFAULT_BUCKET;
     this.publicBaseUrl = this.config.get<string>(EnvKeys.MINIO_PUBLIC_BASE_URL) ?? null;
+    this.allowPublicRead = this.resolveAllowPublicRead();
     const protocol = ['1', 'true', 'yes'].includes(useSSLRaw) ? 'https' : 'http';
     this.fallbackPublicBaseUrl = `${protocol}://${endPoint}:${portRaw}`;
 
@@ -116,16 +121,94 @@ export class StorageService {
     return Buffer.concat(chunks).toString('utf8');
   }
 
+  /**
+   * Direct URL (chỉ hoạt động khi bucket public read). Không dùng để persist DB khi public read tắt.
+   */
   getObjectUrl(objectKey: string): string {
     const baseUrl = (this.publicBaseUrl ?? this.fallbackPublicBaseUrl).replace(/\/+$/, '');
     return `${baseUrl}/${this.bucket}/${objectKey}`;
+  }
+
+  isPublicReadEnabled(): boolean {
+    return this.allowPublicRead;
+  }
+
+  /**
+   * URL hiển thị cho trình duyệt: presigned GET khi public read tắt; legacy URL khi dev/public bucket.
+   */
+  async resolveDisplayUrl(
+    objectKey: string | null | undefined,
+    legacyUrl: string | null | undefined,
+    expiresInSeconds = 900,
+  ): Promise<string | null> {
+    const key = objectKey?.trim();
+    if (key) {
+      if (this.allowPublicRead && legacyUrl?.trim()) {
+        return legacyUrl.trim();
+      }
+      return this.createPresignedDownloadUrl(key, expiresInSeconds);
+    }
+    if (this.allowPublicRead && legacyUrl?.trim()) {
+      return legacyUrl.trim();
+    }
+    return null;
+  }
+
+  /**
+   * Avatar hiển thị: MinIO (presigned) khi có `imageObjectKey`;
+   * URL ngoài (Google OAuth, …) khi chỉ có `image` — luôn trả về trên production
+   * (không phụ thuộc MINIO_ALLOW_PUBLIC_READ).
+   */
+  async resolveAvatarImageUrl(
+    imageObjectKey: string | null | undefined,
+    legacyImage: string | null | undefined,
+  ): Promise<string | null> {
+    const key = imageObjectKey?.trim();
+    if (key) {
+      return this.createPresignedDownloadUrl(key, StorageService.AVATAR_PRESIGN_TTL_SECONDS);
+    }
+
+    const legacy = legacyImage?.trim();
+    if (!legacy) {
+      return null;
+    }
+
+    // Google / HTTPS avatar — dùng trực tiếp trong <img>
+    if (/^https?:\/\//i.test(legacy)) {
+      return legacy;
+    }
+
+    if (this.allowPublicRead) {
+      return legacy;
+    }
+
+    return null;
   }
 
   getBucketName(): string {
     return this.bucket;
   }
 
+  private resolveAllowPublicRead(): boolean {
+    const raw = this.config.get<string>(EnvKeys.MINIO_ALLOW_PUBLIC_READ)?.trim().toLowerCase();
+    if (raw === '1' || raw === 'true' || raw === 'yes') {
+      return true;
+    }
+    if (raw === '0' || raw === 'false' || raw === 'no') {
+      return false;
+    }
+    return process.env.NODE_ENV !== 'production';
+  }
+
   private async ensureBucketReadPolicy(): Promise<void> {
+    if (!this.allowPublicRead) {
+      this.logger.log(
+        `Skipping public read bucket policy for "${this.bucket}" (MINIO_ALLOW_PUBLIC_READ=false)`,
+      );
+      this.bucketReadPolicyEnsured = true;
+      return;
+    }
+
     if (this.bucketReadPolicyEnsured) {
       return;
     }

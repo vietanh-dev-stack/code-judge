@@ -4,12 +4,18 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { AdminProblemsService } from './admin-problems.service';
 import { ProblemsController } from './problems.controller';
 import { ProblemsService } from './problems.service';
+import { ProblemAccessService } from './problem-access.service';
 import { ProblemVisibilityService } from './problem-visibility.service';
 
 @Module({
   imports: [PrismaModule, AiTestcaseModule],
   controllers: [ProblemsController],
-  providers: [ProblemsService, AdminProblemsService, ProblemVisibilityService],
-  exports: [ProblemsService],
+  providers: [
+    ProblemsService,
+    AdminProblemsService,
+    ProblemVisibilityService,
+    ProblemAccessService,
+  ],
+  exports: [ProblemsService, ProblemAccessService],
 })
 export class ProblemsModule {}

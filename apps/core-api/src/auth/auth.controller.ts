@@ -24,9 +24,11 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { Public } from '../common/decorators/public.decorator';
-import { CurrentUser } from '../common';
+import { CurrentUser, getClientIp } from '../common';
 import type { RequestUser } from '../common/interfaces/request-user.interface';
+import { AuthRateLimitService } from './auth-rate-limit.service';
 import { AuthService, type GoogleProfile } from './auth.service';
+import { UsersService } from '../users/users.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -60,8 +62,10 @@ export class AuthController {
 
   constructor(
     private readonly auth: AuthService,
+    private readonly authRateLimit: AuthRateLimitService,
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly users: UsersService,
   ) {
     this.isProduction = process.env.NODE_ENV === 'production';
     const domain = this.config.get<string>('COOKIE_DOMAIN')?.trim();
@@ -79,7 +83,12 @@ export class AuthController {
   @Public()
   @ApiOperation({ summary: 'Đăng ký tài khoản mới' })
   @Post('register')
-  async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
+  async register(
+    @Body() dto: RegisterDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    await this.authRateLimit.assertRegisterAllowed(getClientIp(req));
     const tokens = await this.auth.register(dto.name, dto.email, dto.password);
     this.setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
     return { success: true };
@@ -88,10 +97,24 @@ export class AuthController {
   @Public()
   @ApiOperation({ summary: 'Đăng nhập email/password' })
   @Post('login')
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
-    const tokens = await this.auth.login(dto.email, dto.password);
-    this.setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
-    return { success: true };
+  async login(
+    @Body() dto: LoginDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const ip = getClientIp(req);
+    await this.authRateLimit.assertLoginAllowed(ip, dto.email);
+    try {
+      const tokens = await this.auth.login(dto.email, dto.password);
+      await this.authRateLimit.recordLoginSuccess(ip, dto.email);
+      this.setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+      return { success: true };
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        await this.authRateLimit.recordLoginFailure(ip, dto.email);
+      }
+      throw error;
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -153,22 +176,8 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Trả thông tin user đang đăng nhập' })
   @Get('me')
-  async me(@CurrentUser() requestUser: RequestUser) {
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: requestUser.userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        image: true,
-        emailVerified: true,
-        isActive: true,
-        createdAt: true,
-        lastLoginAt: true,
-      },
-    });
-    return user;
+  me(@CurrentUser() requestUser: RequestUser) {
+    return this.users.findPublicById(requestUser.userId);
   }
 
   // ---------------------------------------------------------------------------

@@ -1,18 +1,22 @@
 /**
- * Simulate many submissions to the Core API /submissions endpoint.
+ * Stress-test POST /submissions (requires JWT cookie after login).
  *
  * Usage:
- *   node scripts/simulate-submissions.js
+ *   node scripts/stress-test.js
  *
- * This uses the public submission endpoint in this project, which currently
- * accepts `userId`, `problemId`, `mode`, `language`, and `sourceCode`.
+ * Env:
+ *   BASE_URL (default http://localhost:3000)
+ *   STRESS_EMAIL (default seed-student1@codejudge.io)
+ *   STRESS_PASSWORD (default password123)
  */
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
-const PROBLEM_ID = 'seed-problem-easy-02';
-const CONTEST_ID = 'seed-contest-spring'; // Link to Spring Open 2026 contest to show in leaderboard
-const TOTAL_SUBMISSIONS = 1000;
-const CONCURRENCY = 50; // High concurrency to simulate simultaneous submission
+const BASE_URL = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/+$/, '');
+const STRESS_EMAIL = process.env.STRESS_EMAIL || 'seed-student1@codejudge.io';
+const STRESS_PASSWORD = process.env.STRESS_PASSWORD || 'password123';
+const PROBLEM_ID = process.env.STRESS_PROBLEM_ID || 'seed-problem-easy-02';
+const CONTEST_ID = process.env.STRESS_CONTEST_ID || 'seed-contest-code-war';
+const TOTAL_SUBMISSIONS = Number(process.env.TOTAL_SUBMISSIONS || 1000);
+const CONCURRENCY = Number(process.env.CONCURRENCY || 50);
 const LANGUAGE = 'PYTHON';
 const SOURCE_CODE = `
 a = int(input())
@@ -20,23 +24,36 @@ b = int(input())
 print(max(a, b))
 `;
 
-function requestOptions(body) {
-  return {
+function collectCookieHeader(res) {
+  if (typeof res.headers.getSetCookie === 'function') {
+    const parts = res.headers.getSetCookie();
+    return parts.map((c) => c.split(';')[0].trim()).filter(Boolean).join('; ');
+  }
+  const single = res.headers.get('set-cookie');
+  if (!single) return '';
+  return single
+    .split(/,(?=[^;]+?=)/)
+    .map((c) => c.split(';')[0].trim())
+    .filter(Boolean)
+    .join('; ');
+}
+
+async function login() {
+  const res = await fetch(`${BASE_URL}/auth/login`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  };
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: STRESS_EMAIL, password: STRESS_PASSWORD }),
+  });
+  const cookie = collectCookieHeader(res);
+  if (!res.ok || !cookie.includes('accessToken')) {
+    const body = await res.text();
+    throw new Error(`Login failed (${res.status}): ${body}`);
+  }
+  return cookie;
 }
 
-function getUserId(index) {
-  return `seed-user-${index + 1}`;
-}
-
-async function submit(userId, retryCount = 0) {
+async function submit(cookie, index, retryCount = 0) {
   const payload = {
-    userId,
     problemId: PROBLEM_ID,
     contestId: CONTEST_ID,
     mode: 'ALGO',
@@ -45,26 +62,31 @@ async function submit(userId, retryCount = 0) {
   };
 
   try {
-    const res = await fetch(`${BASE_URL}/submissions`, requestOptions(payload));
+    const res = await fetch(`${BASE_URL}/submissions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: cookie,
+      },
+      body: JSON.stringify(payload),
+    });
 
     if (res.status === 429 && retryCount < 3) {
-      // Rate limited, wait and retry
-      const waitTime = Math.pow(2, retryCount) * 1000; // Exponential backoff
-      console.log(`Rate limited for user ${userId}, retrying in ${waitTime}ms...`);
+      const waitTime = Math.pow(2, retryCount) * 1000;
       await new Promise((resolve) => setTimeout(resolve, waitTime));
-      return submit(userId, retryCount + 1);
+      return submit(cookie, index, retryCount + 1);
     }
 
     const body = await res.text();
     let json;
     try {
       json = JSON.parse(body);
-    } catch (error) {
+    } catch {
       json = body;
     }
 
     return {
-      userId,
+      index,
       status: res.status,
       ok: res.ok,
       result: json,
@@ -73,13 +95,11 @@ async function submit(userId, retryCount = 0) {
   } catch (error) {
     if (retryCount < 3) {
       const waitTime = Math.pow(2, retryCount) * 1000;
-      console.log(`Network error for user ${userId}, retrying in ${waitTime}ms...`);
       await new Promise((resolve) => setTimeout(resolve, waitTime));
-      return submit(userId, retryCount + 1);
+      return submit(cookie, index, retryCount + 1);
     }
-
     return {
-      userId,
+      index,
       status: 0,
       ok: false,
       result: error.message,
@@ -89,8 +109,10 @@ async function submit(userId, retryCount = 0) {
 }
 
 async function run() {
+  console.log(`Login as ${STRESS_EMAIL} ...`);
+  const cookie = await login();
   console.log(
-    `Starting simulation: ${TOTAL_SUBMISSIONS} submissions with concurrency ${CONCURRENCY}`,
+    `Starting simulation: ${TOTAL_SUBMISSIONS} submissions (concurrency ${CONCURRENCY})`,
   );
   const startTime = Date.now();
 
@@ -98,8 +120,7 @@ async function run() {
   const results = [];
 
   for (let i = 0; i < TOTAL_SUBMISSIONS; i += 1) {
-    const userId = getUserId(i);
-    pending.push(submit(userId));
+    pending.push(submit(cookie, i));
 
     if (pending.length >= CONCURRENCY) {
       const batch = await Promise.all(pending);
@@ -114,36 +135,25 @@ async function run() {
     results.push(...batch);
   }
 
-  const endTime = Date.now();
-  const totalTime = (endTime - startTime) / 1000; // seconds
-  const requestsPerSecond = TOTAL_SUBMISSIONS / totalTime;
-
+  const totalTime = (Date.now() - startTime) / 1000;
   const successCount = results.filter((item) => item.ok).length;
   const errorCount = results.length - successCount;
-  const totalRetries = results.reduce((sum, item) => sum + (item.retries || 0), 0);
 
   console.log('\n=== RESULTS ===');
-  console.log(`Total submissions: ${TOTAL_SUBMISSIONS}`);
   console.log(`Successful: ${successCount}`);
   console.log(`Failed: ${errorCount}`);
-  console.log(`Total retries: ${totalRetries}`);
-  console.log(`Total time: ${totalTime.toFixed(2)} seconds`);
-  console.log(`Requests/second: ${requestsPerSecond.toFixed(2)}`);
-  console.log(
-    `Average time per request: ${((totalTime / TOTAL_SUBMISSIONS) * 1000).toFixed(2)} ms`,
-  );
+  console.log(`Total time: ${totalTime.toFixed(2)}s`);
+  console.log(`Requests/s: ${(TOTAL_SUBMISSIONS / totalTime).toFixed(2)}`);
 
-  console.log('\nDone');
-  console.log(`Successful: ${successCount}`);
-  console.log(`Failed: ${errorCount}`);
   if (errorCount > 0) {
     console.log('Sample failures:');
     results
       .filter((item) => !item.ok)
-      .slice(0, 10)
+      .slice(0, 5)
       .forEach((item) => {
-        console.log(item.userId, item.status, item.result);
+        console.log(item.index, item.status, item.result);
       });
+    process.exit(1);
   }
 }
 

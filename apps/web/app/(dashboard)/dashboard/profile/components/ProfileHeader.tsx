@@ -5,6 +5,7 @@ import { Camera, Check, Code2, KeyRound, MailCheck, Pencil, X } from 'lucide-rea
 import type { UserProfile } from '@/services/auth.apis';
 import { profileApi } from '@/services/profile.apis';
 import { usersApi } from '@/services/user.apis';
+import { UserAvatar } from '@/components/shared/user-avatar';
 import { useAuthStore } from '@/store/auth-store';
 import type { UserProfileStats } from '@/services/profile.apis';
 import {
@@ -28,8 +29,8 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [avatarLoadError, setAvatarLoadError] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const setUser = useAuthStore((s) => s.setUser);
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(user.name);
@@ -230,9 +231,8 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
         body: file,
       });
       if (!uploadResponse.ok) throw new Error('Failed to upload image to MinIO');
-      await usersApi.confirmAvatar(uploadData.objectKey);
-      setAvatarLoadError(false);
-      await refreshUser();
+      const updated = await usersApi.confirmAvatar(uploadData.objectKey);
+      setUser(updated);
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Failed to upload avatar');
     } finally {
@@ -253,18 +253,11 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
           <div className="relative mb-4">
             <div className="relative h-32 w-32 rounded-full bg-gradient-to-br from-primary/40 via-primary/10 to-transparent p-[3px] shadow-lg shadow-primary/20">
               <div className="relative h-full w-full overflow-hidden rounded-full border border-border/60 bg-secondary">
-                {!avatarLoadError && user.image ? (
-                  <img
-                    src={user.image}
-                    alt={user.name}
-                    className="h-full w-full object-cover"
-                    onError={() => setAvatarLoadError(true)}
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-muted text-3xl font-semibold text-foreground/80">
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <UserAvatar
+                  name={user.name}
+                  imageUrl={user.image}
+                  fallbackClassName="text-3xl"
+                />
                 {isUploading && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/45 text-xs font-medium text-white">
                     Đang tải...

@@ -37,10 +37,14 @@ export async function acceptInvite(token: string) {
   });
 }
 
-export async function searchUsers(query: string): Promise<UserSuggestion[]> {
+export async function searchUsers(
+  query: string,
+  classRoomId: string,
+): Promise<UserSuggestion[]> {
   if (!query.trim()) return [];
 
-  const res = await apiFetch<UserSuggestion[]>(`/users/search?q=${encodeURIComponent(query)}`);
+  const params = new URLSearchParams({ q: query, classRoomId });
+  const res = await apiFetch<UserSuggestion[]>(`/users/search?${params.toString()}`);
 
   return res ?? [];
 }

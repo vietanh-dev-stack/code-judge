@@ -4,10 +4,23 @@ import { CreateClassroomDto } from './dto/create-classroom.dto';
 import { UpdateClassroomDto } from './dto/update-classroom.dto';
 import { JoinClassroomDto } from './dto/join-classroom.dto';
 import { generateClassCode } from './utils/generate-class-code';
+import { StorageService } from '../storage/storage.service';
+import type { User } from '@prisma/client';
 
 @Injectable()
 export class ClassroomService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
+
+  private async mapUserAvatar<T extends Pick<User, 'image' | 'imageObjectKey'>>(
+    user: T,
+  ): Promise<Omit<T, 'imageObjectKey'> & { image: string | null }> {
+    const image = await this.storage.resolveAvatarImageUrl(user.imageObjectKey, user.image);
+    const { imageObjectKey: _key, ...rest } = user;
+    return { ...rest, image };
+  }
 
   // CREATE CLASSROOM
   async create(dto: CreateClassroomDto, userId: string) {
@@ -97,7 +110,7 @@ export class ClassroomService {
 
   // GET MY CLASSES
   async getMyClasses(userId: string) {
-    return this.prisma.classEnrollment.findMany({
+    const enrollments = await this.prisma.classEnrollment.findMany({
       where: {
         userId,
         status: 'ACTIVE',
@@ -121,6 +134,7 @@ export class ClassroomService {
                 id: true,
                 name: true,
                 image: true,
+                imageObjectKey: true,
               },
             },
             assignments: {
@@ -133,6 +147,16 @@ export class ClassroomService {
         },
       },
     });
+
+    return Promise.all(
+      enrollments.map(async (row) => ({
+        ...row,
+        classRoom: {
+          ...row.classRoom,
+          owner: await this.mapUserAvatar(row.classRoom.owner),
+        },
+      })),
+    );
   }
 
   // GET CLASS DETAIL
@@ -205,10 +229,15 @@ export class ClassroomService {
 
     const students = classroom.enrollments.filter((e) => e.role === 'MEMBER').map((e) => e.user);
 
+    const [mappedTeachers, mappedStudents] = await Promise.all([
+      Promise.all(teachers.map((u) => this.mapUserAvatar(u))),
+      Promise.all(students.map((u) => this.mapUserAvatar(u))),
+    ]);
+
     return {
       ownerId: classroom.ownerId,
-      teachers,
-      students,
+      teachers: mappedTeachers,
+      students: mappedStudents,
     };
   }
 

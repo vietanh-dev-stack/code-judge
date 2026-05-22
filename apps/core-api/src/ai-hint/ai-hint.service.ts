@@ -124,7 +124,9 @@ export class AiHintService {
 
     await this.rateLimit.assertWithinLimit(user.userId, problemId);
 
-    const problem = await this.problemsService.findById(problemId, req);
+    const problem = await this.problemsService.findById(problemId, req, {
+      contestId: submission.contestId ?? undefined,
+    });
     const hiddenIds = new Set(
       (problem.testCases ?? []).filter((tc) => tc.isHidden).map((tc) => tc.id),
     );

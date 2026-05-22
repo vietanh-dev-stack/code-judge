@@ -77,6 +77,7 @@
         <a href="#ssh">SSH từ Windows</a>
         <a class="sub" href="#ssh-key">SSH key</a>
         <a class="sub" href="#ssh-scp">SCP / WinSCP</a>
+        <a href="SSH-DELEGATE-ACCESS.html">Thêm người (SSH key) →</a>
         <a href="#vps-setup">Chuẩn bị VPS</a>
         <a href="#readiness">Sẵn sàng deploy?</a>
         <a href="#get-code">Đưa code lên VPS (SSH)</a>
@@ -234,6 +235,11 @@
           <li><strong>PuTTY:</strong> Host <code>VPS_IP</code>, port 22, SSH — đăng nhập user <code>ubuntu</code>.</li>
           <li><strong>WinSCP:</strong> SFTP, cùng host/user — dùng kéo thả file <code>.env.production</code> lên VPS (mục 5).</li>
         </ul>
+
+        <div class="callout">
+          <strong>Thêm monitor / người vận hành khác</strong> (không chia private key của bạn):
+          xem <a href="SSH-DELEGATE-ACCESS.html">SSH-DELEGATE-ACCESS.html</a> — họ tạo key riêng, gửi file <code>.pub</code>, bạn append vào <code>authorized_keys</code>.
+        </div>
       </section>
 
       <section id="vps-setup">
@@ -710,7 +716,8 @@ docker compose -f docker-compose.production.yml --env-file .env.production exec 
       </section>
 
       <footer>
-        <p>Tài liệu liên quan: <a href="UPDATE-DEPLOY.html">UPDATE-DEPLOY.html</a> ·
+        <p>Tài liệu liên quan: <a href="SSH-DELEGATE-ACCESS.html">SSH-DELEGATE-ACCESS.html</a> ·
+        <a href="UPDATE-DEPLOY.html">UPDATE-DEPLOY.html</a> ·
         <a href="DEBUG-CONTAINERS.html">DEBUG-CONTAINERS.html</a> ·
         <a href="../deploy/README.md">deploy/README.md</a> ·
         <a href="MINIO.html">MINIO.html</a></p>

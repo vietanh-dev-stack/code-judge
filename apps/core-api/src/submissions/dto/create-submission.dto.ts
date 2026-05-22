@@ -2,10 +2,13 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateSubmissionDto {
-  @ApiProperty({ example: 'clxxxxxxxxxxxxxxxxxxxxxxxx' })
+  @ApiPropertyOptional({
+    deprecated: true,
+    description: 'Ignored when JWT present — server uses authenticated user id',
+  })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  userId!: string;
+  userId?: string;
 
   @ApiProperty({ example: 'clxxxxxxxxxxxxxxxxxxxxxxxx' })
   @IsString()

@@ -651,6 +651,17 @@ function AiGoldenVerifyTab() {
 }
 
 export default function TestPage() {
+  if (process.env.NODE_ENV === 'production') {
+    return (
+      <main className={cn('mx-auto max-w-lg p-10 text-center')}>
+        <h1 className={cn('text-xl font-semibold')}>Dev tools unavailable</h1>
+        <p className={cn('mt-2 text-muted-foreground text-sm')}>
+          Trang /test chỉ bật khi chạy web ở chế độ development.
+        </p>
+      </main>
+    );
+  }
+
   const coreUrl = useMemo(() => getPublicCoreUrl().replace(/\/+$/, ''), []);
 
   const [resourceKind, setResourceKind] = useState<ResourceKind>('ai-input');

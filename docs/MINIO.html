@@ -241,8 +241,9 @@ MINIO_REGION=us-east-1
 <ul>
 <li><strong>Presigned PUT</strong> / <strong>GET</strong> qua client MinIO (mặc định TTL 900 giây nếu không chỉ định khác).</li>
 <li><strong><code>putObject</code> / <code>removeObject</code></strong> cho server-side ghi/xoá.</li>
-<li><strong><code>getObjectUrl(objectKey)</code></strong>: <code>{base}/{bucket}/{objectKey}</code> với <code>base</code> = <code>MINIO_PUBLIC_BASE_URL</code> (bỏ slash cuối) hoặc fallback <code>http(s)://{endpoint}:{port}</code> theo <code>MINIO_USE_SSL</code>.</li>
-<li>Sau khi đảm bảo bucket tồn tại, service cố gắng áp <strong>bucket policy public read cho <code>s3:GetObject</code></strong> (nếu set thất bại chỉ log cảnh báo, không chặn luồng chính).</li>
+<li><strong><code>resolveDisplayUrl</code> / <code>resolveAvatarImageUrl</code></strong>: trả presigned GET khi <code>MINIO_ALLOW_PUBLIC_READ=false</code> (mặc định production); dev có thể bật public read.</li>
+<li><strong><code>getObjectUrl(objectKey)</code></strong>: URL trực tiếp (chỉ dùng nội bộ; không persist DB khi public read tắt).</li>
+<li>Bucket policy public read chỉ áp khi <code>MINIO_ALLOW_PUBLIC_READ=true</code> (mặc định <code>false</code> trên production).</li>
 </ul>
 <h2>6. Taxonomy object key</h2>
 <p>Khớp <code>storage-key.builder.ts</code>:</p>
