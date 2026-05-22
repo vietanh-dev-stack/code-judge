@@ -59,12 +59,12 @@ export function LoginForm() {
     <div className="flex min-h-screen">
       <div className="relative flex w-full flex-col justify-center px-8 py-12 lg:w-1/2 lg:px-20 xl:px-28">
         <div className="absolute left-8 top-8 flex items-center gap-2.5 lg:left-20 xl:left-28">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900">
+          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-white">
             <svg
               className="h-5 w-5 text-white"
               fill="none"
               viewBox="0 0 24 24"
-              strokeWidth={1.5}
+              strokeWidth={2}
               stroke="currentColor"
             >
               <path
@@ -74,16 +74,14 @@ export function LoginForm() {
               />
             </svg>
           </div>
-          <Link href="/" className="text-lg font-semibold tracking-tight text-slate-900">
+          <Link href="/" className="text-lg font-semibold tracking-tight text-white">
             Code Judge
           </Link>
         </div>
 
         <div className="mx-auto w-full max-w-sm">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Login to your account
-          </h1>
-          <p className="mt-1.5 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold tracking-tight text-primary">Login to your account</h1>
+          <p className="mt-1.5 text-sm text-slate-300">
             Enter your email below to login to your account
           </p>
 
@@ -97,7 +95,7 @@ export function LoginForm() {
             <div>
               <label
                 htmlFor="login-email"
-                className="mb-1.5 block text-sm font-medium text-slate-700"
+                className="mb-1.5 block text-sm font-medium text-primary"
               >
                 Email
               </label>
@@ -114,15 +112,9 @@ export function LoginForm() {
 
             <div>
               <div className="mb-1.5 flex items-center justify-between">
-                <label htmlFor="login-password" className="text-sm font-medium text-slate-700">
+                <label htmlFor="login-password" className="text-sm font-medium text-primary">
                   Password
                 </label>
-                <button
-                  type="button"
-                  className="text-sm font-medium text-slate-500 underline-offset-4 hover:text-slate-900 hover:underline cursor-pointer"
-                >
-                  Forgot your password?
-                </button>
               </div>
               <input
                 id="login-password"
@@ -138,7 +130,7 @@ export function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition-colors cursor-pointer hover:bg-slate-800 active:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors cursor-pointer hover:bg-primary/80 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? (
                 <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -198,7 +190,7 @@ export function LoginForm() {
             Don&apos;t have an account?{' '}
             <Link
               href="/register"
-              className="font-medium text-slate-900 underline-offset-4 hover:underline"
+              className="font-medium text-primary underline-offset-4 hover:underline"
             >
               Sign up
             </Link>

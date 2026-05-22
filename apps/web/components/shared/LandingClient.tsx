@@ -5,30 +5,69 @@ import Link from 'next/link';
 import { Button } from '../ui/button';
 
 export default function LandingClient() {
+  const features = [
+    {
+      icon: Sparkles,
+      title: 'AI-Powered Problem Creation',
+      description:
+        'Upload problem statements and let AI generate comprehensive test cases automatically. Save hours on problem preparation.',
+    },
+    {
+      icon: Zap,
+      title: 'Instant Auto-Judging',
+      description:
+        'Secure sandboxed execution with configurable resource limits. Get results in seconds, not hours.',
+    },
+    {
+      icon: Users,
+      title: 'Classroom Management',
+      description:
+        'Create classes, invite students with one-click links, and manage assignments seamlessly.',
+    },
+    {
+      icon: Code2,
+      title: 'Multi-Language Support',
+      description:
+        'Support for C++, Java, Python, JavaScript and more. With syntax highlighting and advanced editor features.',
+    },
+    {
+      icon: BarChart3,
+      title: 'Detailed Analytics',
+      description:
+        'Track student progress, analyze problem difficulty, and export comprehensive reports.',
+    },
+    {
+      icon: Shield,
+      title: 'Plagiarism Detection',
+      description:
+        'AST-based code similarity detection to maintain academic integrity in your contests.',
+    },
+  ];
+
   return (
     <>
       {/* Hero Section */}
       <section className="relative py-20 sm:py-32 lg:py-40 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-secondary/30 to-transparent"></div>
+        <div className="absolute inset-0 bg-muted/20"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="space-y-8">
             <div className="inline-block">
-              <span className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="text-sm font-semibold uppercase tracking-wider border border-primary rounded-full text-primary p-1">
                 The Future of Programming Education
               </span>
             </div>
 
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-tight max-w-4xl mx-auto">
-              Master Competitive Programming with AI
+              Master Competitive <span className="text-primary">Programming with AI</span>
             </h1>
 
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg sm:text-md text-primary/80 max-w-2xl mx-auto leading-relaxed">
               Create intelligent contests, practice with auto-generated test cases, and compete with
               programmers worldwide. All in one powerful platform.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <Button size="lg" asChild className="text-base">
+              <Button size="lg" asChild className="text-base hover:scale-105 transition-transform">
                 <Link href="/register">
                   Get Started Free <ArrowRight className="w-4 h-4 ml-2" />
                 </Link>
@@ -42,96 +81,46 @@ export default function LandingClient() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 sm:py-32 border-t border-border">
+      <section id="features" className="py-20 sm:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold mb-4">Powerful Features</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg text-primary/80 max-w-2xl mx-auto">
               Everything you need to teach, learn, and compete in programming
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="p-8 border border-border rounded-lg hover:border-primary transition hover:shadow-lg">
-              <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mb-4">
-                <Sparkles className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">AI-Powered Problem Creation</h3>
-              <p className="text-muted-foreground">
-                Upload problem statements and let AI generate comprehensive test cases
-                automatically. Save hours on problem preparation.
-              </p>
-            </div>
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
 
-            {/* Feature 2 */}
-            <div className="p-8 border border-border rounded-lg hover:border-primary transition hover:shadow-lg">
-              <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mb-4">
-                <Zap className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Instant Auto-Judging</h3>
-              <p className="text-muted-foreground">
-                Secure sandboxed execution with configurable resource limits. Get results in
-                seconds, not hours.
-              </p>
-            </div>
+              return (
+                <div
+                  key={index}
+                  className="p-8 border border-border rounded-lg hover:border-primary transition hover:shadow-lg"
+                >
+                  <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mb-4">
+                    <Icon className="w-6 h-6 text-primary-foreground" />
+                  </div>
 
-            {/* Feature 3 */}
-            <div className="p-8 border border-border rounded-lg hover:border-primary transition hover:shadow-lg">
-              <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mb-4">
-                <Users className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Classroom Management</h3>
-              <p className="text-muted-foreground">
-                Create classes, invite students with one-click links, and manage assignments
-                seamlessly.
-              </p>
-            </div>
+                  <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
 
-            {/* Feature 4 */}
-            <div className="p-8 border border-border rounded-lg hover:border-primary transition hover:shadow-lg">
-              <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mb-4">
-                <Code2 className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Multi-Language Support</h3>
-              <p className="text-muted-foreground">
-                Support for C++, Java, Python, JavaScript and more. With syntax highlighting and
-                advanced editor features.
-              </p>
-            </div>
-
-            {/* Feature 5 */}
-            <div className="p-8 border border-border rounded-lg hover:border-primary transition hover:shadow-lg">
-              <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mb-4">
-                <BarChart3 className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Detailed Analytics</h3>
-              <p className="text-muted-foreground">
-                Track student progress, analyze problem difficulty, and export comprehensive
-                reports.
-              </p>
-            </div>
-
-            {/* Feature 6 */}
-            <div className="p-8 border border-border rounded-lg hover:border-primary transition hover:shadow-lg">
-              <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mb-4">
-                <Shield className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Plagiarism Detection</h3>
-              <p className="text-muted-foreground">
-                AST-based code similarity detection to maintain academic integrity in your contests.
-              </p>
-            </div>
+                  <p className="text-muted-foreground">{feature.description}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* For Educators Section */}
-      <section id="for-educators" className="py-20 sm:py-32 border-t border-border bg-secondary/50">
+      <section id="for-educators" className="py-20 sm:py-32  bg-muted/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
-              <h2 className="text-4xl sm:text-5xl font-bold">Built for Educators</h2>
+              <h2 className="text-4xl sm:text-5xl font-bold">
+                Built for <span className="text-primary">Educators</span>
+              </h2>
               <p className="text-lg text-muted-foreground">
                 Focus on teaching, not grading. CodeJudge handles the rest.
               </p>
@@ -172,21 +161,86 @@ export default function LandingClient() {
                 </Link>
               </Button>
             </div>
-            <div className="hidden md:flex items-center justify-center">
-              <div className="bg-primary rounded-lg p-1 shadow-2xl">
-                <div className="bg-background rounded p-8 w-full">
-                  <div className="space-y-4">
-                    <div className="h-3 bg-muted w-2/3 rounded"></div>
-                    <div className="h-3 bg-muted w-1/2 rounded"></div>
-                    <div className="space-y-2 mt-6">
-                      <div className="flex gap-2">
-                        <div className="h-2 bg-muted w-1/4 rounded"></div>
-                        <div className="h-2 bg-muted w-1/3 rounded"></div>
-                      </div>
-                      <div className="flex gap-2">
-                        <div className="h-2 bg-muted w-1/3 rounded"></div>
-                        <div className="h-2 bg-muted w-1/4 rounded"></div>
-                      </div>
+            <div className="relative hidden md:block overflow-hidden rounded-[32px] bg-muted/1 p-2 shadow-2xl order-1">
+              <div className="relative">
+                <div className="rounded-3xl border border-slate-800 bg-[#0B1120] shadow-2xl overflow-hidden">
+                  {/* Top Bar */}
+                  <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-800 bg-[#0F172A]">
+                    <div className="w-3 h-3 rounded-full bg-red-500" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                    <div className="w-3 h-3 rounded-full bg-green-500" />
+
+                    <span className="ml-4 text-sm text-slate-400">leaderboard.ts</span>
+                  </div>
+
+                  {/* Code */}
+                  <div className="p-6 font-mono text-sm leading-7">
+                    <div>
+                      <span className="text-purple-400">async</span>{' '}
+                      <span className="text-purple-400">function</span>{' '}
+                      <span className="text-blue-400">fetchLeaderboard</span>
+                      <span className="text-white">()</span>{' '}
+                      <span className="text-white">{'{'}</span>
+                    </div>
+
+                    <div className="pl-6">
+                      <span className="text-purple-400">try</span>{' '}
+                      <span className="text-white">{'{'}</span>
+                    </div>
+
+                    <div className="pl-12">
+                      <span className="text-purple-400">const</span>{' '}
+                      <span className="text-blue-300">response</span>{' '}
+                      <span className="text-white">=</span>{' '}
+                      <span className="text-purple-400">await</span>{' '}
+                      <span className="text-green-400">fetch</span>
+                      <span className="text-white">(</span>
+                      <span className="text-orange-400">'/api/rankings'</span>
+                      <span className="text-white">)</span>
+                    </div>
+
+                    <div className="pl-12 mt-2">
+                      <span className="text-purple-400">const</span>{' '}
+                      <span className="text-blue-300">data</span>{' '}
+                      <span className="text-white">=</span>{' '}
+                      <span className="text-purple-400">await</span> response.json()
+                    </div>
+
+                    <div className="pl-12 mt-4">
+                      <span className="text-purple-400">return</span> data.users
+                      <span className="text-white">.</span>
+                      <span className="text-green-400">sort</span>
+                      <span className="text-white">((</span>a, b
+                      <span className="text-white">)</span>{' '}
+                      <span className="text-white">=&gt;</span> b.score - a.score)
+                    </div>
+
+                    <div className="pl-6 mt-4">
+                      <span className="text-white">{'}'}</span>{' '}
+                      <span className="text-purple-400">catch</span>{' '}
+                      <span className="text-white">(error)</span>{' '}
+                      <span className="text-white">{'{'}</span>
+                    </div>
+
+                    <div className="pl-12">
+                      console
+                      <span className="text-white">.</span>
+                      <span className="text-red-400">error</span>
+                      <span className="text-white">(</span>
+                      <span className="text-orange-400">'Failed to load leaderboard'</span>, error
+                      <span className="text-white">)</span>
+                    </div>
+
+                    <div className="pl-12 mt-2">
+                      <span className="text-purple-400">return</span> []
+                    </div>
+
+                    <div className="pl-6">
+                      <span className="text-white">{'}'}</span>
+                    </div>
+
+                    <div>
+                      <span className="text-white">{'}'}</span>
                     </div>
                   </div>
                 </div>
@@ -197,31 +251,70 @@ export default function LandingClient() {
       </section>
 
       {/* For Students Section */}
-      <section id="for-students" className="py-20 sm:py-32 border-t border-border">
+      <section id="for-students" className="py-20 sm:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="hidden md:flex items-center justify-center order-2">
-              <div className="bg-secondary rounded-lg p-1 shadow-2xl">
-                <div className="bg-background rounded p-8 w-full">
-                  <div className="space-y-4">
-                    <div className="h-3 bg-muted w-2/3 rounded"></div>
-                    <div className="h-3 bg-muted w-1/2 rounded"></div>
-                    <div className="space-y-2 mt-6">
-                      <div className="flex gap-2">
-                        <div className="h-2 bg-muted w-1/4 rounded"></div>
-                        <div className="h-2 bg-muted w-1/3 rounded"></div>
-                      </div>
-                      <div className="flex gap-2">
-                        <div className="h-2 bg-muted w-1/3 rounded"></div>
-                        <div className="h-2 bg-muted w-1/4 rounded"></div>
-                      </div>
+            <div className="relative hidden md:block overflow-hidden rounded-[32px] bg-[#020b1d] p-2 shadow-2xl order-1">
+              <div className="relative">
+                <div className="rounded-3xl border border-slate-800 bg-[#0B1120] shadow-2xl overflow-hidden">
+                  {/* Top Bar */}
+                  <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-800 bg-[#0F172A]">
+                    <div className="w-3 h-3 rounded-full bg-red-500" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                    <div className="w-3 h-3 rounded-full bg-green-500" />
+
+                    <span className="ml-4 text-sm text-slate-400">solution.ts</span>
+                  </div>
+
+                  {/* Code */}
+                  <div className="p-6 font-mono text-sm leading-7">
+                    <div>
+                      <span className="text-purple-400">const</span>{' '}
+                      <span className="text-blue-400">twoSum</span>{' '}
+                      <span className="text-white">=</span>{' '}
+                      <span className="text-orange-400">(nums, target)</span>{' '}
+                      <span className="text-white">=&gt;</span>{' '}
+                      <span className="text-white">{'{'}</span>
                     </div>
+
+                    <div className="pl-6">
+                      <span className="text-purple-400">const</span>{' '}
+                      <span className="text-blue-300">map</span>{' '}
+                      <span className="text-white">=</span>{' '}
+                      <span className="text-purple-400">new</span>{' '}
+                      <span className="text-green-400">Map</span>()
+                    </div>
+
+                    <div className="pl-6 mt-4">
+                      <span className="text-purple-400">for</span>{' '}
+                      <span className="text-white">(</span>
+                      <span className="text-purple-400">let</span> i = 0; i &lt; nums.length; i++
+                      <span className="text-white">)</span>{' '}
+                      <span className="text-white">{'{'}</span>
+                    </div>
+
+                    <div className="pl-12">
+                      <span className="text-purple-400">const</span> diff = target - nums[i]
+                    </div>
+
+                    <div className="pl-12 mt-2">
+                      <span className="text-purple-400">if</span> (map.has(diff)){' '}
+                      <span className="text-purple-400">return</span> [map.get(diff), i]
+                    </div>
+
+                    <div className="pl-12 mt-2">map.set(nums[i], i)</div>
+
+                    <div className="pl-6">{'}'}</div>
+
+                    <div>{'}'}</div>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="space-y-6 order-1">
-              <h2 className="text-4xl sm:text-5xl font-bold">Perfect for Students</h2>
+            <div className="space-y-6 order-2">
+              <h2 className="text-4xl sm:text-5xl font-bold">
+                Perfect for <span className="text-primary">Students</span>
+              </h2>
               <p className="text-lg text-muted-foreground">
                 Practice, compete, and master programming
               </p>
@@ -276,14 +369,19 @@ export default function LandingClient() {
             Start building smarter contests and practice problems today.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="secondary" asChild>
+            <Button
+              size="lg"
+              variant="outline"
+              className="bg-[#0F172A] hover:bg-[#0F172A] hover:text-white hover:scale-105 transition-transform"
+              asChild
+            >
               <Link href="/register">Get Started Free</Link>
             </Button>
             <Button
               size="lg"
               variant="outline"
               asChild
-              className="border-primary-foreground text-foreground hover:bg-primary-foreground hover:text-primary"
+              className="bg-primary-foreground text-primary hover:scale-105 hover:bg-white hover:text-primary transition-transform "
             >
               <Link href="#features">Learn More</Link>
             </Button>
