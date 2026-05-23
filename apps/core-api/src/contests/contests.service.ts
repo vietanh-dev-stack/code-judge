@@ -10,15 +10,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateContestDto } from './dto/create-contest.dto';
 import { UpdateContestDto } from './dto/update-contest.dto';
 
-import { MailerService } from '../mail/mail.service';
-import { ConfigService } from '@nestjs/config';
-
 @Injectable()
 export class ContestsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly mailerService: MailerService,
-    private readonly configService: ConfigService,
   ) {}
 
   async create(dto: CreateContestDto, creatorId: string, isAdmin = false) {
@@ -78,7 +73,7 @@ export class ContestsService {
       });
 
       if (dto.classRoomId) {
-        const assignment = await tx.classAssignment.create({
+        await tx.classAssignment.create({
           data: {
             classRoomId: dto.classRoomId,
             title: contest.title,
@@ -87,37 +82,7 @@ export class ContestsService {
             publishedAt: new Date(),
             dueAt: new Date(dto.endAt),
           },
-          include: {
-            classRoom: {
-              include: {
-                enrollments: {
-                  where: { status: 'ACTIVE', role: 'MEMBER' },
-                  include: { user: { select: { email: true } } },
-                },
-              },
-            },
-          },
         });
-
-        // Send email notification (async)
-        const memberEmails = assignment.classRoom.enrollments
-          .map((e: any) => e.user.email)
-          .filter((email: string | null): email is string => !!email);
-
-        if (memberEmails.length > 0) {
-          const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3001';
-          this.mailerService
-            .sendAssignmentNotification({
-              to: memberEmails,
-              classroomName: assignment.classRoom.name,
-              type: 'contest',
-              title: contest.title,
-              description: contest.description ?? undefined,
-              dueAt: new Date(dto.endAt).toLocaleString(),
-              url: `${frontendUrl}/dashboard/${dto.classRoomId}/contests`,
-            })
-            .catch((err) => console.error('Failed to send contest notification emails', err));
-        }
       }
 
       return contest;
