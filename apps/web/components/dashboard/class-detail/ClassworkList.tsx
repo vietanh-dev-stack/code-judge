@@ -96,7 +96,7 @@ export default function ClassworkList({
           </Link>
         )}
 
-        <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-sm w-full max-w-md">
+        <div className="flex items-center gap-2 bg-slate-900 px-4 py-2 rounded-xl border border-gray-900 shadow-sm w-full max-w-md">
           <Search className="w-4 h-4 text-gray-400" />
           <Input
             placeholder="Search assignments..."
