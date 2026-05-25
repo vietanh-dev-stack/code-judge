@@ -207,6 +207,68 @@ body {
   display: none;
 }
 .no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* =========================
+ * CUSTOM SCROLLBAR (hover to reveal)
+ * ========================= */
+
+/* Firefox: hidden until hover */
+.custom-scrollbar {
+  scrollbar-width: none;
+  scrollbar-gutter: stable;
+}
+
+.custom-scrollbar.is-hovered {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+
+/* WebKit: hidden until hover */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.custom-scrollbar.is-hovered::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 999px;
+  margin: 4px 0;
+}
+
+.custom-scrollbar.is-hovered::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.28);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.custom-scrollbar.is-hovered::-webkit-scrollbar-thumb:hover {
+  background: rgba(249, 115, 22, 0.65);
+  background-clip: content-box;
+}
+
+.custom-scrollbar.is-hovered::-webkit-scrollbar-thumb:active {
+  background: rgba(249, 115, 22, 0.9);
+  background-clip: content-box;
+}
+
+/* Sidebar nav: dark surface, primary accent on hover */
+.sidebar-scrollbar.is-hovered {
+  scrollbar-color: rgba(249, 115, 22, 0.45) rgba(15, 23, 42, 0.6);
+}
+
+.sidebar-scrollbar.is-hovered::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.45);
+}
+
+.sidebar-scrollbar.is-hovered::-webkit-scrollbar-thumb:hover {
+  background: rgba(249, 115, 22, 0.7);
 }

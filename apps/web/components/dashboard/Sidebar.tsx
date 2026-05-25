@@ -16,10 +16,9 @@ import {
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 import { useSidebarStore } from '@/store/sidebar-store';
-import { useAuthStore } from '@/store/auth-store';
 import { useClassroomStore } from '@/store/classroom-store';
 import Link from 'next/link';
-import { Button } from '../ui/button';
+import { useScrollbarHover } from '@/hooks/useScrollbarHandle';
 
 const menuItems = [
   { icon: Home, label: 'Classroom', path: '/dashboard' },
@@ -28,11 +27,10 @@ const menuItems = [
   { icon: Trophy, label: 'Contests', path: '/dashboard/contests' },
 ];
 
-const adminMenuItems = [{ icon: Settings, label: 'Admin Panel', path: '/dashboard/admin' }];
-
 export default function Sidebar() {
   const pathname = usePathname();
   const isOpen = useSidebarStore((state) => state.isOpen);
+  const ref = useScrollbarHover();
 
   const [isTeachingExpanded, setIsTeachingExpanded] = useState(true);
   const [isEnrolledExpanded, setIsEnrolledExpanded] = useState(true);
@@ -114,7 +112,10 @@ export default function Sidebar() {
         isOpen ? 'w-64' : 'w-[72px] hover:w-64',
       )}
     >
-      <div className="flex-1 flex flex-col gap-2 p-3 overflow-y-auto overflow-x-hidden">
+      <div
+        ref={ref}
+        className="custom-scrollbar sidebar-scrollbar flex-1 min-h-0 flex flex-col gap-2 p-3 overflow-y-auto overflow-x-hidden"
+      >
         {/* MAIN MENU */}
         {menuItems.map((item, index) => renderItem(item, index))}
 
