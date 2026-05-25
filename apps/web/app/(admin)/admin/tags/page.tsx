@@ -134,34 +134,34 @@ export default function AdminTagsPage() {
     <div className="p-8 space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Tags Management</h1>
-          <p className="text-slate-500 mt-1">Manage problem classification tags</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Tags Management</h1>
+          <p className="text-muted-foreground mt-1">Manage problem classification tags</p>
         </div>
         <Button
           onClick={openCreateDialog}
-          className="bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all hover:scale-105"
+          className="bg-primary hover:bg-primary/95 text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105"
         >
           <Plus className="w-4 h-4 mr-2" />
           New Tag
         </Button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+      <div className="bg-card rounded-2xl border border-border shadow-md overflow-hidden">
+        <div className="p-4 border-b border-border bg-muted/20">
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search tags by name or slug..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 bg-white border-slate-200 focus:ring-indigo-500"
+              className="pl-10 bg-background border-border focus:ring-primary"
             />
           </div>
         </div>
 
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
+            <TableRow className="bg-muted/10 hover:bg-muted/10">
               <TableHead>Tag Name</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead>Created At</TableHead>
@@ -172,30 +172,30 @@ export default function AdminTagsPage() {
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i} className="animate-pulse">
-                  <TableCell colSpan={4} className="h-16 bg-slate-50/20" />
+                  <TableCell colSpan={4} className="h-16 bg-muted/10" />
                 </TableRow>
               ))
             ) : filteredTags.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="h-40 text-center text-slate-500">
+                <TableCell colSpan={4} className="h-40 text-center text-muted-foreground">
                   <div className="flex flex-col items-center gap-2">
-                    <TagIcon className="w-8 h-8 text-slate-300" />
+                    <TagIcon className="w-8 h-8 text-muted-foreground/50" />
                     <p>No tags found</p>
                   </div>
                 </TableCell>
               </TableRow>
             ) : (
               filteredTags.map((tag) => (
-                <TableRow key={tag.id} className="hover:bg-slate-50/50 transition-colors">
-                  <TableCell className="font-semibold text-slate-900">{tag.name}</TableCell>
-                  <TableCell className="font-mono text-xs text-slate-500">{tag.slug}</TableCell>
-                  <TableCell className="text-slate-500 text-sm">
+                <TableRow key={tag.id} className="hover:bg-muted/5 transition-colors">
+                  <TableCell className="font-semibold text-foreground">{tag.name}</TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">{tag.slug}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
                     {new Date(tag.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -245,7 +245,7 @@ export default function AdminTagsPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="slug">
-                  Slug <span className="text-xs text-slate-400 font-normal">(Optional)</span>
+                  Slug <span className="text-xs text-muted-foreground font-normal">(Optional)</span>
                 </Label>
                 <Input
                   id="slug"
@@ -253,7 +253,7 @@ export default function AdminTagsPage() {
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                 />
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-muted-foreground">
                   Leave empty to automatically generate from tag name. Must be lowercase,
                   alphanumeric, and unique.
                 </p>

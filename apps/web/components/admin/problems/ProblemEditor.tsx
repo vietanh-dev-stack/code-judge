@@ -139,8 +139,8 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
   if (initialLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-slate-500 font-medium">Loading problem details...</p>
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-muted-foreground font-medium">Loading problem details...</p>
       </div>
     );
   }
@@ -161,7 +161,7 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
             <h1 className="text-3xl font-bold tracking-tight">
               {problemId ? 'Edit Problem' : 'New Problem'}
             </h1>
-            <p className="text-slate-500">
+            <p className="text-muted-foreground">
               {problemId
                 ? 'Update your coding challenge details'
                 : 'Create a new challenge for the platform'}
@@ -172,7 +172,7 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
           <Button
             onClick={handleSave}
             disabled={loading}
-            className="bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 min-w-[140px]"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 min-w-[140px]"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -188,8 +188,8 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          <Card className="border-slate-200 shadow-sm overflow-hidden">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+          <Card className="border-border shadow-md overflow-hidden bg-card">
+            <CardHeader className="bg-muted/10 border-b border-border">
               <CardTitle className="text-lg">Content</CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
@@ -202,7 +202,7 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   placeholder="Problem name..."
-                  className="h-11 rounded-lg border-slate-200 focus:ring-indigo-500"
+                  className="h-11 rounded-lg border-border focus:ring-primary bg-background"
                 />
               </div>
 
@@ -215,7 +215,7 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Short summary..."
-                  className="min-h-[80px] rounded-lg border-slate-200 focus:ring-indigo-500 resize-none"
+                  className="min-h-[80px] rounded-lg border-border focus:ring-primary bg-background resize-none"
                 />
               </div>
 
@@ -228,14 +228,14 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                   value={formData.statementMd}
                   onChange={(e) => setFormData({ ...formData, statementMd: e.target.value })}
                   placeholder="Detailed instructions..."
-                  className="min-h-[300px] rounded-lg border-slate-200 focus:ring-indigo-500 font-mono text-sm"
+                  className="min-h-[300px] rounded-lg border-border focus:ring-primary bg-background font-mono text-sm"
                 />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 shadow-sm overflow-hidden">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100 flex flex-row items-center justify-between">
+          <Card className="border-border shadow-md overflow-hidden bg-card">
+            <CardHeader className="bg-muted/10 border-b border-border flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-lg">Test Cases</CardTitle>
                 <CardDescription>Configure validation tests</CardDescription>
@@ -254,7 +254,7 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
             <CardContent className="p-6">
               <div className="space-y-4">
                 {formData.testCases?.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 text-slate-400">
+                  <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-border bg-muted/5 rounded-xl text-muted-foreground">
                     <Beaker className="w-12 h-12 mb-2 opacity-20" />
                     <p>No test cases defined yet</p>
                   </div>
@@ -262,21 +262,21 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                   formData.testCases?.map((tc, index) => (
                     <div
                       key={index}
-                      className="border border-slate-100 rounded-xl p-5 bg-slate-50/30 space-y-4"
+                      className="border border-border rounded-xl p-5 bg-muted/10 space-y-4"
                     >
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold text-slate-400 uppercase">
+                          <Label className="text-xs font-bold text-muted-foreground uppercase">
                             Input
                           </Label>
                           <Textarea
                             value={tc.input}
                             onChange={(e) => updateTestCase(index, 'input', e.target.value)}
-                            className="min-h-[80px] rounded-lg border-slate-200 bg-white font-mono text-xs"
+                            className="min-h-[80px] rounded-lg border-border bg-background font-mono text-xs"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold text-slate-400 uppercase">
+                          <Label className="text-xs font-bold text-muted-foreground uppercase">
                             Output
                           </Label>
                           <Textarea
@@ -284,11 +284,11 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                             onChange={(e) =>
                               updateTestCase(index, 'expectedOutput', e.target.value)
                             }
-                            className="min-h-[80px] rounded-lg border-slate-200 bg-white font-mono text-xs"
+                            className="min-h-[80px] rounded-lg border-border bg-background font-mono text-xs"
                           />
                         </div>
                       </div>
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                      <div className="flex items-center justify-between pt-2 border-t border-border">
                         <div className="flex items-center gap-6">
                           <div className="flex items-center gap-2">
                             <Switch
@@ -302,14 +302,14 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                             </Label>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Label className="text-xs font-bold text-slate-400">Weight</Label>
+                            <Label className="text-xs font-bold text-muted-foreground">Weight</Label>
                             <Input
                               type="number"
                               value={tc.weight}
                               onChange={(e) =>
                                 updateTestCase(index, 'weight', Number(e.target.value))
                               }
-                              className="w-16 h-8 rounded-lg text-center font-bold"
+                              className="w-16 h-8 rounded-lg text-center font-bold bg-background border-border"
                             />
                           </div>
                         </div>
@@ -317,7 +317,7 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                           variant="ghost"
                           size="sm"
                           onClick={() => removeTestCase(index)}
-                          className="text-rose-500 hover:bg-rose-50"
+                          className="text-rose-500 hover:bg-rose-500/10"
                         >
                           <Trash2 className="w-4 h-4 mr-1.5" />
                           Remove
@@ -332,8 +332,8 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
         </div>
 
         <div className="space-y-8">
-          <Card className="border-slate-200 shadow-sm overflow-hidden sticky top-24">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+          <Card className="border-border shadow-md overflow-hidden bg-card sticky top-24">
+            <CardHeader className="bg-muted/10 border-b border-border">
               <CardTitle className="text-lg">Settings</CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
@@ -344,7 +344,7 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                     value={formData.difficulty}
                     onValueChange={(value: any) => setFormData({ ...formData, difficulty: value })}
                   >
-                    <SelectTrigger className="rounded-lg">
+                    <SelectTrigger className="rounded-lg bg-background border-border">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -357,7 +357,7 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-1">
                       <Clock className="w-3 h-3" /> Time (ms)
                     </Label>
                     <Input
@@ -366,11 +366,11 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                       onChange={(e) =>
                         setFormData({ ...formData, timeLimitMs: Number(e.target.value) })
                       }
-                      className="rounded-lg font-bold"
+                      className="rounded-lg font-bold bg-background border-border"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-1">
                       <Database className="w-3 h-3" /> Mem (MB)
                     </Label>
                     <Input
@@ -379,15 +379,15 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                       onChange={(e) =>
                         setFormData({ ...formData, memoryLimitMb: Number(e.target.value) })
                       }
-                      className="rounded-lg font-bold"
+                      className="rounded-lg font-bold bg-background border-border"
                     />
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                 <div className="pt-4 border-t border-border flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label className="text-sm font-semibold">Published</Label>
-                    <p className="text-xs text-slate-500">Live status</p>
+                    <p className="text-xs text-muted-foreground">Live status</p>
                   </div>
                   <Switch
                     checked={formData.isPublished}
@@ -397,7 +397,7 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                   />
                 </div>
 
-                <div className="pt-4 border-t border-slate-100 space-y-3">
+                <div className="pt-4 border-t border-border space-y-3">
                   <ProblemTagPicker
                     value={formData.tagIds || []}
                     onChange={(ids) => setFormData({ ...formData, tagIds: ids })}
@@ -407,9 +407,9 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                   />
                 </div>
 
-                <div className="pt-4 border-t border-slate-100 space-y-3">
+                <div className="pt-4 border-t border-border space-y-3">
                   <Label className="text-sm font-semibold flex items-center gap-2">
-                    <Languages className="w-4 h-4 text-slate-400" /> Languages
+                    <Languages className="w-4 h-4 text-muted-foreground" /> Languages
                   </Label>
                   <div className="flex flex-wrap gap-1.5">
                     {SUPPORTED_LANGUAGES.map((lang) => (

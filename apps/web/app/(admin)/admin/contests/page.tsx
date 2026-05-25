@@ -109,10 +109,10 @@ export default function AdminContestsPage() {
     <div className="p-8 space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Contests Management</h1>
-          <p className="text-slate-500 mt-1">Schedule and monitor programming competitions</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Contests Management</h1>
+          <p className="text-muted-foreground mt-1">Schedule and monitor programming competitions</p>
         </div>
-        <Button asChild className="bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all hover:scale-105">
+        <Button asChild className="bg-primary hover:bg-primary/95 text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105">
           <Link href="/admin/contests/create">
             <Plus className="w-4 h-4 mr-2" />
             New Contest
@@ -120,16 +120,16 @@ export default function AdminContestsPage() {
         </Button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+      <div className="bg-card rounded-2xl border border-border shadow-md overflow-hidden">
+        <div className="p-4 border-b border-border bg-muted/20">
           <form onSubmit={handleSearch} className="flex gap-2 max-w-md">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Search contests..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 bg-white border-slate-200 focus:ring-indigo-500"
+                className="pl-10 bg-background border-border focus:ring-primary"
               />
             </div>
             <Button type="submit" variant="secondary">Search</Button>
@@ -138,7 +138,7 @@ export default function AdminContestsPage() {
 
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
+            <TableRow className="bg-muted/10 hover:bg-muted/10">
               <TableHead className="w-[300px]">Contest</TableHead>
               <TableHead>Timeline</TableHead>
               <TableHead>Status</TableHead>
@@ -150,37 +150,37 @@ export default function AdminContestsPage() {
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i} className="animate-pulse">
-                  <TableCell colSpan={5} className="h-16 bg-slate-50/20" />
+                  <TableCell colSpan={5} className="h-16 bg-muted/10" />
                 </TableRow>
               ))
             ) : contests.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-40 text-center text-slate-500">
+                <TableCell colSpan={5} className="h-40 text-center text-muted-foreground">
                   <div className="flex flex-col items-center gap-2">
-                    <Trophy className="w-8 h-8 text-slate-300" />
+                    <Trophy className="w-8 h-8 text-muted-foreground/50" />
                     <p>No contests found</p>
                   </div>
                 </TableCell>
               </TableRow>
             ) : (
               contests.map((contest) => (
-                <TableRow key={contest.id} className="hover:bg-slate-50/50 transition-colors">
+                <TableRow key={contest.id} className="hover:bg-muted/5 transition-colors">
                   <TableCell className="font-medium">
                     <div className="flex flex-col">
-                      <span className="text-slate-900">{contest.title}</span>
-                      <span className="text-xs text-slate-400 font-normal">
+                      <span className="text-foreground">{contest.title}</span>
+                      <span className="text-xs text-muted-foreground font-normal">
                         {contest.slug}
                       </span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col text-sm text-slate-600 gap-1">
+                    <div className="flex flex-col text-sm text-muted-foreground gap-1">
                       <div className="flex items-center gap-2">
-                        <Calendar className="w-3 h-3 text-slate-400" />
+                        <Calendar className="w-3 h-3 text-muted-foreground" />
                         <span>{format(new Date(contest.startAt), 'MMM d, h:mm a')}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Clock className="w-3 h-3 text-slate-400" />
+                        <Clock className="w-3 h-3 text-muted-foreground" />
                         <span>Duration: {Math.round((new Date(contest.endAt).getTime() - new Date(contest.startAt).getTime()) / 60000)}m</span>
                       </div>
                     </div>
@@ -189,14 +189,14 @@ export default function AdminContestsPage() {
                     {getStatusBadge(contest.status)}
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm text-slate-600">
+                    <div className="text-sm text-muted-foreground">
                       {(contest as any).createdBy?.name || 'System'}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>

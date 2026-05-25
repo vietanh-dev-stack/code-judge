@@ -93,7 +93,7 @@ export function TopProblems({ mostAttemptedProblems, hardestProblems }: TopProbl
                     <span className="text-3xs text-muted-foreground uppercase font-medium">AC</span>
                   </div>
                   <div className="w-[80px] text-right">
-                    <div className="flex items-center justify-end gap-1 text-indigo-600 dark:text-indigo-400 font-bold text-sm">
+                    <div className="flex items-center justify-end gap-1 text-primary font-bold text-sm">
                       <Percent className="h-3 w-3" />
                       {prob.acRate}%
                     </div>

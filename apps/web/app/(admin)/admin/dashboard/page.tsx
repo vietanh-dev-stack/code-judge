@@ -53,19 +53,19 @@ export default function DashboardPage() {
 
   if (isLoading || !analytics) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <RefreshCw className="h-10 w-10 text-indigo-600 animate-spin" />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 bg-background text-foreground">
+        <RefreshCw className="h-10 w-10 text-primary animate-spin" />
         <p className="text-sm font-medium text-muted-foreground animate-pulse">Loading system dashboard analytics...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-8 p-6 md:p-8 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-8 p-6 md:p-8 max-w-7xl mx-auto bg-background text-foreground">
       {/* 1. Header Section */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-50">
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
             System Analytics
           </h1>
           <p className="text-sm text-muted-foreground mt-1">

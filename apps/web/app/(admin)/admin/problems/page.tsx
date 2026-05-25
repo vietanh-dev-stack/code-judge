@@ -89,13 +89,13 @@ export default function AdminProblemsPage() {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'EASY':
-        return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
       case 'MEDIUM':
-        return 'bg-amber-100 text-amber-700 border-amber-200';
+        return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
       case 'HARD':
-        return 'bg-rose-100 text-rose-700 border-rose-200';
+        return 'bg-rose-500/10 text-rose-500 border-rose-500/20';
       default:
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+        return 'bg-muted text-muted-foreground border-border';
     }
   };
 
@@ -103,12 +103,12 @@ export default function AdminProblemsPage() {
     <div className="p-8 space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Problems Management</h1>
-          <p className="text-slate-500 mt-1">Manage public and private coding challenges</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Problems Management</h1>
+          <p className="text-muted-foreground mt-1">Manage public and private coding challenges</p>
         </div>
         <Button
           asChild
-          className="bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all hover:scale-105"
+          className="bg-primary hover:bg-primary/95 text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105"
         >
           <Link href="/admin/problems/create">
             <Plus className="w-4 h-4 mr-2" />
@@ -117,16 +117,16 @@ export default function AdminProblemsPage() {
         </Button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+      <div className="bg-card rounded-2xl border border-border shadow-md overflow-hidden">
+        <div className="p-4 border-b border-border bg-muted/20">
           <form onSubmit={handleSearch} className="flex gap-2 max-w-md">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Search problems..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 bg-white border-slate-200 focus:ring-indigo-500"
+                className="pl-10 bg-background border-border focus:ring-primary"
               />
             </div>
             <Button type="submit" variant="secondary">
@@ -137,7 +137,7 @@ export default function AdminProblemsPage() {
 
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
+            <TableRow className="bg-muted/10 hover:bg-muted/10">
               <TableHead className="w-[300px]">Problem</TableHead>
               <TableHead>Difficulty</TableHead>
               <TableHead>Status</TableHead>
@@ -163,11 +163,11 @@ export default function AdminProblemsPage() {
               </TableRow>
             ) : (
               problems.map((problem) => (
-                <TableRow key={problem.id} className="hover:bg-slate-50/50 transition-colors">
+                <TableRow key={problem.id} className="hover:bg-muted/5 transition-colors">
                   <TableCell className="font-medium">
                     <div className="flex flex-col">
-                      <span className="text-slate-900">{problem.title}</span>
-                      <span className="text-xs text-slate-400 font-normal truncate max-w-[250px]">
+                      <span className="text-foreground">{problem.title}</span>
+                      <span className="text-xs text-muted-foreground font-normal truncate max-w-[250px]">
                         {problem.slug}
                       </span>
                     </div>
@@ -187,7 +187,7 @@ export default function AdminProblemsPage() {
                         variant={problem.isPublished ? 'default' : 'secondary'}
                         className={
                           problem.isPublished
-                            ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-100 border-indigo-200'
+                            ? 'bg-primary/10 text-primary hover:bg-primary/10 border-primary/20'
                             : ''
                         }
                       >
@@ -196,7 +196,7 @@ export default function AdminProblemsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm text-slate-600">
+                    <div className="text-sm text-muted-foreground">
                       {(problem as any).creator?.name || 'System'}
                     </div>
                   </TableCell>
@@ -233,8 +233,8 @@ export default function AdminProblemsPage() {
           </TableBody>
         </Table>
 
-        <div className="p-4 border-t border-slate-100 bg-slate-50/30 flex items-center justify-between">
-          <p className="text-sm text-slate-500">
+        <div className="p-4 border-t border-border bg-muted/10 flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
             Showing {problems.length} of {total} problems
           </p>
           <div className="flex gap-2">
