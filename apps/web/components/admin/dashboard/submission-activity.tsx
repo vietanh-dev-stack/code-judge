@@ -27,8 +27,13 @@ interface SubmissionActivityProps {
 export function SubmissionActivity({ dailyActivity }: SubmissionActivityProps) {
   const [timeRange, setTimeRange] = useState('7d');
 
-  const totalSum = dailyActivity.reduce((acc, curr) => acc + curr.total, 0);
-  const acceptedSum = dailyActivity.reduce((acc, curr) => acc + curr.accepted, 0);
+  // Filter dailyActivity based on time range (last 7, 30, or 90 days)
+  const filteredActivity = dailyActivity.slice(
+    timeRange === '7d' ? -7 : timeRange === '30d' ? -30 : -90
+  );
+
+  const totalSum = filteredActivity.reduce((acc, curr) => acc + curr.total, 0);
+  const acceptedSum = filteredActivity.reduce((acc, curr) => acc + curr.accepted, 0);
   const acRate = totalSum > 0 ? ((acceptedSum / totalSum) * 100).toFixed(1) : '0.0';
 
   return (
@@ -40,7 +45,7 @@ export function SubmissionActivity({ dailyActivity }: SubmissionActivityProps) {
         </div>
         <div className="flex items-center gap-2">
           <Select
-            defaultValue={timeRange}
+            value={timeRange}
             onValueChange={(value) => value && setTimeRange(value)}
           >
             <SelectTrigger className="w-[140px] h-9">
@@ -86,7 +91,7 @@ export function SubmissionActivity({ dailyActivity }: SubmissionActivityProps) {
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
-              data={dailyActivity}
+              data={filteredActivity}
               margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
             >
               <defs>
@@ -119,7 +124,7 @@ export function SubmissionActivity({ dailyActivity }: SubmissionActivityProps) {
                   if (active && payload && payload.length) {
                     return (
                       <div className="rounded-xl border border-border bg-popover p-3 shadow-md">
-                        <p className="font-semibold text-sm mb-1">{payload[0].payload.day}day</p>
+                        <p className="font-semibold text-sm mb-1">{payload[0].payload.day}</p>
                         <div className="space-y-1 text-xs">
                           <p className="text-primary">
                             Total Submissions: <span className="font-bold">{payload[0].value}</span>

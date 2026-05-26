@@ -14,35 +14,52 @@ export class AdminDashboardService {
       this.prisma.classRoom.count({ where: { isActive: true } }),
     ]);
 
-    // 2. Submission Activity Chart (Last 7 Days daily counts)
+    // 2. Submission Activity Chart (Last 90 Days daily counts - single query optimized)
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    ninetyDaysAgo.setHours(0, 0, 0, 0);
+
+    const submissions = await this.prisma.submission.findMany({
+      where: {
+        createdAt: { gte: ninetyDaysAgo },
+      },
+      select: {
+        status: true,
+        createdAt: true,
+      },
+    });
+
+    const submissionsByDay: Record<string, { total: number; accepted: number }> = {};
+    for (const sub of submissions) {
+      // Offset time to local date string to match timezone
+      const localDate = new Date(sub.createdAt.getTime() - sub.createdAt.getTimezoneOffset() * 60000);
+      const dateKey = localDate.toISOString().slice(0, 10);
+      if (!submissionsByDay[dateKey]) {
+        submissionsByDay[dateKey] = { total: 0, accepted: 0 };
+      }
+      submissionsByDay[dateKey].total++;
+      if (sub.status === 'Accepted') {
+        submissionsByDay[dateKey].accepted++;
+      }
+    }
+
     const dailyActivity = [];
-    for (let i = 6; i >= 0; i--) {
+    for (let i = 89; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
+      const localDate = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+      const dateKey = localDate.toISOString().slice(0, 10);
       
-      const start = new Date(d);
-      start.setHours(0, 0, 0, 0);
+      const counts = submissionsByDay[dateKey] || { total: 0, accepted: 0 };
+      const failed = counts.total - counts.accepted;
+      const dayLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       
-      const end = new Date(d);
-      end.setHours(23, 59, 59, 999);
-
-      const [total, accepted] = await Promise.all([
-        this.prisma.submission.count({
-          where: {
-            createdAt: { gte: start, lte: end },
-          },
-        }),
-        this.prisma.submission.count({
-          where: {
-            createdAt: { gte: start, lte: end },
-            status: 'Accepted',
-          },
-        }),
-      ]);
-
-      const failed = total - accepted;
-      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
-      dailyActivity.push({ day: dayName, total, accepted, failed });
+      dailyActivity.push({ 
+        day: dayLabel, 
+        total: counts.total, 
+        accepted: counts.accepted, 
+        failed 
+      });
     }
 
     // 3. Verdict Distribution (Accepted, WA, RE, TLE, CE counts & percentages)
