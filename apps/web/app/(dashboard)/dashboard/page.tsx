@@ -7,7 +7,7 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import Link from 'next/link';
 import { History } from 'lucide-react';
 
-import { archiveClassroom, restoreClassroom } from '@/services/classroom.apis';
+import { archiveClassroom, restoreClassroom, leaveClassroom } from '@/services/classroom.apis';
 import { useClassroomStore } from '@/store/classroom-store';
 import { useAuthStore } from '@/store/auth-store';
 
@@ -143,13 +143,13 @@ export default function StudentDashboardPage() {
       onConfirm: async () => {
         setConfirmConfig((p) => ({ ...p, loading: true }));
         try {
-          // Logic for member to leave
-          toast.info('Hành động Leave Class đang được xử lý...');
+          await leaveClassroom(id);
           await fetchClassrooms();
+          toast.success('Successfully left the classroom');
           closeDialog();
-        } catch (error) {
+        } catch (error: any) {
           console.error(error);
-          toast.error('Failed to leave class');
+          toast.error(error?.message || 'Failed to leave class');
           setConfirmConfig((p) => ({ ...p, loading: false }));
         }
       },

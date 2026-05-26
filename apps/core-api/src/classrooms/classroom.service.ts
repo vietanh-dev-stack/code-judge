@@ -370,4 +370,39 @@ export class ClassroomService {
       },
     });
   }
+
+  // LEAVE CLASSROOM
+  async leave(classRoomId: string, userId: string) {
+    const classroom = await this.prisma.classRoom.findUnique({
+      where: { id: classRoomId },
+    });
+
+    if (!classroom) {
+      throw new NotFoundException('Class not found');
+    }
+
+    if (classroom.ownerId === userId) {
+      throw new BadRequestException('Instructor cannot leave their own class.');
+    }
+
+    const enrollment = await this.prisma.classEnrollment.findUnique({
+      where: {
+        classRoomId_userId: {
+          classRoomId,
+          userId,
+        },
+      },
+    });
+
+    if (!enrollment || enrollment.status !== 'ACTIVE') {
+      throw new BadRequestException('You are not active in this classroom.');
+    }
+
+    return this.prisma.classEnrollment.update({
+      where: { id: enrollment.id },
+      data: {
+        status: 'LEFT',
+      },
+    });
+  }
 }

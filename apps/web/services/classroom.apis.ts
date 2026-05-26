@@ -194,3 +194,10 @@ export async function removeMember(classRoomId: string, userId: string): Promise
     method: 'DELETE',
   });
 }
+
+// LEAVE CLASSROOM
+export async function leaveClassroom(classRoomId: string): Promise<void> {
+  return apiFetch<void>(`/classroom/${classRoomId}/leave`, {
+    method: 'POST',
+  });
+}
