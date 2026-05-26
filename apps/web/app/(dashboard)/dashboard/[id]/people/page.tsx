@@ -65,9 +65,7 @@ export default function PeoplePage() {
       {/* Teachers */}
       <section>
         <div className="border-b border-border pb-3 mb-4">
-          <h2 className="text-2xl font-extrabold text-foreground flex items-center gap-2">
-            Teachers
-          </h2>
+          <h2 className="text-2xl font-extrabold text-primary flex items-center gap-2">Teachers</h2>
         </div>
 
         <div className="divide-y divide-border/60">
@@ -80,12 +78,10 @@ export default function PeoplePage() {
       {/* Students */}
       <section>
         <div className="flex justify-between items-center border-b border-border pb-3 mb-4">
-          <h2 className="text-2xl font-extrabold text-foreground flex items-center gap-2">
-            Students
-          </h2>
+          <h2 className="text-2xl font-extrabold text-primary flex items-center gap-2">Students</h2>
 
           <div className="flex gap-4 items-center">
-            <span className="text-xs text-muted-foreground font-semibold bg-muted/65 px-3 py-1 rounded-full border border-border">
+            <span className="text-xs text-primary border-primary font-semibold bg-primary/20 px-3 py-1 rounded-full border">
               {data.students.length} student{data.students.length > 1 ? 's' : ''}
             </span>
           </div>
