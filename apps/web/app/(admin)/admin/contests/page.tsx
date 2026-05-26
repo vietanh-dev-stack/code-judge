@@ -84,7 +84,7 @@ export default function AdminContestsPage() {
   const handleExport = async (id: string) => {
     try {
       await reportsApi.downloadAdminContestReport(id);
-      toast.success('Đã tạo báo cáo contest');
+      toast.success('Contest report ready');
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Export failed');
     }
@@ -110,7 +110,7 @@ export default function AdminContestsPage() {
       case 'PUBLISHED':
         return <Badge variant="outline" className="border-blue-200 text-blue-600 bg-blue-50">Upcoming</Badge>;
       case 'DRAFT':
-        return <Badge variant="outline" className="border-slate-200 text-slate-500 bg-slate-50">Draft</Badge>;
+        return <Badge variant="outline" className="border-slate-200 text-muted-foreground bg-slate-50">Draft</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -223,7 +223,7 @@ export default function AdminContestsPage() {
                           onClick={() => handleExport(contest.id)}
                         >
                           <FileSpreadsheet className="w-4 h-4 mr-2" />
-                          Xuất báo cáo
+                          Export report
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-rose-600 focus:text-rose-600 focus:bg-rose-50" onClick={() => handleDelete(contest.id)}>
                           <Trash2 className="w-4 h-4 mr-2" />
@@ -239,7 +239,7 @@ export default function AdminContestsPage() {
         </Table>
 
         <div className="p-4 border-t border-slate-100 bg-slate-50/30 flex items-center justify-between">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             Showing {contests.length} of {total} contests
           </p>
           <div className="flex gap-2">

@@ -4,12 +4,15 @@ import { Menu } from 'lucide-react';
 import AdminSidebar from '@/components/admin/layout/admin-sidebar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { useScrollbarHover } from '@/hooks/useScrollbarHandle';
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const mainScrollRef = useScrollbarHover();
+
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
       
@@ -39,7 +42,10 @@ export default function AdminLayout({
         </header>
 
         {/* NỘI DUNG TRANG (Page Content) */}
-        <main className="flex-1 overflow-y-auto">
+        <main
+          ref={mainScrollRef}
+          className="custom-scrollbar flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
+        >
           {children}
         </main>
         

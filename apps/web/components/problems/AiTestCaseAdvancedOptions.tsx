@@ -112,7 +112,7 @@ export function AiTestCaseAdvancedOptions(props: {
     aiGenOptions,
     setAiGenOptions,
     maxTestCasesForProblem,
-    locale = 'vi',
+    locale = 'en',
     idPrefix = '',
     problemDescription,
     problemStatementMd,
@@ -139,7 +139,7 @@ export function AiTestCaseAdvancedOptions(props: {
         <div className="space-y-2">
           <Label
             htmlFor={`${idPrefix}ai-io-spec`}
-            className="text-xs font-semibold text-primary/70"
+            className="text-xs font-semibold text-muted-foreground"
           >
             {t.ioSpec}
           </Label>
@@ -157,7 +157,7 @@ export function AiTestCaseAdvancedOptions(props: {
         <div className="space-y-2">
           <Label
             htmlFor={`${idPrefix}ai-supplementary`}
-            className="text-xs font-semibold text-primary/70"
+            className="text-xs font-semibold text-muted-foreground"
           >
             {t.supplementary}
           </Label>
@@ -184,7 +184,7 @@ export function AiTestCaseAdvancedOptions(props: {
           <div className="space-y-0.5">
             <Label
               htmlFor={`${idPrefix}ai-full-io`}
-              className="text-xs font-semibold cursor-pointer text-primary/70"
+              className="text-xs font-semibold cursor-pointer text-muted-foreground"
             >
               {t.fullIo}
             </Label>
@@ -194,7 +194,7 @@ export function AiTestCaseAdvancedOptions(props: {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label className="text-xs font-semibold text-primary/70">{t.maxSuggestions}</Label>
+            <Label className="text-xs font-semibold text-muted-foreground">{t.maxSuggestions}</Label>
             <Input
               type="number"
               min={1}
@@ -235,7 +235,7 @@ export function AiTestCaseAdvancedOptions(props: {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}ai-model`} className="text-xs font-semibold text-primary/70">
+          <Label htmlFor={`${idPrefix}ai-model`} className="text-xs font-semibold text-muted-foreground">
             {t.model}
           </Label>
           <Input
@@ -248,7 +248,7 @@ export function AiTestCaseAdvancedOptions(props: {
         </div>
 
         <div className="space-y-2 pt-2 border-t border-violet-200/50 dark:border-violet-800/40">
-          <p className="text-xs font-semibold text-primary/70">{t.revisionTitle}</p>
+          <p className="text-xs font-semibold text-muted-foreground">{t.revisionTitle}</p>
           <p className="text-[11px] text-muted-foreground">{t.revisionHelp}</p>
           <Textarea
             value={aiGenOptions.revisionSummary}

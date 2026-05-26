@@ -52,7 +52,7 @@ export default async function ClassDetailLayout({
       }}
     >
       <div className="flex flex-col">
-        <div className="bg-slate-900 -mx-6 -mt-6 mb-6 px-6">
+        <div className="-mx-6 -mt-6 mb-6 border-b border-border bg-card px-6">
           <ClassTabs classId={id} />
         </div>
         <div className="flex-1 px-0">

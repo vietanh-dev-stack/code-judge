@@ -114,7 +114,7 @@ export function ProblemTagPicker({
 
   return (
     <div className="space-y-3">
-      {label ? <Label className="text-sm font-semibold text-primary/70">{label}</Label> : null}
+      {label ? <Label className="text-sm font-semibold text-foreground">{label}</Label> : null}
       {hint ? <p className="text-[11px] text-muted-foreground leading-snug">{hint}</p> : null}
 
       {value.length > 0 ? (
@@ -142,7 +142,7 @@ export function ProblemTagPicker({
           {locale === 'vi' ? 'Đang tải tag…' : 'Loading tags…'}
         </div>
       ) : (
-        <div className="max-h-40 overflow-y-auto rounded-xl border border-primary bg-slate-900 p-2">
+        <div className="max-h-40 overflow-y-auto rounded-xl border border-border bg-muted/30 p-2">
           <div className="flex flex-wrap gap-1.5">
             {tags.map((t) => {
               const on = value.includes(t.id);

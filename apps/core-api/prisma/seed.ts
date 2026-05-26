@@ -218,12 +218,12 @@ async function seedUsers() {
 
 async function seedTags() {
   const tags = [
-    { id: 'seed-tag-basic', slug: 'basic', name: 'Basic' },
-    { id: 'seed-tag-math', slug: 'math', name: 'Mathematics' },
-    { id: 'seed-tag-dp', slug: 'dp', name: 'Dynamic Programming' },
-    { id: 'seed-tag-graph', slug: 'graph', name: 'Graph Theory' },
-    { id: 'seed-tag-tree', slug: 'tree', name: 'Trees' },
-    { id: 'seed-tag-string', slug: 'string', name: 'String' },
+    { id: 'a1111111-1111-4111-8111-111111111101', slug: 'basic', name: 'Basic' },
+    { id: 'a1111111-1111-4111-8111-111111111102', slug: 'math', name: 'Mathematics' },
+    { id: 'a1111111-1111-4111-8111-111111111103', slug: 'dp', name: 'Dynamic Programming' },
+    { id: 'a1111111-1111-4111-8111-111111111104', slug: 'graph', name: 'Graph Theory' },
+    { id: 'a1111111-1111-4111-8111-111111111105', slug: 'tree', name: 'Trees' },
+    { id: 'a1111111-1111-4111-8111-111111111106', slug: 'string', name: 'String' },
   ];
 
   for (const t of tags) {

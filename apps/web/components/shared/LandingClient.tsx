@@ -61,7 +61,7 @@ export default function LandingClient() {
               Master Competitive <span className="text-primary">Programming with AI</span>
             </h1>
 
-            <p className="text-lg sm:text-md text-primary/80 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg sm:text-md max-w-2xl mx-auto leading-relaxed text-muted-foreground">
               Create intelligent contests, practice with auto-generated test cases, and compete with
               programmers worldwide. All in one powerful platform.
             </p>

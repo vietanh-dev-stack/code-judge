@@ -19,10 +19,8 @@ import {
   buildProblemReportDocument,
 } from './reports-builders';
 import type { ReportAuthor } from './reports-format.util';
-import {
-  isStaffUser,
-  resolveClassroomReportScope,
-} from './reports-classroom-scope';
+import { resolveClassroomReportScope } from './reports-classroom-scope';
+import { resolveContestReportLeaderboard } from './reports-contest-roster.util';
 import {
   REPORT_EXPORT_JOB_NAME,
   type ContestExportJobPayload,
@@ -245,31 +243,34 @@ export class ReportsService {
       };
       const author: ReportAuthor = { name: requester.name, email: requester.email };
       const lb = await this.contestsService.getLeaderboard(contestId, viewer);
-      let leaderboard = lb.leaderboard;
       const classAssignment = await this.prisma.classAssignment.findFirst({
         where: { contestId },
         select: { classRoomId: true },
       });
-      let staffIds: string[] = [];
-      if (classAssignment?.classRoomId) {
-        const scope = await resolveClassroomReportScope(
-          this.prisma,
-          classAssignment.classRoomId,
-        );
-        staffIds = [...scope.staffUserIds];
-        leaderboard = leaderboard.filter((row) => !isStaffUser(row.userId, scope));
-      }
+      const classRoomId = classAssignment?.classRoomId ?? null;
+      const scope = classRoomId
+        ? await resolveClassroomReportScope(this.prisma, classRoomId)
+        : undefined;
+      const staffIds = scope ? [...scope.staffUserIds] : [];
+
+      const leaderboard = await resolveContestReportLeaderboard(this.prisma, {
+        contestId,
+        classRoomId,
+        scope,
+        rawLeaderboard: lb.leaderboard,
+      });
 
       if (leaderboard.length > MAX_LEADERBOARD_ROWS) {
         throw new BadRequestException(
-          `Contest có ${leaderboard.length} dòng BXH — vượt giới hạn ${MAX_LEADERBOARD_ROWS}. Hãy lọc hoặc chia nhỏ.`,
+          `Contest có ${leaderboard.length} dòng báo cáo — vượt giới hạn ${MAX_LEADERBOARD_ROWS}. Hãy lọc hoặc chia nhỏ.`,
         );
       }
 
       const generatedAt = new Date();
-      const scopeNote = classAssignment?.classRoomId
-        ? 'Chỉ học viên — không gồm chủ lớp / giáo viên (OWNER).'
-        : undefined;
+      const rosterMode = classRoomId ? ('classroom' as const) : ('public' as const);
+      const scopeNote = classRoomId
+        ? 'Danh sách đủ học viên lớp (MEMBER ACTIVE); không gồm chủ lớp / giáo viên (OWNER).'
+        : 'Chỉ người đã tham gia contest (có trên BXH / đã nộp).';
       const submissionAttempts = await this.aggregation.getContestSubmissionAttempts(
         contestId,
         staffIds,
@@ -281,7 +282,7 @@ export class ReportsService {
           leaderboard,
           author,
           generatedAt,
-          scopeNote,
+          { scopeNote, rosterMode },
         ),
       );
       const objectKey = buildExportObjectKey(contestId, exportId, 'xlsx');

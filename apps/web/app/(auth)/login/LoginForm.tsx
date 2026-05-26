@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { clearLocalAppStorage } from '@/lib/clear-local-storage';
 import { authApi, ApiRequestError } from '@/services/auth.apis';
 import { useAuthStore } from '@/store/auth-store';
 
@@ -20,6 +21,12 @@ export function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (searchParams.get('sessionExpired') === '1') {
+      clearLocalAppStorage();
+    }
+  }, [searchParams]);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
@@ -32,7 +39,7 @@ export function LoginForm() {
       const user = useAuthStore.getState().user;
       if (!user) {
         setError(
-          'Đăng nhập API thành công nhưng phiên không được lưu (cookie). Xóa cookie site, thử lại hoặc liên hệ quản trị.',
+          'Sign-in succeeded but the session was not saved (cookies). Clear site cookies, try again, or contact support.',
         );
         return;
       }
@@ -48,7 +55,7 @@ export function LoginForm() {
       if (err instanceof ApiRequestError) {
         setError(err.body.message);
       } else {
-        setError('Đã có lỗi xảy ra. Vui lòng thử lại.');
+        setError('Something went wrong. Please try again.');
       }
     } finally {
       setLoading(false);

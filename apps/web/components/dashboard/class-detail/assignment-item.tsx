@@ -40,7 +40,7 @@ export default function AssignmentItem({
     if (!classRoomId) return;
     try {
       await reportsApi.downloadProblemReport(classRoomId, id);
-      toast.success('Đã tạo báo cáo bài tập', { position: 'top-center' });
+      toast.success('Assignment report created', { position: 'top-center' });
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Export failed', {
         position: 'top-center',

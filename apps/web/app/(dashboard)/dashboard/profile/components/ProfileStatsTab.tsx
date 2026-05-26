@@ -24,7 +24,7 @@ function DifficultyBar({
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <span className={`text-sm font-medium text-primary/80`}>{label}</span>
+        <span className={`text-sm font-medium text-muted-foreground`}>{label}</span>
         <span className="text-sm text-muted-foreground">
           {solved}/{attempted} problems ({pct}%)
         </span>

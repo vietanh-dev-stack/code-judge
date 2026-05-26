@@ -14,7 +14,7 @@ export default function AdminProblemCreatePage() {
         </div>
       }
     >
-      <div className="p-4 pt-6 md:p-8">
+      <div className="p-4 pt-6 md:p-8 min-h-0">
         <AdminProblemCreate />
       </div>
     </Suspense>

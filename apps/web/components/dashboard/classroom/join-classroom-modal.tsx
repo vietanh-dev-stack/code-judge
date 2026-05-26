@@ -67,13 +67,13 @@ export function JoinClassroomModal({ open, onClose }: JoinClassroomModalProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-2xl bg-slate-900 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         <div className="relative px-6 py-5">
           <button
             onClick={onClose}
             className="absolute right-4 top-4 p-1 rounded-full hover:bg-gray-500 cursor-pointer transition"
           >
-            <X className="w-5 h-5 text-gray-500 hover:text-gray-200" />
+            <X className="w-5 h-5 text-muted-foreground hover:text-gray-200" />
           </button>
 
           <div className="flex items-center gap-3">
@@ -83,7 +83,7 @@ export function JoinClassroomModal({ open, onClose }: JoinClassroomModalProps) {
 
             <div>
               <h2 className="text-xl font-bold text-white">Join Classroom</h2>
-              <p className="text-sm text-primary-light">Enter classroom code to join</p>
+              <p className="text-sm text-muted-foreground">Enter classroom code to join</p>
             </div>
           </div>
         </div>
@@ -97,10 +97,10 @@ export function JoinClassroomModal({ open, onClose }: JoinClassroomModalProps) {
             onChange={(e) => setClassCode(e.target.value.toUpperCase())}
             placeholder="ABCD1234"
             maxLength={12}
-            className="w-full h-12 rounded-xl border border-gray-300 px-4 text-center text-lg tracking-[0.25em] font-semibold uppercase outline-none focus:ring-1 focus:ring-primary focus:border-black"
+            className="h-12 w-full rounded-xl border border-border bg-background px-4 text-center text-lg font-semibold uppercase tracking-[0.25em] text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
           />
 
-          <p className="mt-2 text-xs text-gray-500">
+          <p className="mt-2 text-xs text-muted-foreground">
             Ask your teacher or classroom owner for the invite code.
           </p>
 

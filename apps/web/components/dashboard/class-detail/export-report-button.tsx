@@ -29,10 +29,10 @@ export function ExportReportButton({
 
   const defaultLabel =
     kind === 'classroom'
-      ? 'Xuất báo cáo lớp'
+      ? 'Export class report'
       : kind === 'problem'
-        ? 'Xuất báo cáo bài'
-        : 'Xuất báo cáo contest';
+        ? 'Export problem report'
+        : 'Export contest report';
 
   const handleExport = async () => {
     setLoading(true);
@@ -44,14 +44,14 @@ export function ExportReportButton({
       } else if (kind === 'contest' && contestId) {
         await reportsApi.downloadContestReport(contestId);
       } else {
-        throw new Error('Thiếu tham số export');
+        throw new Error('Missing export parameters');
       }
-      toast.success('Đã tạo file báo cáo', {
-        description: 'File XLSX đang được tải xuống.',
+      toast.success('Report ready', {
+        description: 'Your XLSX file is downloading.',
         position: 'top-center',
       });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Không thể xuất báo cáo';
+      const message = err instanceof Error ? err.message : 'Could not export report';
       toast.error(message, { position: 'top-center' });
     } finally {
       setLoading(false);

@@ -430,7 +430,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
         hintCachedSubmissionRef.current = submissionId;
       } catch (err: unknown) {
         if (latestHintRequestRef.current !== submissionId) return;
-        const message = err instanceof Error ? err.message : 'Không thể tải gợi ý AI';
+        const message = err instanceof Error ? err.message : 'Could not load AI hint';
         setHintError(message);
         setHintState('error');
       }
@@ -457,7 +457,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
   const handleRequestHint = useCallback(async () => {
     if (contestId) {
       toast.info('Gợi ý AI tắt trong contest', {
-        description: 'Khi thi contest bạn cần tự giải bài, không dùng gợi ý AI.',
+        description: 'AI hints are disabled during contests. Solve the problem on your own.',
       });
       return;
     }
@@ -846,6 +846,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
                 isRunning={isRunning || isSubmitting}
                 result={result}
                 problem={problem}
+                isDarkMode={isDarkMode}
               />
             </div>
           </>

@@ -109,7 +109,9 @@ export async function middleware(request: NextRequest) {
       clearAuthCookies(response, request);
       return response;
     }
-    const response = NextResponse.redirect(new URL('/login', request.url));
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('sessionExpired', '1');
+    const response = NextResponse.redirect(loginUrl);
     clearAuthCookies(response, request);
     return response;
   }

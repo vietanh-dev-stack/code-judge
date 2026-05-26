@@ -8,7 +8,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUUID,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -78,10 +78,14 @@ export class CreateAdminProblemDto {
   @Type(() => CreateTestCaseDto)
   testCases?: CreateTestCaseDto[];
 
-  @ApiPropertyOptional({ type: [String], description: 'UUID các Tag gán cho đề' })
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Id hoặc slug của các tag gán cho đề',
+  })
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(40)
-  @IsUUID('4', { each: true })
+  @IsString({ each: true })
+  @MaxLength(128, { each: true })
   tagIds?: string[];
 }

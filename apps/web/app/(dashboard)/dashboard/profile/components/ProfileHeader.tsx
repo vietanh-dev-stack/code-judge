@@ -319,7 +319,7 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
                     type="button"
                     onClick={cancelEditingName}
                     disabled={nameSaveStatus === 'saving'}
-                    className="inline-flex items-center gap-1 rounded-lg border border-primary bg-slate-900 px-3 py-1.5 text-sm font-medium hover:bg-accent disabled:opacity-60 text-primary cursor-pointer"
+                    className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-primary hover:bg-muted disabled:opacity-60"
                     aria-label="Cancel"
                   >
                     <X className="h-4 w-4" />

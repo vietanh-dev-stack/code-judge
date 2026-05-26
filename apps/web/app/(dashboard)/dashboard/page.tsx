@@ -144,7 +144,7 @@ export default function StudentDashboardPage() {
         setConfirmConfig((p) => ({ ...p, loading: true }));
         try {
           // Logic for member to leave
-          toast.info('Hành động Leave Class đang được xử lý...');
+          toast.info('Leaving class is being processed...');
           await fetchClassrooms();
           closeDialog();
         } catch (error) {
@@ -158,7 +158,7 @@ export default function StudentDashboardPage() {
 
   if (loading && teaching.length === 0 && enrolled.length === 0) {
     return (
-      <div className="flex items-center justify-center h-[50vh] text-slate-400">
+      <div className="flex items-center justify-center h-[50vh] text-muted-foreground">
         <div className="flex flex-col items-center gap-2">
           <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
           <span>Loading classrooms...</span>
@@ -176,7 +176,7 @@ export default function StudentDashboardPage() {
           <h1 className="text-4xl font-extrabold tracking-tight text-white">
             My Learning Workspace
           </h1>
-          <p className="text-lg text-primary/70 max-w-2xl leading-relaxed">
+          <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
             Manage your dual-role ecosystem. Coordinate curriculum as an instructor while tracking
             your personal upskilling progress across technical modules.
           </p>
@@ -184,7 +184,7 @@ export default function StudentDashboardPage() {
 
         <div className="flex flex-col items-center justify-center h-[50vh] border border-dashed border-white/10 rounded-3xl bg-white/[0.02] p-8 text-center max-w-3xl mx-auto mt-8 animate-in fade-in zoom-in-95 duration-500">
           <p className="text-xl font-bold text-white mb-2">No active classrooms yet</p>
-          <p className="text-sm text-slate-400 mb-8 max-w-md">
+          <p className="text-sm text-muted-foreground mb-8 max-w-md">
             Get started by creating your own classroom as an instructor or joining an existing one
             with a code.
           </p>
@@ -221,7 +221,7 @@ export default function StudentDashboardPage() {
           <h1 className="text-4xl font-extrabold tracking-tight text-white">
             My Learning Workspace
           </h1>
-          <p className="text-lg text-primary/70 max-w-2xl leading-relaxed">
+          <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
             Manage your dual-role ecosystem. Coordinate curriculum as an instructor while tracking
             your personal upskilling progress across technical modules.
           </p>
@@ -283,8 +283,8 @@ export default function StudentDashboardPage() {
 
         {/* Enrolled List - Horizontal Scroll */}
         {enrolled.length === 0 ? (
-          <div className="h-[190px] border border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center text-slate-500 bg-white/[0.01]">
-            <p className="text-sm font-medium text-slate-400">
+          <div className="h-[190px] border border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center text-muted-foreground bg-white/[0.01]">
+            <p className="text-sm font-medium text-muted-foreground">
               You haven't joined any classrooms yet.
             </p>
             <Button

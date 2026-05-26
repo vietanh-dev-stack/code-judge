@@ -55,6 +55,7 @@ export function buildContestEntityInfo(
     problemCount?: number;
     scopeNote?: string;
     status?: string;
+    rosterMode?: 'classroom' | 'public';
   },
 ): ReportEntityInfoForm {
   const fields: ReportEntityInfoForm['fields'] = [
@@ -70,12 +71,15 @@ export function buildContestEntityInfo(
     fields.push({ label: 'Số câu trong đề', value: options.problemCount });
   }
   if (options?.scopeNote) {
-    fields.push({ label: 'Phạm vi BXH', value: options.scopeNote });
+    fields.push({ label: 'Phạm vi báo cáo', value: options.scopeNote });
   }
   return {
     sectionTitle: 'THÔNG TIN CONTEST',
     fields,
-    note: 'Submission trong contest; không dry-run.',
+    note:
+      options?.rosterMode === 'classroom'
+        ? 'Danh sách theo học viên đăng ký lớp (MEMBER ACTIVE). Submission trong contest; không dry-run.'
+        : 'Theo người tham gia contest (BXH). Submission trong contest; không dry-run.',
   };
 }
 

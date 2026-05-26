@@ -37,7 +37,7 @@ export function AiStatementLengthHint(props: {
   locale?: Locale;
   className?: string;
 }) {
-  const { description, statementMd, ioSpec, locale = 'vi', className = '' } = props;
+  const { description, statementMd, ioSpec, locale = 'en', className = '' } = props;
   const t = COPY[locale];
   const len = statementLengthForAi({ description, statementMd });
   const isLong = len > LONG_STATEMENT_WARN_CHARS;

@@ -232,12 +232,12 @@ export default function ProblemsBankPage() {
       <div>
         <div className="flex items-center gap-4">
           <h1 className="text-4xl font-extrabold tracking-tight text-white">Problem Bank</h1>
-          <p className="bg-primary text-muted py-1 px-2 rounded-full text-sm font-semibold">
+          <p className="rounded-full bg-primary/20 px-2 py-1 text-sm font-semibold text-primary">
             {total > 0 ? `${total} problems` : null}
           </p>
         </div>
         <div className="flex items-center gap-2 mt-2">
-          <p className="text-lg text-primary/70 max-w-2xl leading-relaxed">
+          <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground">
             Practice and master programming with our curated collection of public problems. Filter
             by difficulty, topics, or status to find your next challenge.{' '}
           </p>
@@ -248,12 +248,12 @@ export default function ProblemsBankPage() {
         <div className="lg:col-span-8 flex flex-col gap-6">
           {/* Filters */}
           <div className="relative w-full">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search by title, description, or slug..."
               value={searchDraft}
               onChange={(e) => setSearchDraft(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 bg-slate-950/40 border-slate-800 focus-visible:border-slate-700 text-slate-200 placeholder:text-slate-500 rounded-lg text-sm focus-visible:ring-0 focus-visible:ring-offset-0 transition-all"
+              className="h-10 w-full rounded-lg border-border bg-background pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
               aria-label="Search problems"
             />
           </div>
@@ -309,11 +309,11 @@ export default function ProblemsBankPage() {
           {/* Problem List */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {loading && items.length === 0 ? (
-              <div className="col-span-full h-32 flex items-center justify-center bg-card rounded-xl border border-slate-800">
+              <div className="col-span-full h-32 flex items-center justify-center bg-card rounded-xl border border-border">
                 <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
               </div>
             ) : items.length === 0 ? (
-              <div className="col-span-full text-muted-foreground h-32 flex items-center justify-center bg-card rounded-xl border border-slate-800 text-sm">
+              <div className="col-span-full text-muted-foreground h-32 flex items-center justify-center bg-card rounded-xl border border-border text-sm">
                 No matching problems. Try adjusting filters or keywords.
               </div>
             ) : (
@@ -361,7 +361,7 @@ export default function ProblemsBankPage() {
         {/* Stats */}
         <div className="lg:col-span-4 flex flex-col gap-3">
           {/* User Progress */}
-          <div className="flex flex-col gap-4 p-5 bg-slate-900/50 border border-primary/20 hover:border hover:border-primary/50 rounded-2xl shadow-sm transition-all duration-200">
+          <div className="flex flex-col gap-4 p-5 bg-card/80 border border-primary/20 hover:border hover:border-primary/50 rounded-2xl shadow-sm transition-all duration-200">
             <div className="flex items-center gap-3">
               <SquareMenu className="h-5 w-5 text-primary" />
               <p className="font-semibold text-lg">My Progress</p>
@@ -369,7 +369,7 @@ export default function ProblemsBankPage() {
             {/* Total Solved - Progress bar */}
             <div className="flex flex-col gap-4 mt-2">
               <div className="flex items-center justify-between">
-                <h5 className="text-primary/80 text-md">Total Solved</h5>
+                <h5 className="text-muted-foreground text-md">Total Solved</h5>
                 {progressLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 ) : (

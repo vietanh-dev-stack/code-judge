@@ -72,19 +72,19 @@ export function CreateClassroomModal({ open, onClose }: CreateClassroomModalProp
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="relative w-full max-w-md bg-slate-900 rounded-2xl p-6 shadow-2xl animate-in fade-in zoom-in-95">
+      <div className="relative w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl animate-in fade-in zoom-in-95">
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 p-1 rounded-full hover:bg-gray-500 cursor-pointer transition"
+          className="absolute right-4 top-4 cursor-pointer rounded-full p-1 transition hover:bg-muted"
         >
-          <X className="w-5 h-5 text-gray-600 hover:text-gray-200" />
+          <X className="h-5 w-5 text-muted-foreground hover:text-foreground" />
         </button>
 
         {/* Header */}
         <div className="mb-5">
-          <h2 className="text-xl font-bold text-white">Create Classroom</h2>
-          <p className="text-sm text-primary-light mt-1">
+          <h2 className="text-xl font-bold text-foreground">Create Classroom</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
             Create a new classroom for your students
           </p>
         </div>

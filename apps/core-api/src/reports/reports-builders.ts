@@ -180,6 +180,8 @@ export function buildProblemReportDocument(
   ];
 }
 
+export type ContestReportRosterMode = 'classroom' | 'public';
+
 export function buildContestReportDocument(
   contest: { id: string; title: string; startAt: Date; endAt: Date },
   submissionAttempts: SubmissionAttemptDetail[],
@@ -198,11 +200,19 @@ export function buildContestReportDocument(
   }>,
   author?: ReportAuthor | null,
   generatedAt: Date = new Date(),
-  scopeNote?: string,
+  options?: {
+    scopeNote?: string;
+    rosterMode?: ContestReportRosterMode;
+  },
 ): ProfessionalReportSheet[] {
+  const scopeNote = options?.scopeNote;
+  const rosterMode = options?.rosterMode ?? 'public';
   const problemTitles = leaderboard[0]?.problems.map((p) => p.problemTitle) ?? [];
   const totalParticipants = leaderboard.length;
   const totalSolved = leaderboard.reduce((s, r) => s + r.solvedCount, 0);
+  const submittedCount = leaderboard.filter((r) =>
+    r.problems.some((p) => p.attempts > 0),
+  ).length;
 
   const passRateRows = problemTitles.map((title, idx) => {
     const withAttempts = leaderboard.filter((r) => r.problems[idx]?.attempts > 0).length;
@@ -256,6 +266,7 @@ export function buildContestReportDocument(
   const contestEntity = buildContestEntityInfo(contest, {
     problemCount: problemTitles.length,
     scopeNote,
+    rosterMode,
   });
 
   const contestContextBase = (subtitle: string, kpis?: ReportContextBlock['kpis']) =>
@@ -273,7 +284,12 @@ export function buildContestReportDocument(
     {
       tabName: 'Tổng quan',
       context: contestContextBase('Thống kê điểm, xếp hạng và pass rate', [
-        { label: 'Thí sinh trên BXH', value: totalParticipants },
+        rosterMode === 'classroom'
+          ? { label: 'Học viên trong lớp', value: totalParticipants }
+          : { label: 'Thí sinh tham gia', value: totalParticipants },
+        ...(rosterMode === 'classroom'
+          ? [{ label: 'Đã nộp bài', value: submittedCount }]
+          : []),
         { label: 'Tổng bài đã giải (Accepted)', value: totalSolved },
         { label: 'Tổng lần nộp', value: submissionAttempts.length },
       ]),

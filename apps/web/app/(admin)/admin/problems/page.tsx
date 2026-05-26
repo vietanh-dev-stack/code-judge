@@ -80,7 +80,7 @@ export default function AdminProblemsPage() {
   const handleExport = async (id: string) => {
     try {
       await reportsApi.downloadAdminProblemReport(id);
-      toast.success('Đã tạo báo cáo bài tập');
+      toast.success('Problem report ready');
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Export failed');
     }
@@ -165,9 +165,9 @@ export default function AdminProblemsPage() {
               ))
             ) : problems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-40 text-center text-slate-500">
+                <TableCell colSpan={6} className="h-40 text-center text-muted-foreground">
                   <div className="flex flex-col items-center gap-2">
-                    <Code2 className="w-8 h-8 text-slate-300" />
+                    <Code2 className="w-8 h-8 text-muted-foreground" />
                     <p>No problems found</p>
                   </div>
                 </TableCell>
@@ -214,7 +214,7 @@ export default function AdminProblemsPage() {
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -233,7 +233,7 @@ export default function AdminProblemsPage() {
                           onClick={() => handleExport(problem.id)}
                         >
                           <FileSpreadsheet className="w-4 h-4 mr-2" />
-                          Xuất báo cáo
+                          Export report
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-rose-600 focus:text-rose-600 focus:bg-rose-50"

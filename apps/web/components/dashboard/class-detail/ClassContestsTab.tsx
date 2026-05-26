@@ -329,7 +329,7 @@ export default function ClassContestsTab({
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
         <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-gray-500 font-medium">Loading contests...</p>
+        <p className="text-muted-foreground font-medium">Loading contests...</p>
       </div>
     );
   }
@@ -339,7 +339,7 @@ export default function ClassContestsTab({
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-4xl font-extrabold tracking-tight text-white">Class Contests</h2>
-          <p className="text-lg text-primary/70 max-w-2xl leading-relaxed">
+          <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
             {isOwner
               ? 'Manage and track contests for your students.'
               : 'View contests available for your class.'}
@@ -356,9 +356,9 @@ export default function ClassContestsTab({
         )}
       </div>
 
-      <div className="flex items-center gap-2 bg-slate-900 p-1 rounded-xl border border-gray-900 shadow-sm w-full max-w-md">
+      <div className="flex items-center gap-2 bg-card p-1 rounded-xl border border-border shadow-sm w-full max-w-md">
         <div className="pl-3">
-          <Search className="w-4 h-4 text-gray-400" />
+          <Search className="w-4 h-4 text-muted-foreground" />
         </div>
         <Input
           placeholder="Search contests by title or description..."
@@ -369,7 +369,7 @@ export default function ClassContestsTab({
       </div>
 
       {showCreateForm && (
-        <Card className="border-2 border-black/5 bg-slate-900 shadow-2xl overflow-hidden animate-in slide-in-from-top-4 duration-300">
+        <Card className="border-2 border-black/5 bg-card shadow-2xl overflow-hidden animate-in slide-in-from-top-4 duration-300">
           <CardHeader className="border-b">
             <CardTitle className="text-xl">
               {editingContestId ? 'Edit Contest' : 'Create New Contest'}
@@ -379,7 +379,7 @@ export default function ClassContestsTab({
           <CardContent className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-sm font-semibold text-primary/70">
+                <Label htmlFor="title" className="text-sm font-semibold text-muted-foreground">
                   Title
                 </Label>
                 <Input
@@ -390,14 +390,14 @@ export default function ClassContestsTab({
                     if (errors.title) setErrors({ ...errors, title: '' });
                   }}
                   placeholder="e.g. Midterm Programming Contest"
-                  className={`rounded-lg border-gray-700 resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none ${errors.title ? 'border-red-500 bg-red-50' : ''}`}
+                  className={`rounded-lg border-border resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none ${errors.title ? 'border-destructive bg-destructive/10' : ''}`}
                 />
                 {errors.title && (
                   <p className="text-xs text-red-500 mt-1 font-medium">{errors.title}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-semibold text-primary/70">
+                <Label htmlFor="password" className="text-sm font-semibold text-muted-foreground">
                   Access Password (optional)
                 </Label>
                 <Input
@@ -406,13 +406,13 @@ export default function ClassContestsTab({
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder="Leave empty for public access"
-                  className="rounded-lg border-gray-700 resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
+                  className="rounded-lg border-border resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-sm font-semibold text-primary/70">
+              <Label htmlFor="description" className="text-sm font-semibold text-muted-foreground">
                 Description
               </Label>
               <Textarea
@@ -420,7 +420,7 @@ export default function ClassContestsTab({
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="What is this contest about?"
-                className={`min-h-[100px] rounded-lg border-gray-700 resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none ${errors.description ? 'border-red-500 bg-red-50' : ''}`}
+                className={`min-h-[100px] rounded-lg border-border resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none ${errors.description ? 'border-destructive bg-destructive/10' : ''}`}
               />
             </div>
 
@@ -428,9 +428,9 @@ export default function ClassContestsTab({
               <div className="space-y-2">
                 <Label
                   htmlFor="startAt"
-                  className="text-sm font-semibold text-primary/70 flex items-center gap-2"
+                  className="text-sm font-semibold text-muted-foreground flex items-center gap-2"
                 >
-                  <Clock className="w-4 h-4 text-primary/70" /> Start Time
+                  <Clock className="w-4 h-4 text-muted-foreground" /> Start Time
                 </Label>
                 <Input
                   id="startAt"
@@ -443,7 +443,7 @@ export default function ClassContestsTab({
                     setFormData({ ...formData, startAt: e.target.value });
                     if (errors.startAt) setErrors({ ...errors, startAt: '' });
                   }}
-                  className={`rounded-lg border-gray-700 resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none ${errors.startAt ? 'border-red-500 bg-red-50' : ''}`}
+                  className={`rounded-lg border-border resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none ${errors.startAt ? 'border-destructive bg-destructive/10' : ''}`}
                 />
                 {errors.startAt && (
                   <p className="text-xs text-red-500 mt-1 font-medium">{errors.startAt}</p>
@@ -452,9 +452,9 @@ export default function ClassContestsTab({
               <div className="space-y-2">
                 <Label
                   htmlFor="endAt"
-                  className="text-sm font-semibold text-primary/70 flex items-center gap-2"
+                  className="text-sm font-semibold text-muted-foreground flex items-center gap-2"
                 >
-                  <Clock className="w-4 h-4 text-primary/70" /> End Time
+                  <Clock className="w-4 h-4 text-muted-foreground" /> End Time
                 </Label>
                 <Input
                   id="endAt"
@@ -467,7 +467,7 @@ export default function ClassContestsTab({
                     setFormData({ ...formData, endAt: e.target.value });
                     if (errors.endAt) setErrors({ ...errors, endAt: '' });
                   }}
-                  className={`rounded-lg border-gray-700 resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none ${errors.endAt ? 'border-red-500 bg-red-50' : ''}`}
+                  className={`rounded-lg border-border resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none ${errors.endAt ? 'border-destructive bg-destructive/10' : ''}`}
                 />
                 {errors.endAt && (
                   <p className="text-xs text-red-500 mt-1 font-medium">{errors.endAt}</p>
@@ -479,7 +479,7 @@ export default function ClassContestsTab({
               <div className="space-y-2">
                 <Label
                   htmlFor="testFeedbackPolicy"
-                  className="text-sm font-semibold text-primary/70"
+                  className="text-sm font-semibold text-muted-foreground"
                 >
                   Feedback Policy
                 </Label>
@@ -489,7 +489,7 @@ export default function ClassContestsTab({
                     setFormData({ ...formData, testFeedbackPolicy: value })
                   }
                 >
-                  <SelectTrigger className="rounded-lg border-gray-700 focus:ring-black">
+                  <SelectTrigger className="rounded-lg border-border focus:ring-black">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -499,7 +499,7 @@ export default function ClassContestsTab({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="maxSubmissions" className="text-sm font-semibold text-primary/70">
+                <Label htmlFor="maxSubmissions" className="text-sm font-semibold text-muted-foreground">
                   Max Submissions per Problem
                 </Label>
                 <Input
@@ -513,7 +513,7 @@ export default function ClassContestsTab({
                     })
                   }
                   placeholder="Unlimited"
-                  className="rounded-lg border-gray-700 focus:border-black transition-colors"
+                  className="rounded-lg border-border focus:border-black transition-colors"
                 />
               </div>
             </div>
@@ -529,7 +529,7 @@ export default function ClassContestsTab({
               </div>
 
               <div
-                className={`border rounded-xl p-6 bg-slate-900 space-y-6 ${errors.problems ? 'border-red-300 bg-red-50/20' : 'border-gray-600'}`}
+                className={`border rounded-xl p-6 bg-card space-y-6 ${errors.problems ? 'border-destructive/50 bg-destructive/10' : 'border-gray-600'}`}
               >
                 {errors.problems && (
                   <p className="text-sm text-red-500 font-medium">{errors.problems}</p>
@@ -537,17 +537,17 @@ export default function ClassContestsTab({
 
                 <div className="space-y-4">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       placeholder="Search available problems..."
                       value={problemSearch}
                       onChange={(e) => setProblemSearch(e.target.value)}
-                      className="pl-10 rounded-lg border-gray-700 resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
+                      className="pl-10 rounded-lg border-border resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
                     />
                   </div>
 
                   {filteredAvailableProblems.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto bg-slate-900 rounded-xl">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto bg-card rounded-xl">
                       {filteredAvailableProblems.map((problem, index) => (
                         <div
                           key={problem.id}
@@ -565,7 +565,7 @@ export default function ClassContestsTab({
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-400 italic">
+                    <p className="text-xs text-muted-foreground italic">
                       {problems.length === 0
                         ? 'No problems available in this classroom. Please create some problems first.'
                         : 'All classroom problems have been added to this contest.'}
@@ -573,13 +573,13 @@ export default function ClassContestsTab({
                   )}
                 </div>
 
-                <div className="space-y-3 pt-6 border-t border-gray-200">
-                  <Label className="text-sm font-semibold text-primary/70 text-gray-900 flex items-center gap-2">
+                <div className="space-y-3 pt-6 border-t border-border">
+                  <Label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                     Included Problems ({formData.problems?.length || 0})
                   </Label>
                   <div className="space-y-2">
                     {formData.problems?.length === 0 ? (
-                      <div className="text-center py-8 bg-slate-900 rounded-xl border border-dashed border-gray-700 text-gray-400 text-sm">
+                      <div className="text-center py-8 bg-card rounded-xl border border-dashed border-border text-muted-foreground text-sm">
                         No problems added yet
                       </div>
                     ) : (
@@ -588,7 +588,7 @@ export default function ClassContestsTab({
                         return (
                           <div
                             key={cp.problemId}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-slate-900 border border-gray-700 rounded-xl shadow-sm hover:border-primary/70 transition-colors"
+                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-card border border-border rounded-xl shadow-sm hover:border-primary/70 transition-colors"
                           >
                             <div className="flex items-center gap-3">
                               <span className="text-xs font-bold text-primary shrink-0">
@@ -598,14 +598,14 @@ export default function ClassContestsTab({
                                 <span className="font-semibold text-primary truncate">
                                   {problem?.title || 'Unknown Problem'}
                                 </span>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-muted-foreground">
                                   {problem?.difficulty} • {cp.points} points
                                 </span>
                               </div>
                             </div>
                             <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0">
                               <div className="flex items-center gap-2">
-                                <Label className="text-xs font-bold text-gray-400">Points</Label>
+                                <Label className="text-xs font-bold text-muted-foreground">Points</Label>
                                 <Input
                                   type="number"
                                   min={0}
@@ -615,7 +615,7 @@ export default function ClassContestsTab({
                                     next[idx].points = Number(e.target.value);
                                     setFormData({ ...formData, problems: next });
                                   }}
-                                  className="w-20 h-8 rounded-lg border-gray-700 resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
+                                  className="w-20 h-8 rounded-lg border-border resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
                                 />
                               </div>
                               <Button
@@ -658,7 +658,7 @@ export default function ClassContestsTab({
         </Card>
       )}
 
-      <Card className="border-none shadow-xl bg-slate-900 backdrop-blur-sm overflow-hidden">
+      <Card className="border-none shadow-xl bg-card backdrop-blur-sm overflow-hidden">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -690,7 +690,7 @@ export default function ClassContestsTab({
                   >
                     <TableCell className="py-4">
                       <div className="flex flex-col">
-                        <span className="font-semibold text-primary group-hover:text-primary/70 transition-colors">
+                        <span className="font-semibold text-primary group-hover:text-muted-foreground transition-colors">
                           {contest.title}
                         </span>
                         <span className="text-xs text-muted-foreground line-clamp-1">
@@ -705,7 +705,7 @@ export default function ClassContestsTab({
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                           {format(new Date(contest.startAt), 'MMM d, h:mm a')}
                         </span>
-                        <span className="flex items-center gap-1.5 text-primary-light">
+                        <span className="flex items-center gap-1.5 text-muted-foreground">
                           <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
                           {format(new Date(contest.endAt), 'MMM d, h:mm a')}
                         </span>

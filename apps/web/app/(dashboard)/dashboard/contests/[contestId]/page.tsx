@@ -181,7 +181,7 @@ export default function ContestDetailPage() {
           <p className="text-sm uppercase tracking-[0.35em] text-primary">Contest Detail</p>
           <h1 className="text-4xl font-bold tracking-tight">{contest.title}</h1>
           <p className="max-w-2xl text-muted-foreground">
-            {contest.description || 'Không có mô tả contest.'}
+            {contest.description || 'No contest description.'}
           </p>
         </div>
         <div className="flex flex-wrap gap-4">
@@ -209,16 +209,16 @@ export default function ContestDetailPage() {
         <section className="flex flex-col gap-2 space-y-6 rounded-3xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Status */}
-            <div className="flex items-center justify-center gap-6 border border-border bg-slate-900 rounded-xl py-5">
+            <div className="flex items-center justify-center gap-6 border border-border bg-card rounded-xl py-5">
               <div className="rounded-lg bg-amber-700/20 p-2">
                 <ChartNoAxesColumnIncreasing className="h-7 w-7 text-primary" />
               </div>
               <div className="flex flex-col items-start">
-                <h3 className="text-lg text-primary-light tracking-widest">STATUS</h3>
+                <h3 className="text-lg text-muted-foreground tracking-widest">STATUS</h3>
                 <p
                   className={`text-2xl font-semibold ${
                     currentStatus === 'UPCOMING'
-                      ? 'text-primary/80'
+                      ? 'text-primary'
                       : currentStatus === 'RUNNING'
                         ? 'text-green-600'
                         : 'text-red-600'
@@ -228,7 +228,7 @@ export default function ContestDetailPage() {
                   {currentStatus === 'RUNNING' && 'Running'}
                   {currentStatus === 'FINISHED' && 'Finished'}
                 </p>
-                <p className="text-primary-light/70">
+                <p className="text-muted-foreground/70">
                   {currentStatus === 'UPCOMING'
                     ? timeSubMessage
                     : currentStatus === 'RUNNING'
@@ -239,14 +239,14 @@ export default function ContestDetailPage() {
             </div>
 
             {/* Duration */}
-            <div className="flex items-center justify-center gap-6 border border-border bg-slate-900 rounded-xl py-5">
+            <div className="flex items-center justify-center gap-6 border border-border bg-card rounded-xl py-5">
               <div className="rounded-lg bg-sky-900 p-2">
                 <Clock11 className="h-7 w-7 text-blue-400" />
               </div>
               <div className="flex flex-col items-start">
-                <h3 className="text-lg text-primary-light tracking-widest">DURATION</h3>
+                <h3 className="text-lg text-muted-foreground tracking-widest">DURATION</h3>
                 <p className={`text-2xl font-semibold text-blue-400`}>{durationText}</p>
-                <p className="text-primary-light/70">Single continues session</p>
+                <p className="text-muted-foreground/70">Single continues session</p>
               </div>
             </div>
           </div>
@@ -349,7 +349,7 @@ export default function ContestDetailPage() {
                       <span className="text-3xl font-bold text-slate-100 tracking-tight">
                         {formattedCountdown}
                       </span>
-                      <span className="text-xs font-semibold uppercase tracking-widest text-primary-light mt-1">
+                      <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mt-1">
                         To Kickoff
                       </span>
                     </div>
@@ -357,7 +357,7 @@ export default function ContestDetailPage() {
 
                   {/* Nội dung thông báo ẩn bài viết */}
                   <h3 className="text-xl font-bold text-slate-200 mb-2">Content Encrypted</h3>
-                  <p className="max-w-md text-[16px] text-primary-light leading-relaxed">
+                  <p className="max-w-md text-[16px] text-muted-foreground leading-relaxed">
                     Contest problems are hidden until the official start time. Please stay on this
                     page; the problems will unlock automatically.
                   </p>
@@ -367,7 +367,7 @@ export default function ContestDetailPage() {
                     {[1, 2, 3].map((index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between rounded-xl border border-slate-800 bg-black p-4"
+                        className="flex items-center justify-between rounded-xl border border-border bg-black p-4"
                       >
                         <div className="flex items-center gap-4">
                           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-800 font-bold text-slate-400 text-sm">
@@ -378,7 +378,7 @@ export default function ContestDetailPage() {
                             <div className="h-3 w-48 rounded bg-slate-800"></div>
                           </div>
                         </div>
-                        <span className="rounded-full border border-slate-800 p-1.5 bg-slate-900">
+                        <span className="rounded-full border border-border p-1.5 bg-card">
                           <svg
                             className="h-4 w-4 text-slate-500"
                             fill="none"

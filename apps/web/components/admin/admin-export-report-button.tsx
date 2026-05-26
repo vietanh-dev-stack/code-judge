@@ -26,7 +26,7 @@ export function AdminExportReportButton({
   const [loading, setLoading] = useState(false);
 
   const defaultLabel =
-    kind === 'problem' ? 'Xuất báo cáo bài' : 'Xuất báo cáo contest';
+    kind === 'problem' ? 'Export problem report' : 'Export contest report';
 
   const handleExport = async () => {
     setLoading(true);
@@ -36,13 +36,13 @@ export function AdminExportReportButton({
       } else if (kind === 'contest' && contestId) {
         await reportsApi.downloadAdminContestReport(contestId);
       } else {
-        throw new Error('Thiếu tham số export');
+        throw new Error('Missing export parameters');
       }
-      toast.success('Đã tạo file báo cáo', {
-        description: 'File XLSX đang được tải xuống.',
+      toast.success('Report ready', {
+        description: 'Your XLSX file is downloading.',
       });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Không thể xuất báo cáo';
+      const message = err instanceof Error ? err.message : 'Could not export report';
       toast.error(message);
     } finally {
       setLoading(false);
@@ -56,7 +56,7 @@ export function AdminExportReportButton({
       size={size}
       disabled={loading}
       onClick={handleExport}
-      className="gap-1.5 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+      className="gap-1.5"
     >
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
       {label ?? defaultLabel}

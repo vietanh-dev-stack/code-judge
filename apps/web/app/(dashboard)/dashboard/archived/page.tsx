@@ -98,7 +98,7 @@ export default function ArchivedDashboardPage() {
         setConfirmConfig((p) => ({ ...p, loading: true }));
         try {
           // Logic for member to leave
-          toast.info('Hành động Leave Class đang được xử lý...');
+              toast.info('Leaving class is being processed...');
           await fetchClassrooms();
           closeDialog();
         } catch (error) {
@@ -116,7 +116,7 @@ export default function ArchivedDashboardPage() {
 
   if (archived.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] text-gray-500">
+      <div className="flex flex-col items-center justify-center h-[60vh] text-muted-foreground">
         <p className="text-lg font-medium">No archived classrooms.</p>
       </div>
     );

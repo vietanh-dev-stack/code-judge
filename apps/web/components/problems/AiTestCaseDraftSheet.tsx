@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Loader2, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -40,16 +40,9 @@ import { goldenSolutionsApi } from '@/services/golden-solutions.apis';
 import { ApiRequestError } from '@/services/api-client';
 import type { GenerateTestCasesDraftResult } from '@/services/problem.apis';
 import { toast } from 'sonner';
-import { isLikelyPlaceholderIoClient } from './ai-testcase-draft.shared';
+import { isLikelyPlaceholderIoClient, type AiDraftSheetCase } from './ai-testcase-draft.shared';
 
 type Locale = 'vi' | 'en';
-
-type PreviewCase = {
-  input: string;
-  expectedOutput: string;
-  isHidden: boolean;
-  weight: number;
-};
 
 type GoldenCopy = {
   goldenTitle: string;
@@ -66,7 +59,10 @@ type GoldenCopy = {
   uploadButton: string;
   uploadReady: string;
   storedFromServer: string;
-  syncPreview: string;
+  restoreFromAi: string;
+  restoreFromAiHint: string;
+  editableSectionTitle: string;
+  aiOriginalSectionTitle: string;
   verifyButton: string;
   verifyWorkerHint: string;
   modeInline: string;
@@ -99,7 +95,7 @@ const GOLDEN_COPY: Record<Locale, GoldenCopy> = {
     saveFirstHint:
       'Chưa lưu bài: dán mã golden bên dưới để verify ngay. Upload golden lên MinIO cần lưu bài một lần (có problemId).',
     draftVerifyBanner:
-      'Verify nháp: test từ AI (chưa lưu đề) được gửi thẳng lên server — không cần problemId. Bấm «Đồng bộ test từ preview», dán golden, rồi «Chạy golden & kiểm tra».',
+      'Verify nháp: test từ AI (chưa lưu đề) được gửi thẳng lên server — không cần problemId. Chỉnh test bên dưới, dán golden, rồi «Chạy golden & kiểm tra». Muốn bỏ hết chỉnh sửa → «Khôi phục bản AI gốc».',
     storedNeedsProblemId:
       'Chế độ golden trên server cần lưu bài trước — dùng "Dán mã" để verify khi đang tạo mới.',
     inlineLabel: 'Mã golden',
@@ -110,7 +106,10 @@ const GOLDEN_COPY: Record<Locale, GoldenCopy> = {
     uploadButton: 'Upload golden',
     uploadReady: 'Đã upload & xác nhận golden.',
     storedFromServer: 'Đã có golden trên server cho bài này.',
-    syncPreview: 'Đồng bộ test từ preview',
+    restoreFromAi: 'Khôi phục bản AI gốc',
+    restoreFromAiHint: 'Ghi đè danh sách đang sửa bằng testcase AI sinh ra ban đầu (mất chỉnh sửa tay).',
+    editableSectionTitle: 'Test case đang chỉnh (áp dụng vào form)',
+    aiOriginalSectionTitle: 'Bản gốc từ AI (chỉ xem)',
     verifyButton: 'Chạy golden & kiểm tra',
     verifyWorkerHint: 'Nếu lỗi timeout/service: kiểm tra worker đang chạy và queue golden-verify.',
     modeInline: 'Dán mã',
@@ -131,7 +130,7 @@ const GOLDEN_COPY: Record<Locale, GoldenCopy> = {
     saveFirstHint:
       'Problem not saved yet: paste golden code below to verify now. Uploading golden to the server requires saving the problem first.',
     draftVerifyBanner:
-      'Draft verify: AI-generated tests (problem not saved yet) are sent directly to the API — no problemId. Sync from preview, paste golden code, then run verify.',
+      'Draft verify: AI-generated tests (problem not saved yet) are sent directly to the API — no problemId. Edit tests below, paste golden code, then run verify. To discard edits → «Restore AI original».',
     storedNeedsProblemId:
       'Server golden mode requires a saved problem — use "Paste code" while creating a new problem.',
     inlineLabel: 'Golden source',
@@ -142,7 +141,10 @@ const GOLDEN_COPY: Record<Locale, GoldenCopy> = {
     uploadButton: 'Upload golden',
     uploadReady: 'Golden uploaded and confirmed.',
     storedFromServer: 'A golden solution already exists on the server for this problem.',
-    syncPreview: 'Sync tests from preview',
+    restoreFromAi: 'Restore AI original',
+    restoreFromAiHint: 'Overwrite your edits with the first AI-generated test list (discards manual changes).',
+    editableSectionTitle: 'Tests you are editing (applied to form)',
+    aiOriginalSectionTitle: 'AI original (read-only)',
     verifyButton: 'Run golden & verify',
     verifyWorkerHint:
       'If you see service errors, ensure the worker is running (golden-verify queue).',
@@ -177,7 +179,7 @@ const COPY: Record<
     notesTitle: string;
     revNotesTitle: string;
     emptyFiltered: string;
-    preview: (n: number) => string;
+    aiOriginalSectionTitle: (n: number) => string;
     emptyInput: string;
     input: string;
     output: string;
@@ -213,7 +215,7 @@ const COPY: Record<
     revNotesTitle: 'Ghi chú revision',
     emptyFiltered:
       'Không có test case nào sau khi lọc. Thử bổ sung đề bài rõ hơn hoặc chỉnh ioSpec ở bản sau.',
-    preview: (n) => `Xem trước (${n} case)`,
+    aiOriginalSectionTitle: (n) => `Bản gốc từ AI — ${n} test (chỉ xem)`,
     emptyInput: '(trống)',
     input: 'Input',
     output: 'Output',
@@ -248,7 +250,7 @@ const COPY: Record<
     revNotesTitle: 'Revision notes',
     emptyFiltered:
       'No test cases after filtering. Try a clearer statement or adjust ioSpec and generate again.',
-    preview: (n) => `Preview (${n} cases)`,
+    aiOriginalSectionTitle: (n) => `AI original — ${n} test(s) (read-only)`,
     emptyInput: '(empty)',
     input: 'Input',
     output: 'Output',
@@ -263,7 +265,7 @@ const COPY: Record<
   },
 };
 
-function previewCasesFingerprint(cases: PreviewCase[]): string {
+function previewCasesFingerprint(cases: AiDraftSheetCase[]): string {
   return JSON.stringify(
     cases.map((c) => ({ i: c.input, o: c.expectedOutput, h: c.isHidden, w: c.weight })),
   );
@@ -327,9 +329,11 @@ export function AiTestCaseDraftSheet(props: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   draftResult: GenerateTestCasesDraftResult | null;
-  previewCases: PreviewCase[];
-  onApplyReplace: () => void;
-  onApplyAppend: () => void;
+  previewCases: AiDraftSheetCase[];
+  onApplyReplace: (cases: AiDraftSheetCase[]) => void;
+  onApplyAppend: (cases: AiDraftSheetCase[]) => void;
+  /** Gọi khi đóng sheet — lưu chỉnh sửa testcase vào parent / sessionStorage. */
+  onPersistEditableCases?: (cases: AiDraftSheetCase[]) => void;
   onApplySuggestedLimits?: (limits: { timeLimitMs: number; memoryLimitMb: number }) => void;
   /** Khi đã lưu problem — cho upload golden và quyền verify inline (creator). */
   problemId?: string;
@@ -345,21 +349,20 @@ export function AiTestCaseDraftSheet(props: {
     previewCases,
     onApplyReplace,
     onApplyAppend,
+    onPersistEditableCases,
     onApplySuggestedLimits,
     problemId,
     problemTitle,
     problemStatement,
     ioSpec,
-    locale = 'vi',
+    locale = 'en',
   } = props;
   const t = COPY[locale];
   const g = GOLDEN_COPY[locale];
 
   const user = useAuthStore((s) => s.user);
 
-  const [editableCases, setEditableCases] = useState<
-    Array<{ input: string; expectedOutput: string }>
-  >([]);
+  const [editableCases, setEditableCases] = useState<AiDraftSheetCase[]>([]);
   const [goldenMode, setGoldenMode] = useState<'inline' | 'stored'>('inline');
   const [goldenInline, setGoldenInline] = useState('');
   const [goldenLanguage, setGoldenLanguage] =
@@ -381,25 +384,52 @@ export function AiTestCaseDraftSheet(props: {
   const [serverGoldenReady, setServerGoldenReady] = useState(false);
 
   const previewKey = useMemo(() => previewCasesFingerprint(previewCases), [previewCases]);
+  const lastSyncedPreviewKeyRef = useRef<string | null>(null);
+  const editableCasesRef = useRef(editableCases);
+  editableCasesRef.current = editableCases;
 
-  const syncFromPreview = useCallback(() => {
-    setEditableCases(
-      previewCases.map((c) => ({
-        input: c.input,
-        expectedOutput: c.expectedOutput,
-      })),
-    );
+  const loadAiOriginalIntoEditable = useCallback(() => {
+    setEditableCases(previewCases.map((c) => ({ ...c })));
   }, [previewCases]);
+
+  const handleRestoreFromAi = useCallback(() => {
+    loadAiOriginalIntoEditable();
+    toast.message(
+      locale === 'vi'
+        ? 'Đã khôi phục testcase từ bản AI gốc.'
+        : 'Restored tests from the original AI output.',
+      { position: 'top-center' },
+    );
+  }, [loadAiOriginalIntoEditable, locale]);
+
+  const casesReadyToApply = useMemo(
+    () =>
+      editableCases.filter(
+        (c) => c.input.trim().length > 0 || c.expectedOutput.trim().length > 0,
+      ),
+    [editableCases],
+  );
+
+  useEffect(() => {
+    if (lastSyncedPreviewKeyRef.current !== previewKey) {
+      loadAiOriginalIntoEditable();
+      lastSyncedPreviewKeyRef.current = previewKey;
+    }
+  }, [previewKey, loadAiOriginalIntoEditable]);
 
   useEffect(() => {
     if (!open) return;
-    syncFromPreview();
     setVerifyResult(null);
     setLastSavedDiagnosis(loadSavedGoldenVerifyDiagnosis(diagnosisStorageScope));
     if (!problemId) {
       setGoldenMode('inline');
     }
-  }, [open, previewKey, syncFromPreview, problemId, diagnosisStorageScope]);
+  }, [open, problemId, diagnosisStorageScope]);
+
+  useEffect(() => {
+    if (open) return;
+    onPersistEditableCases?.(editableCasesRef.current);
+  }, [open, onPersistEditableCases]);
 
   useEffect(() => {
     if (!open || !problemId) {
@@ -635,6 +665,7 @@ export function AiTestCaseDraftSheet(props: {
       prev.map((row, j) =>
         j === editableIndex
           ? {
+              ...row,
               input: fix.input !== undefined ? fix.input : row.input,
               expectedOutput:
                 fix.expectedOutput !== undefined ? fix.expectedOutput : row.expectedOutput,
@@ -662,6 +693,7 @@ export function AiTestCaseDraftSheet(props: {
         if (editableIndex === undefined) continue;
         const row = next[editableIndex]!;
         next[editableIndex] = {
+          ...row,
           input: d.suggestedFix.input !== undefined ? d.suggestedFix.input : row.input,
           expectedOutput:
             d.suggestedFix.expectedOutput !== undefined
@@ -695,7 +727,7 @@ export function AiTestCaseDraftSheet(props: {
           <SheetDescription>{t.description}</SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-4">
+        <div className="custom-scrollbar flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 py-3 space-y-4">
           {draftResult ? (
             <>
               <div className="text-xs text-muted-foreground space-y-1">
@@ -769,7 +801,7 @@ export function AiTestCaseDraftSheet(props: {
               {draftResult.parsed?.notes ? (
                 <div className="rounded-lg border bg-muted/40 border-primary bg-primary/10 px-3 py-2 text-sm">
                   <p className="font-medium text-primary mb-1">{t.notesTitle}</p>
-                  <p className="whitespace-pre-wrap break-words text-primary-light">
+                  <p className="whitespace-pre-wrap break-words text-muted-foreground">
                     {draftResult.parsed.notes}
                   </p>
                 </div>
@@ -814,7 +846,9 @@ export function AiTestCaseDraftSheet(props: {
                 <p className="text-sm text-muted-foreground">{t.emptyFiltered}</p>
               ) : (
                 <div className="space-y-3">
-                  <p className="text-sm font-medium">{t.preview(previewCases.length)}</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {t.aiOriginalSectionTitle(previewCases.length)}
+                  </p>
                   {previewCases.map((tc, i) => (
                     <div
                       key={i}
@@ -959,14 +993,19 @@ export function AiTestCaseDraftSheet(props: {
                   <p className="text-xs text-muted-foreground">{g.storedNeedsProblemId}</p>
                 ) : null}
 
+                <div className="space-y-2 border-t pt-4">
+                  <p className="text-sm font-semibold">{g.editableSectionTitle}</p>
+                  <p className="text-[11px] text-muted-foreground leading-snug">{g.restoreFromAiHint}</p>
                 <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
                     size="sm"
-                    className="cursor-pointer"
-                    onClick={syncFromPreview}
+                    variant="outline"
+                    className="cursor-pointer border-amber-500/50 text-amber-800 dark:text-amber-200 hover:bg-amber-500/10"
+                    onClick={handleRestoreFromAi}
                   >
-                    {g.syncPreview}
+                    <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                    {g.restoreFromAi}
                   </Button>
                   <Button
                     type="button"
@@ -974,14 +1013,18 @@ export function AiTestCaseDraftSheet(props: {
                     variant="outline"
                     className="border-primary text-primary bg-primary/10 hover:text-primary cursor-pointer"
                     onClick={() =>
-                      setEditableCases((prev) => [...prev, { input: '', expectedOutput: '' }])
+                      setEditableCases((prev) => [
+                        ...prev,
+                        { input: '', expectedOutput: '', isHidden: false, weight: 1 },
+                      ])
                     }
                   >
                     {g.addCase}
                   </Button>
                 </div>
+                </div>
 
-                <div className="space-y-3 max-h-[min(40vh,360px)] overflow-y-auto pr-1">
+                <div className="custom-scrollbar space-y-3 max-h-[min(40vh,360px)] overflow-y-auto overflow-x-hidden pr-1">
                   {editableCases.map((tc, i) => (
                     <div key={i} className="rounded-lg border bg-muted/20 p-2 space-y-2">
                       <div className="flex justify-between items-center gap-2">
@@ -1137,16 +1180,16 @@ export function AiTestCaseDraftSheet(props: {
           <Button
             type="button"
             className="cursor-pointer"
-            disabled={previewCases.length === 0}
-            onClick={onApplyAppend}
+            disabled={casesReadyToApply.length === 0}
+            onClick={() => onApplyAppend(casesReadyToApply)}
           >
             {t.append}
           </Button>
           <Button
             type="button"
             className="cursor-pointer"
-            disabled={previewCases.length === 0}
-            onClick={onApplyReplace}
+            disabled={casesReadyToApply.length === 0}
+            onClick={() => onApplyReplace(casesReadyToApply)}
           >
             {t.replace}
           </Button>

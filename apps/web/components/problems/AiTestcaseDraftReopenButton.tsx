@@ -36,7 +36,7 @@ export function AiTestcaseDraftReopenButton(props: {
   refreshKey?: number;
   onRestore: (saved: SavedAiTestcaseDraft) => void;
 }) {
-  const { scope, locale = 'vi', disabled, refreshKey = 0, onRestore } = props;
+  const { scope, locale = 'en', disabled, refreshKey = 0, onRestore } = props;
   const t = COPY[locale];
   const [meta, setMeta] = useState<{
     savedAt: string;

@@ -8,11 +8,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { getDifficultyColor } from '@/lib/utils';
 import { Problem } from '@/services/problem.apis';
-import { ArrowRight, Clock, Cpu, Edit2, MoreVertical, Trash2 } from 'lucide-react';
+import { reportsApi } from '@/services/reports.apis';
+import { ArrowRight, Clock, Cpu, Edit2, FileSpreadsheet, MoreVertical, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export interface ProblemCardProps {
   problem: Problem;
+  classRoomId?: string;
+  canExportReport?: boolean;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   showActions?: boolean;
@@ -21,23 +25,37 @@ export interface ProblemCardProps {
 
 export default function ProblemCard({
   problem,
+  classRoomId,
+  canExportReport = false,
   onTagClick,
   onEdit,
   onDelete,
   showActions,
 }: ProblemCardProps) {
   const diffColor = getDifficultyColor(problem.difficulty);
+
+  const handleExport = async () => {
+    if (!classRoomId) return;
+    try {
+      await reportsApi.downloadProblemReport(classRoomId, problem.id);
+      toast.success('Problem report ready', { position: 'top-center' });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Export failed', {
+        position: 'top-center',
+      });
+    }
+  };
   return (
     <div
       key={problem.id}
-      className="flex flex-col justify-between p-5 bg-slate-900/50 border border-gray-800 rounded-2xl shadow-sm transition-all duration-200"
+      className="flex flex-col justify-between rounded-2xl border border-border bg-card p-5 shadow-sm transition-all duration-200"
     >
       {/* PHẦN TRÊN: Tiêu đề + Action (nếu là owner) */}
       <div>
         <div className="flex flex-col gap-2 mb-3">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-slate-200 text-2xl line-clamp-1">{problem.title}</h3>
-            {showActions && (
+            {(showActions || canExportReport) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -45,27 +63,39 @@ export default function ProblemCard({
                     size="icon"
                     className="h-8 w-8 rounded-full cursor-pointer"
                   >
-                    <MoreVertical className="h-4 w-4 text-primary-light" />
+                    <MoreVertical className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-32 p-1 rounded-xl shadow-xl">
-                  <DropdownMenuItem
-                    onClick={() => onEdit?.(problem.id)}
-                    className="rounded-lg gap-2 cursor-pointer py-2 text-sm focus:bg-primary focus:text-white"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" /> Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => onDelete?.(problem.id)}
-                    className="rounded-lg gap-2 cursor-pointer py-2 text-sm text-red-600 focus:text-red-600 focus:bg-red-50 mt-1"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Delete
-                  </DropdownMenuItem>
+                <DropdownMenuContent align="end" className="w-40 p-1 rounded-xl shadow-xl">
+                  {canExportReport && classRoomId && (
+                    <DropdownMenuItem
+                      onClick={handleExport}
+                      className="rounded-lg gap-2 cursor-pointer py-2 text-sm"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5" /> Export report
+                    </DropdownMenuItem>
+                  )}
+                  {showActions && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => onEdit?.(problem.id)}
+                        className="rounded-lg gap-2 cursor-pointer py-2 text-sm focus:bg-primary focus:text-white"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" /> Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => onDelete?.(problem.id)}
+                        className="rounded-lg gap-2 cursor-pointer py-2 text-sm text-red-600 focus:text-red-600 focus:bg-red-50 mt-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Delete
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
           </div>
-          <p className="text-primary-light text-sm mt-2 line-clamp-3">{problem.description}</p>
+          <p className="text-muted-foreground text-sm mt-2 line-clamp-3">{problem.description}</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -98,11 +128,11 @@ export default function ProblemCard({
         </div>
       </div>
 
-      <div className="border-t border-primary-light opacity-60 my-8"></div>
+      <div className="border-t border-border opacity-60 my-8"></div>
 
       {/* PHẦN DƯỚI: Nút Solve */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-primary-light">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" />
             <p>{problem.timeLimitMs}ms</p>
@@ -116,7 +146,7 @@ export default function ProblemCard({
         <Button
           size="sm"
           asChild
-          className="bg-transparent hover:bg-slate-900 text-primary font-semibold px-5 rounded-xl h-9 border-none transition-colors hover:text-white"
+          className="h-9 rounded-xl border-none bg-transparent px-5 font-semibold text-primary transition-colors hover:bg-muted hover:text-primary"
         >
           <Link href={`/problem/${problem.id}`} className="flex items-center gap-2">
             <p className="font-semibold">Solve Problem</p>

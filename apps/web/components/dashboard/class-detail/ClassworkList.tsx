@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import AssignmentItem from '@/components/dashboard/class-detail/assignment-item';
 import { Problem, problemsApi } from '@/services/problem.apis';
 import { useDebounce } from '@/hooks/use-debounce';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import ProblemCard from '../problems/ProblemCard';
+import { useClassDetail } from '@/components/dashboard/class-detail/class-detail-context';
+import { ExportReportButton } from '@/components/dashboard/class-detail/export-report-button';
 
 export default function ClassworkList({
   classId,
@@ -23,6 +24,7 @@ export default function ClassworkList({
   isOwner: boolean;
   canManage: boolean;
 }) {
+  const { canExportReports } = useClassDetail();
   const router = useRouter();
   const [problems, setProblems] = useState<Problem[]>(initialProblems);
   const [search, setSearch] = useState('');
@@ -85,19 +87,23 @@ export default function ClassworkList({
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        {/* Only Owner of the Class has the access to create new problem */}
-        {canManage && (
-          <Link
-            href={`/dashboard/${classId}/classwork/create`}
-            className="flex items-center gap-2 bg-primary hover:bg-primary/80 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg transition-all hover:scale-105 active:scale-95"
-          >
-            <Plus className="w-5 h-5" />
-            Create Problem
-          </Link>
-        )}
+        <div className="flex flex-wrap items-center gap-3">
+          {canManage && (
+            <Link
+              href={`/dashboard/${classId}/classwork/create`}
+              className="flex items-center gap-2 bg-primary hover:bg-primary/80 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg transition-all hover:scale-105 active:scale-95"
+            >
+              <Plus className="w-5 h-5" />
+              Create Problem
+            </Link>
+          )}
+          {canExportReports && (
+            <ExportReportButton kind="classroom" classRoomId={classId} />
+          )}
+        </div>
 
-        <div className="flex items-center gap-2 bg-slate-900 px-4 py-2 rounded-xl border border-gray-900 shadow-sm w-full max-w-md">
-          <Search className="w-4 h-4 text-gray-400" />
+        <div className="flex w-full max-w-md items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 shadow-sm">
+          <Search className="w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search assignments..."
             value={search}
@@ -113,13 +119,15 @@ export default function ClassworkList({
             <ProblemCard
               key={problem.id}
               problem={problem}
+              classRoomId={classId}
+              canExportReport={canExportReports}
               onEdit={handleEdit}
               onDelete={handleDelete}
               showActions={canManage}
             />
           ))
         ) : (
-          <div className="col-span-full flex flex-col items-center justify-center py-20 bg-slate-900/50 rounded-3xl border-2 border-dashed border-primary/80 text-gray-400">
+          <div className="col-span-full flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-primary/50 bg-muted/20 py-20 text-muted-foreground">
             <h2 className="text-xl font-medium">No assignments found.</h2>
             <p className="text-sm">Create your first problem to get started.</p>
           </div>

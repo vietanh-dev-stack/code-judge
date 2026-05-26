@@ -61,7 +61,9 @@ Rules:
 - For RUNTIME_ERROR / PYTHON_NOT_FOUND: check input validity, golden compile/runtime, worker/Lambda — do NOT blindly suggest wrong expected fixes.
 - For TIME_LIMIT: rootCause time_limit — suggest smaller input or note golden/timeLimit issue.
 - suggestedFix: include ONLY fields that should change; omit unchanged fields.
-- One caseDiagnosis per failed case index provided; index must match exactly.
+- One caseDiagnosis per failed case; "index" MUST equal the numeric index attribute on each <case index="N"> in failed_cases (NOT 0..k-1 among failures only).
+- For WRONG_ANSWER: suggestedFix.expectedOutput MUST be exactly the string inside <actual_output> for that case (character-for-character, including newlines).
+- Do NOT invent a different expected output than actual_output for WRONG_ANSWER.
 - Be concise; no full golden source code in output.`;
 
 export type GoldenVerifyFailedCasePayload = {

@@ -26,7 +26,7 @@ export default function ClassTabs({ classId }: { classId: string }) {
               'px-4 py-3 text-sm font-medium transition-colors border-b-4',
               isActive
                 ? 'border-primary text-primary'
-                : 'border-transparent text-gray-500 hover:text-primary hover:border-primary',
+                : 'border-transparent text-muted-foreground hover:border-primary hover:text-foreground',
             )}
           >
             {tab.name}

@@ -96,7 +96,7 @@ export default function TeachingClassCard({
           <p className="text-xs text-slate-400 mt-1 uppercase tracking-wider font-semibold">
             {classroom.academicYear || 'No Academic Year'}
           </p>
-          <p className="text-sm text-primary-light mt-2 line-clamp-2 h-[40px] leading-relaxed">
+          <p className="text-sm text-muted-foreground mt-2 line-clamp-2 h-[40px] leading-relaxed">
             {classroom.description || 'No classroom description available.'}
           </p>
         </div>

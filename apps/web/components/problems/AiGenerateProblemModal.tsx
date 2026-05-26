@@ -141,7 +141,7 @@ export function AiGenerateProblemModal(props: {
   const {
     open,
     onOpenChange,
-    locale = 'vi',
+    locale = 'en',
     existingTitle,
     existingStatement,
     defaultDifficulty,
@@ -219,7 +219,7 @@ export function AiGenerateProblemModal(props: {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton
-        className="flex h-[min(92vh,820px)] w-[min(96vw,720px)] max-w-none flex-col gap-0 p-4 sm:max-w-none bg-slate-900"
+        className="flex h-[min(92vh,820px)] w-[min(96vw,720px)] max-w-none flex-col gap-0 border-border bg-card p-4 sm:max-w-none"
       >
         <DialogHeader className="shrink-0 border-b px-5 py-4 text-left">
           <DialogTitle className="flex items-center gap-2 text-primary">
@@ -333,7 +333,7 @@ export function AiGenerateProblemModal(props: {
           ) : null}
         </div>
 
-        <DialogFooter className="shrink-0 flex-col gap-2 sm:flex-row sm:justify-between border-t px-5 py-4 bg-slate-900">
+        <DialogFooter className="shrink-0 flex-col gap-2 border-t border-border bg-card px-5 py-4 sm:flex-row sm:justify-between">
           <p className="text-xs text-muted-foreground sm:max-w-[55%]">{t.applyHint}</p>
           <div className="flex flex-wrap gap-2 justify-end">
             <Button

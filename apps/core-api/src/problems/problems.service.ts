@@ -18,9 +18,8 @@ import { CreateProblemDto } from './dto/create-problem.dto';
 import { UpdateProblemDto } from './dto/update-problem.dto';
 import { buildUniqueProblemSlug } from './problem-slug.util';
 import { ProblemVisibilityService } from './problem-visibility.service';
+import { ProblemAccessService } from './problem-access.service';
 import { replaceProblemTags } from './problem-tag-sync.util';
-
-import * as jwt from 'jsonwebtoken';
 
 const PROBLEM_LIST_INCLUDE = {
   tags: { include: { tag: true } },
@@ -37,6 +36,7 @@ export class ProblemsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly visibilityService: ProblemVisibilityService,
+    private readonly problemAccess: ProblemAccessService,
   ) {}
 
   async create(dto: CreateProblemDto, creatorId: string, role?: Role): Promise<Problem> {
@@ -185,18 +185,34 @@ export class ProblemsService {
     return { total, solved, byDifficulty };
   }
 
-  async findAll(query: {
-    search?: string;
-    page?: number;
-    limit?: number;
-    classRoomId?: string;
-    difficulty?: string;
-    mode?: string;
-    tagId?: string;
-    tagSlug?: string;
-  }) {
+  async findAll(
+    query: {
+      search?: string;
+      page?: number;
+      limit?: number;
+      classRoomId?: string;
+      difficulty?: string;
+      mode?: string;
+      tagId?: string;
+      tagSlug?: string;
+    },
+    req?: any,
+  ) {
+    const viewer = this.problemAccess.resolveViewer(req);
+    const classRoomId = query.classRoomId?.trim();
+    if (classRoomId) {
+      await this.problemAccess.assertCanListClassProblems(classRoomId, viewer);
+    }
+
     const { page, limit, skip } = this.normalizeListPagination(query.page, query.limit);
-    const where = this.buildPublicBankWhere(query);
+    let where = this.buildPublicBankWhere(query);
+    if (classRoomId && viewer) {
+      const classVisibility = await this.problemAccess.buildClassListVisibilityFilter(
+        classRoomId,
+        viewer,
+      );
+      where = { AND: [where, classVisibility] };
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.problem.findMany({
@@ -249,7 +265,10 @@ export class ProblemsService {
     return { items, total, page, limit };
   }
 
-  async findById(problemId: string, req?: any) {
+  async findById(problemId: string, req?: any, opts?: { contestId?: string }) {
+    const viewer = this.problemAccess.resolveViewer(req);
+    await this.problemAccess.assertCanViewProblemById(problemId, viewer, opts);
+
     const problem = await this.prisma.problem.findUnique({
       where: { id: problemId },
       include: PROBLEM_DETAIL_INCLUDE,
@@ -258,25 +277,12 @@ export class ProblemsService {
       throw new NotFoundException('Problem not found');
     }
 
-    // Check if the user is authorized to view raw, unsanitized test cases (admin/creator/teacher)
-    let isAuthorized = false;
-    if (req) {
-      const token = req.cookies?.accessToken;
-      if (token) {
-        try {
-          const decoded: any = jwt.decode(token);
-          if (decoded && decoded.sub) {
-            const userId = decoded.sub;
-            const role = decoded.role;
-            isAuthorized = await this.canManageProblem(problem, userId, role);
-          }
-        } catch (err) {
-          // Token decode fail, treat as unauthorized (student)
-        }
-      }
-    }
+    // Managers (creator / class owner / admin) need full hidden testcase data for edit forms.
+    const canManage =
+      viewer != null &&
+      (await this.problemAccess.canManageProblem(problem, viewer.userId, viewer.role));
 
-    if (!isAuthorized && problem.testCases) {
+    if (!canManage && problem.testCases) {
       // Sanitize hidden test cases for students/guests!
       problem.testCases = problem.testCases.map((tc) => {
         if (tc.isHidden) {

@@ -58,7 +58,7 @@ export function ProfileOverview({ stats, loading, error }: ProfileOverviewProps)
   }
 
   return (
-    <div className="bg-slate-900 rounded-lg p-6">
+    <div className="rounded-lg border border-border bg-card p-6">
       <h3 className="font-bold text-lg mb-4 text-white">Recent Activity</h3>
       <div className="space-y-4">
         {activities.map((activity, idx) => (

@@ -73,8 +73,8 @@ export default function LeaderboardPage({ params }: { params: Promise<{ contestI
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-gray-500 font-medium animate-pulse">Calculating rankings...</p>
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        <p className="text-muted-foreground font-medium animate-pulse">Calculating rankings...</p>
       </div>
     );
   }
@@ -90,16 +90,16 @@ export default function LeaderboardPage({ params }: { params: Promise<{ contestI
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div className="bg-black text-white p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-card p-10 shadow-lg">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
         <div className="relative z-10 space-y-4">
           <div className="flex items-center gap-3">
             <Trophy className="text-amber-400 w-10 h-10" />
-            <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight">
+            <h1 className="text-3xl font-black uppercase tracking-tight text-foreground md:text-5xl">
               {contest.title}
             </h1>
           </div>
-          <div className="flex flex-wrap items-center gap-6 text-gray-400 font-medium">
+          <div className="flex flex-wrap items-center gap-6 text-muted-foreground font-medium">
             <span className="flex items-center gap-2">
               <Clock className="w-5 h-5" />
               Starts: {new Date(contest.startAt).toLocaleString()}
@@ -112,29 +112,29 @@ export default function LeaderboardPage({ params }: { params: Promise<{ contestI
         </div>
       </div>
 
-      <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gray-50/80 hover:bg-gray-50/80 border-b border-gray-100">
-              <TableHead className="py-6 pl-8 font-black text-black text-xs uppercase tracking-widest w-20">
+            <TableRow className="border-b border-border bg-muted/30 hover:bg-muted/30">
+              <TableHead className="w-20 py-6 pl-8 text-xs font-black uppercase tracking-widest text-foreground">
                 Rank
               </TableHead>
-              <TableHead className="py-6 font-black text-black text-xs uppercase tracking-widest">
+              <TableHead className="py-6 text-xs font-black uppercase tracking-widest text-foreground">
                 Participant
               </TableHead>
-              <TableHead className="py-6 font-black text-black text-xs uppercase tracking-widest text-center">
+              <TableHead className="py-6 text-center text-xs font-black uppercase tracking-widest text-foreground">
                 Solved
               </TableHead>
-              <TableHead className="py-6 font-black text-black text-xs uppercase tracking-widest text-center">
+              <TableHead className="py-6 text-center text-xs font-black uppercase tracking-widest text-foreground">
                 Score
               </TableHead>
-              <TableHead className="py-6 font-black text-black text-xs uppercase tracking-widest text-center">
+              <TableHead className="py-6 text-center text-xs font-black uppercase tracking-widest text-foreground">
                 Penalty
               </TableHead>
               {leaderboard[0]?.problems.map((p: any, idx: number) => (
                 <TableHead
                   key={p.problemId}
-                  className="py-6 font-black text-black text-xs uppercase tracking-widest text-center"
+                  className="py-6 text-center text-xs font-black uppercase tracking-widest text-foreground"
                 >
                   Problem {String.fromCharCode(65 + idx)}
                 </TableHead>
@@ -145,7 +145,7 @@ export default function LeaderboardPage({ params }: { params: Promise<{ contestI
             {leaderboard.map((row: any, index: number) => (
               <TableRow
                 key={row.userId}
-                className="group hover:bg-gray-50/50 transition-colors border-b border-gray-50 last:border-0"
+                className="group border-b border-border/50 transition-colors last:border-0 hover:bg-muted/20"
               >
                 <TableCell className="py-6 pl-8">
                   <div
@@ -156,7 +156,7 @@ export default function LeaderboardPage({ params }: { params: Promise<{ contestI
                           ? 'bg-slate-100 text-slate-700'
                           : index === 2
                             ? 'bg-orange-100 text-orange-700'
-                            : 'text-gray-400'
+                            : 'text-muted-foreground'
                     }`}
                   >
                     {index + 1}
@@ -172,8 +172,8 @@ export default function LeaderboardPage({ params }: { params: Promise<{ contestI
                       />
                     </div>
                     <div>
-                      <span className="font-bold text-gray-900 block">{row.userName}</span>
-                      <span className="text-xs text-gray-400">ID: {row.userId.slice(0, 8)}</span>
+                      <span className="block font-bold text-foreground">{row.userName}</span>
+                      <span className="text-xs text-muted-foreground">ID: {row.userId.slice(0, 8)}</span>
                     </div>
                   </div>
                 </TableCell>
@@ -183,10 +183,10 @@ export default function LeaderboardPage({ params }: { params: Promise<{ contestI
                     {row.solvedCount}
                   </span>
                 </TableCell>
-                <TableCell className="py-6 text-center font-black text-xl text-black">
+                <TableCell className="py-6 text-center text-xl font-black text-foreground">
                   {row.totalScore}
                 </TableCell>
-                <TableCell className="py-6 text-center font-medium text-gray-500">
+                <TableCell className="py-6 text-center font-medium text-muted-foreground">
                   {formatPenalty(row.totalPenalty)}
                 </TableCell>
                 {row.problems.map((p: any) => (
@@ -205,12 +205,12 @@ export default function LeaderboardPage({ params }: { params: Promise<{ contestI
                           <XCircle className="w-5 h-5" />
                         </div>
                       ) : (
-                        <div className="bg-gray-100 text-gray-300 p-2 rounded-lg">
+                        <div className="rounded-lg bg-muted p-2 text-muted-foreground">
                           <div className="w-5 h-5" />
                         </div>
                       )}
                       <span
-                        className={`text-[10px] font-bold ${p.isSolved ? 'text-emerald-600' : p.attempts > 0 ? 'text-rose-600' : 'text-gray-300'}`}
+                        className={`text-[10px] font-bold ${p.isSolved ? 'text-emerald-500' : p.attempts > 0 ? 'text-rose-500' : 'text-muted-foreground'}`}
                       >
                         {p.attempts > 0 ? `${p.attempts} tries` : '-'}
                       </span>

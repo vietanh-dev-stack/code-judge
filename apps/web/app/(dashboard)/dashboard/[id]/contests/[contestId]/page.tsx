@@ -35,8 +35,11 @@ import { getClassroomPeople } from '@/services/classroom.apis';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { cn, formatDate, formatDuration } from '@/lib/utils';
+import { useClassDetail } from '@/components/dashboard/class-detail/class-detail-context';
+import { ExportReportButton } from '@/components/dashboard/class-detail/export-report-button';
 
 export default function ContestDetailPage() {
+  const { canExportReports } = useClassDetail();
   const params = useParams();
   const rawContestId = params?.contestId;
   const rawClassId = params?.id;
@@ -49,7 +52,14 @@ export default function ContestDetailPage() {
   const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
   const [hasShownStartToast, setHasShownStartToast] = useState(false);
   const [stats, setStats] = useState<{ submitted: number; total: number } | null>(null);
-  const [studentsStatus, setStudentsStatus] = useState<any[]>([]);
+  type StudentContestStatus = {
+    id: string;
+    name: string;
+    image?: string | null;
+    hasSubmitted: boolean;
+  };
+
+  const [studentsStatus, setStudentsStatus] = useState<StudentContestStatus[]>([]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -145,7 +155,9 @@ export default function ContestDetailPage() {
             const lbEntry = leaderboardUsers.find((lb: any) => lb.userId === student.id);
             let hasSubmitted = false;
             if (lbEntry) {
-              hasSubmitted = lbEntry.problems.some((p: any) => p.isSolved || p.attempts > 0);
+              hasSubmitted = lbEntry.problems.some(
+                (p: any) => p.isSolved || p.attempts > 0 || p.isPending,
+              );
             }
             return {
               id: student.id,
@@ -162,14 +174,14 @@ export default function ContestDetailPage() {
         }
       } catch (err) {
         console.error('Failed to load contest data:', err);
-        setError('Không thể tải thông tin contest. Vui lòng thử lại sau.');
+        setError('Could not load contest details. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
 
     loadContest();
-  }, [contestId]);
+  }, [contestId, classId]);
 
   if (!contestId) {
     return (
@@ -261,6 +273,9 @@ export default function ContestDetailPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-4">
+          {canExportReports && contestId && (
+            <ExportReportButton kind="contest" contestId={contestId} size="default" />
+          )}
           <Button size="lg" asChild className="border border-primary">
             <Link
               href={`/dashboard/${classId}/contests/${contestId}/leaderboard`}
@@ -285,16 +300,16 @@ export default function ContestDetailPage() {
         <section className="space-y-6 rounded-3xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Status */}
-            <div className="flex items-center justify-center gap-6 border border-border bg-slate-900 rounded-xl py-5">
+            <div className="flex items-center justify-center gap-6 border border-border bg-card rounded-xl py-5">
               <div className="rounded-lg bg-amber-700/20 p-2">
                 <ChartNoAxesColumnIncreasing className="h-7 w-7 text-primary" />
               </div>
               <div className="flex flex-col items-start">
-                <h3 className="text-lg text-primary-light tracking-widest">STATUS</h3>
+                <h3 className="text-lg text-muted-foreground tracking-widest">STATUS</h3>
                 <p
                   className={`text-2xl font-semibold ${
                     currentStatus === 'UPCOMING'
-                      ? 'text-primary/80'
+                      ? 'text-primary'
                       : currentStatus === 'RUNNING'
                         ? 'text-green-600'
                         : 'text-red-600'
@@ -304,7 +319,7 @@ export default function ContestDetailPage() {
                   {currentStatus === 'RUNNING' && 'Running'}
                   {currentStatus === 'FINISHED' && 'Finished'}
                 </p>
-                <p className="text-primary-light/70">
+                <p className="text-muted-foreground/70">
                   {currentStatus === 'UPCOMING'
                     ? timeSubMessage
                     : currentStatus === 'RUNNING'
@@ -315,14 +330,14 @@ export default function ContestDetailPage() {
             </div>
 
             {/* Duration */}
-            <div className="flex items-center justify-center gap-6 border border-border bg-slate-900 rounded-xl py-5">
+            <div className="flex items-center justify-center gap-6 border border-border bg-card rounded-xl py-5">
               <div className="rounded-lg bg-sky-900 p-2">
                 <Clock11 className="h-7 w-7 text-blue-400" />
               </div>
               <div className="flex flex-col items-start">
-                <h3 className="text-lg text-primary-light tracking-widest">DURATION</h3>
+                <h3 className="text-lg text-muted-foreground tracking-widest">DURATION</h3>
                 <p className={`text-2xl font-semibold text-blue-400`}>{durationText}</p>
-                <p className="text-primary-light/70">Single continues session</p>
+                <p className="text-muted-foreground/70">Single continues session</p>
               </div>
             </div>
           </div>
@@ -396,14 +411,14 @@ export default function ContestDetailPage() {
                     variant={
                       stats.submitted === stats.total && stats.total > 0 ? 'secondary' : 'outline'
                     }
-                    className="bg-primary/20 text-primary-light border-primary-light text-sm"
+                    className="bg-primary/20 text-muted-foreground border-primary-light text-sm"
                   >
                     <Users className="w-3 h-3 mr-1" />
                     {stats.submitted} / {stats.total} submitted
                   </Badge>
                 </div>
               ) : (
-                <p className="font-semibold text-gray-400">Loading stats...</p>
+                <p className="font-semibold text-muted-foreground">Loading stats...</p>
               )}
             </div>
 
@@ -422,11 +437,11 @@ export default function ContestDetailPage() {
               {/* Table Body */}
               <div className="divide-y divide-white/5">
                 {studentsStatus.map((student) => {
-                  const submitted = student.submitted > 0;
+                  const submitted = student.hasSubmitted;
 
                   return (
                     <div
-                      key={student.userId}
+                      key={student.id}
                       className="grid grid-cols-[1.5fr_1fr] items-center px-6 py-6"
                     >
                       {/* Student Info */}
@@ -442,9 +457,6 @@ export default function ContestDetailPage() {
                         <div>
                           <p className="text-lg font-semibold text-slate-100">{student.name}</p>
 
-                          {student.className && (
-                            <p className="text-sm text-slate-400">{student.className}</p>
-                          )}
                         </div>
                       </div>
 
@@ -517,7 +529,7 @@ export default function ContestDetailPage() {
                       <span className="text-3xl font-bold text-slate-100 tracking-tight">
                         {formattedCountdown}
                       </span>
-                      <span className="text-xs font-semibold uppercase tracking-widest text-primary-light mt-1">
+                      <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mt-1">
                         To Kickoff
                       </span>
                     </div>
@@ -525,7 +537,7 @@ export default function ContestDetailPage() {
 
                   {/* Nội dung thông báo ẩn bài viết */}
                   <h3 className="text-xl font-bold text-slate-200 mb-2">Content Encrypted</h3>
-                  <p className="max-w-md text-[16px] text-primary-light leading-relaxed">
+                  <p className="max-w-md text-[16px] text-muted-foreground leading-relaxed">
                     Contest problems are hidden until the official start time. Please stay on this
                     page; the problems will unlock automatically.
                   </p>
@@ -535,7 +547,7 @@ export default function ContestDetailPage() {
                     {[1, 2, 3].map((index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between rounded-xl border border-slate-800 bg-black p-4"
+                        className="flex items-center justify-between rounded-xl border border-border bg-black p-4"
                       >
                         <div className="flex items-center gap-4">
                           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-800 font-bold text-slate-400 text-sm">
@@ -546,7 +558,7 @@ export default function ContestDetailPage() {
                             <div className="h-3 w-48 rounded bg-slate-800"></div>
                           </div>
                         </div>
-                        <span className="rounded-full border border-slate-800 p-1.5 bg-slate-900">
+                        <span className="rounded-full border border-border p-1.5 bg-card">
                           <svg
                             className="h-4 w-4 text-slate-500"
                             fill="none"

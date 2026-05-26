@@ -79,7 +79,7 @@ export default async function ContestsPage({ searchParams }: PageProps) {
       <div className="flex flex-col justify-between gap-6 pb-8">
         <div className="space-y-4">
           <h1 className="text-4xl font-extrabold tracking-tight text-white">Public Contests</h1>
-          <p className="text-lg text-primary/70 max-w-2xl leading-relaxed">
+          <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
             Compete with others, solve challenging problems, and climb the leaderboard.
           </p>
         </div>
@@ -98,7 +98,7 @@ export default async function ContestsPage({ searchParams }: PageProps) {
                 ${
                   isActive
                     ? 'bg-orange-500 text-slate-950 shadow-md shadow-orange-500/10'
-                    : 'text-orange-100/70 hover:text-orange-500 hover:bg-slate-900/40'
+                    : 'text-orange-100/70 hover:text-orange-500 hover:bg-card/40'
                 }
               `}
                   >
@@ -113,17 +113,17 @@ export default async function ContestsPage({ searchParams }: PageProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredContests.length === 0 ? (
-          <div className="col-span-full py-20 text-center bg-slate-900 rounded-3xl">
+          <div className="col-span-full py-20 text-center bg-card rounded-3xl">
             <Trophy className="w-16 h-16 mx-auto text-primary mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900">No contests scheduled</h2>
-            <p className="text-gray-400 text-lg">Check back later for upcoming challenges!</p>
+            <h2 className="text-xl font-semibold text-foreground">No contests scheduled</h2>
+            <p className="text-muted-foreground text-lg">Check back later for upcoming challenges!</p>
           </div>
         ) : (
           filteredContests.map((contest) => (
             <Link
               href={`/dashboard/contests/${contest.id}`}
               key={contest.id}
-              className="group relative bg-slate-900/50 rounded-3xl shadow-sm hover:scale-105 transition-all duration-300 overflow-hidden flex flex-col h-full"
+              className="group relative bg-card/50 rounded-3xl shadow-sm hover:scale-105 transition-all duration-300 overflow-hidden flex flex-col h-full"
             >
               <div className="p-8 flex-1 flex flex-col space-y-6">
                 <div>{getStatusBadge(contest.status)}</div>
@@ -131,7 +131,7 @@ export default async function ContestsPage({ searchParams }: PageProps) {
                   <h3 className="text-3xl font-bold text-fuchsia-100 transition-colors">
                     {contest.title}
                   </h3>
-                  <p className="text-primary-light text-sm line-clamp-2 min-h-[40px] mt-4">
+                  <p className="text-muted-foreground text-sm line-clamp-2 min-h-[40px] mt-4">
                     {contest.description || 'No description available for this contest.'}
                   </p>
                 </div>
@@ -139,26 +139,26 @@ export default async function ContestsPage({ searchParams }: PageProps) {
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 text-sm text-gray-600">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                      <Calendar className="w-6 h-6 text-primary-light" />
+                      <Calendar className="w-6 h-6 text-muted-foreground" />
                     </div>
-                    <span className="text-[17px] text-primary-light">
+                    <span className="text-[17px] text-muted-foreground">
                       {format(new Date(contest.startAt), 'MMM d, yyyy')}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-gray-600">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                      <Clock className="w-6 h-6 text-primary-light" />
+                      <Clock className="w-6 h-6 text-muted-foreground" />
                     </div>
-                    <span className="text-[17px] text-primary-light">
+                    <span className="text-[17px] text-muted-foreground">
                       {format(new Date(contest.startAt), 'h:mm a')} -{' '}
                       {format(new Date(contest.endAt), 'h:mm a')}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-gray-600">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                      <Users className="w-6 h-6 text-primary-light" />
+                      <Users className="w-6 h-6 text-muted-foreground" />
                     </div>
-                    <span className="text-[17px] text-primary-light">Public Contest</span>
+                    <span className="text-[17px] text-muted-foreground">Public Contest</span>
                   </div>
                 </div>
               </div>

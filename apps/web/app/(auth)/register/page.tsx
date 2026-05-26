@@ -24,7 +24,7 @@ export default function RegisterPage() {
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp');
+      setError('Passwords do not match');
       return;
     }
 
@@ -49,7 +49,7 @@ export default function RegisterPage() {
       if (err instanceof ApiRequestError) {
         setError(err.body.message);
       } else {
-        setError('Đã có lỗi xảy ra. Vui lòng thử lại.');
+        setError('Something went wrong. Please try again.');
       }
     } finally {
       setLoading(false);

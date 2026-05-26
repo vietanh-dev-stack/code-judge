@@ -1,15 +1,14 @@
 import { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { Classroom, getClassroomDetail } from '@/services/classroom.apis';
-import { Copy, Calendar, ArrowRight, ImageIcon, Paperclip } from 'lucide-react';
+import { Calendar, ArrowRight, ImageIcon, Paperclip } from 'lucide-react';
 import { AssignmentPost } from '@/components/dashboard/class-detail/assignment-post';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getClassroomBannerColor } from '@/lib/classroom-banner';
 import { Contest, contestsApi } from '@/services/contest.apis';
 import { authApi } from '@/services/auth.apis';
+import { CopyButton } from '@/components/shared/copy-button';
 
 export const metadata: Metadata = {
   title: 'Class Stream | CodeJudge',
@@ -78,13 +77,12 @@ export default async function ClassStreamPage({ params }: { params: Promise<{ id
             <h2 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Class Access</h2>
             <div className="flex items-center justify-between bg-muted/30 border border-border/80 rounded-lg px-3.5 py-2.5">
               <p className="font-mono text-sm font-bold text-primary tracking-wider">{classroom.classCode}</p>
-              <Button
+              <CopyButton
+                value={classroom.classCode}
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
+              />
             </div>
           </div>
 

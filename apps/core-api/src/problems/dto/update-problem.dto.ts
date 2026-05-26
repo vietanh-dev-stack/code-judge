@@ -8,7 +8,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  IsUUID,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -89,11 +89,13 @@ export class UpdateProblemDto {
 
   @ApiPropertyOptional({
     type: [String],
-    description: 'UUID các Tag gán cho đề; gửi [] để gỡ hết tag. Bỏ qua field này nếu không đổi tag.',
+    description:
+      'Id hoặc slug các tag gán cho đề; gửi [] để gỡ hết tag. Bỏ qua field này nếu không đổi tag.',
   })
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(40)
-  @IsUUID('4', { each: true })
+  @IsString({ each: true })
+  @MaxLength(128, { each: true })
   tagIds?: string[];
 }

@@ -68,6 +68,7 @@ import {
   goldenVerifyFailureDiagnosisSchema,
   type GoldenVerifyFailureDiagnosis,
 } from './golden-verify-failure-diagnose.prompt';
+import { reconcileGoldenVerifyFailureDiagnosis } from './golden-verify-diagnosis-reconcile.util';
 import { TestGenerateProjectSampleDto } from './dto/test-generate-project-sample.dto';
 import {
   validateGeneratedProjectTestcase,
@@ -742,7 +743,7 @@ export class AiTestcaseService {
       return {
         index: r.index,
         input: tc?.input ?? '',
-        expectedOutput: r.expectedOutput,
+        expectedOutput: tc?.expectedOutput ?? r.expectedOutput,
         actualOutput: r.actualOutput,
         stderr: r.stderr,
         verdict: r.verdict,
@@ -790,7 +791,8 @@ export class AiTestcaseService {
 
     try {
       const json = JSON.parse(this.extractFirstJsonObject(text) ?? text) as unknown;
-      const structured = goldenVerifyFailureDiagnosisSchema.parse(json);
+      const parsed = goldenVerifyFailureDiagnosisSchema.parse(json);
+      const structured = reconcileGoldenVerifyFailureDiagnosis(parsed, failedCases);
       return { provider, model, structured };
     } catch (error) {
       const parseError = error instanceof Error ? error.message : 'Unknown parse error';

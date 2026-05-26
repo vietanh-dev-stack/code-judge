@@ -58,7 +58,7 @@ export default function ClassDropdown() {
 
       <SelectContent side="bottom" className="rounded-xl border-gray-100 shadow-xl">
         <SelectGroup>
-          <SelectLabel className="text-gray-400 font-bold text-[10px] uppercase tracking-wider px-2 py-2">
+          <SelectLabel className="text-muted-foreground font-bold text-[10px] uppercase tracking-wider px-2 py-2">
             My Classes
           </SelectLabel>
 
