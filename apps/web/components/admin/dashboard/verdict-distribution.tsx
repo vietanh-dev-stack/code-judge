@@ -32,60 +32,51 @@ export function VerdictDistribution({ verdictData }: VerdictDistributionProps) {
       <CardContent className="flex flex-col items-center justify-between gap-6 pt-4">
         {/* Chart container */}
         <div className="relative h-[180px] w-[180px] shrink-0">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    const data = payload[0].payload;
-                    return (
-                      <div className="rounded-xl border border-border bg-popover p-2.5 shadow-md text-xs">
-                        <span className="font-semibold" style={{ color: data.color }}>
-                          {data.name}
-                        </span>
-                        <div className="mt-1 text-muted-foreground">
-                          Count: <span className="font-bold text-foreground">{data.value.toLocaleString()}</span>
-                        </div>
-                        <div className="text-muted-foreground">
-                          Share: <span className="font-bold text-foreground">{data.percentage}</span>
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Pie
-                data={verdictData}
-                cx="50%"
-                cy="50%"
-                innerRadius={55}
-                outerRadius={75}
-                paddingAngle={3}
-                dataKey="value"
-                onMouseEnter={(_, index) => setActiveIndex(index)}
-                onMouseLeave={() => setActiveIndex(null)}
-              >
-                {verdictData.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={entry.color} 
-                    style={{
-                      filter: activeIndex === index ? 'drop-shadow(0px 4px 12px rgba(0, 0, 0, 0.15))' : 'none',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      transform: activeIndex === index ? 'scale(1.05)' : 'scale(1)',
-                      transformOrigin: 'center'
-                    }}
-                  />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-          {/* Inner details */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-3xl font-bold tracking-tight">{totalVerdictsFormatted}</span>
-            <span className="text-2xs text-muted-foreground uppercase tracking-widest font-semibold">Verdicts</span>
+          <PieChart width={180} height={180}>
+            <Pie
+              data={verdictData}
+              cx="50%"
+              cy="50%"
+              innerRadius={55}
+              outerRadius={75}
+              paddingAngle={3}
+              dataKey="value"
+              isAnimationActive={false}
+              onMouseEnter={(_, index) => setActiveIndex(index)}
+              onMouseLeave={() => setActiveIndex(null)}
+            >
+              {verdictData.map((entry, index) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={entry.color} 
+                  style={{
+                    filter: activeIndex === index ? 'drop-shadow(0px 4px 12px rgba(0, 0, 0, 0.15))' : 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    transform: activeIndex === index ? 'scale(1.05)' : 'scale(1)',
+                    transformOrigin: 'center'
+                  }}
+                />
+              ))}
+            </Pie>
+          </PieChart>
+          {/* Inner details (Dynamic Vercel/Stripe style) */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all duration-200">
+            {activeIndex !== null ? (
+              <>
+                <span className="text-3xl font-extrabold tracking-tight transition-all duration-150" style={{ color: verdictData[activeIndex].color }}>
+                  {verdictData[activeIndex].value.toLocaleString()}
+                </span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold max-w-[120px] text-center truncate px-2 transition-all duration-150">
+                  {verdictData[activeIndex].name}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-3xl font-extrabold tracking-tight">{totalVerdictsFormatted}</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Verdicts</span>
+              </>
+            )}
           </div>
         </div>
 

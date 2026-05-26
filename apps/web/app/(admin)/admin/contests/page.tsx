@@ -220,7 +220,7 @@ export default function AdminContestsPage() {
           </TableBody>
         </Table>
 
-        <div className="p-4 border-t border-slate-100 bg-slate-50/30 flex items-center justify-between">
+        <div className="p-4 border-t border-slate-100 flex items-center justify-between">
           <p className="text-sm text-slate-500">
             Showing {contests.length} of {total} contests
           </p>

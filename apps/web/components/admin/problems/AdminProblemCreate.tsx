@@ -368,7 +368,7 @@ export default function AdminProblemCreate() {
               Back to List
             </Link>
           </Button>
-          <div>
+            <div>
             <h1 className="text-3xl font-bold tracking-tight">
               {editId ? 'Admin — Edit Problem' : 'Admin — Create Problem'}
             </h1>
@@ -408,7 +408,7 @@ export default function AdminProblemCreate() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column - Main Details */}
         <div className="lg:col-span-2 space-y-8">
-          <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden">
+          <Card className="border-none shadow-xl backdrop-blur-sm overflow-hidden">
             <CardHeader className="border-b flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-xl">Basic Information</CardTitle>
               <Button
@@ -482,7 +482,7 @@ export default function AdminProblemCreate() {
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden">
+          <Card className="border-none shadow-xl backdrop-blur-sm overflow-hidden">
             <CardHeader className="border-b flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <CardTitle className="text-xl">Test Cases</CardTitle>
@@ -546,7 +546,7 @@ export default function AdminProblemCreate() {
                 )}
                 {formData.testCases?.length === 0 ? (
                   <div
-                    className={`flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-2xl bg-gray-50/50 text-gray-400 ${errors.testCases ? 'border-red-300' : ''}`}
+                    className={`flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-2xl text-gray-400 ${errors.testCases ? 'border-red-300' : ''}`}
                   >
                     <Beaker className="w-12 h-12 mb-3 opacity-20" />
                     <p className="font-medium">No test cases added yet.</p>
@@ -664,7 +664,7 @@ export default function AdminProblemCreate() {
 
         {/* Right Column - Configuration */}
         <div className="space-y-8">
-          <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden sticky top-24">
+          <Card className="border-none shadow-xl backdrop-blur-sm overflow-hidden sticky top-24">
             <CardHeader className="border-b">
               <CardTitle className="text-xl">Configuration</CardTitle>
               <CardDescription className="text-xs text-muted-foreground pt-1">
