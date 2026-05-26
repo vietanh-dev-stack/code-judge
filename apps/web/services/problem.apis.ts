@@ -224,6 +224,16 @@ export interface CalibrateProblemLimitsResult {
   currentMemoryLimitMb: number;
 }
 
+export interface ProblemBankProgress {
+  total: number;
+  solved: number;
+  byDifficulty: {
+    EASY: number;
+    MEDIUM: number;
+    HARD: number;
+  };
+}
+
 /** GET /problems — danh sách public / theo lớp. */
 export interface ProblemsListQuery {
   search?: string;
@@ -262,6 +272,11 @@ export const problemsApi = {
     if (query) appendProblemsListParams(params, query);
     const queryString = params.toString();
     return apiFetch(`/problems${queryString ? `?${queryString}` : ''}`, options);
+  },
+
+  /** Progress toàn problem bank (không theo filter danh sách). */
+  async getBankProgress(options?: RequestInit): Promise<ProblemBankProgress> {
+    return apiFetch('/problems/bank/progress', options);
   },
 
   async findAllAdmin(

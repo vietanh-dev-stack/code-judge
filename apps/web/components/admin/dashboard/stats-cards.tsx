@@ -20,15 +20,15 @@ export function StatsCards({ stats }: StatsCardsProps) {
       value: stats.totalUsers.toLocaleString(),
       isPositive: true,
       icon: Users,
-      iconColorClass: 'text-indigo-600 dark:text-indigo-400',
-      bgGradClass: 'from-indigo-500/10 to-purple-500/10 border-indigo-500/20',
+      iconColorClass: 'text-primary',
+      bgGradClass: 'from-primary/10 to-orange-500/10 border-primary/20',
     },
     {
       title: 'Total Problems',
       value: stats.totalProblems.toLocaleString(),
       isPositive: true,
       icon: Code2,
-      iconColorClass: 'text-emerald-600 dark:text-emerald-400',
+      iconColorClass: 'text-emerald-500',
       bgGradClass: 'from-emerald-500/10 to-teal-500/10 border-emerald-500/20',
     },
     {
@@ -36,7 +36,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
       value: stats.totalContests.toLocaleString(),
       isPositive: true,
       icon: BookOpen,
-      iconColorClass: 'text-amber-600 dark:text-amber-400',
+      iconColorClass: 'text-amber-500',
       bgGradClass: 'from-amber-500/10 to-orange-500/10 border-amber-500/20',
     },
     {
@@ -44,7 +44,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
       value: stats.activeClassrooms.toLocaleString(),
       isPositive: false,
       icon: GraduationCap,
-      iconColorClass: 'text-rose-600 dark:text-rose-400',
+      iconColorClass: 'text-rose-500',
       bgGradClass: 'from-rose-500/10 to-pink-500/10 border-rose-500/20',
     },
   ];
@@ -57,7 +57,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
           <Card
             key={i}
             className={cn(
-              "relative overflow-hidden border bg-gradient-to-br transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:bg-slate-900/50",
+              "relative overflow-hidden border bg-gradient-to-br transition-all duration-300 hover:-translate-y-1 hover:shadow-lg bg-card border-border",
               stat.bgGradClass
             )}
           >

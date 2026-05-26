@@ -67,29 +67,29 @@ export function JoinClassroomModal({ open, onClose }: JoinClassroomModalProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="relative px-6 py-5 border-b border-gray-100">
+      <div className="relative w-full max-w-md rounded-2xl bg-slate-900 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="relative px-6 py-5">
           <button
             onClick={onClose}
-            className="absolute right-4 top-4 p-1 rounded-full hover:bg-gray-100 cursor-pointer transition"
+            className="absolute right-4 top-4 p-1 rounded-full hover:bg-gray-500 cursor-pointer transition"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-gray-500 hover:text-gray-200" />
           </button>
 
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-black flex items-center justify-center">
-              <Users className="w-5 h-5 text-white" />
+            <div className="w-11 h-11 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Users className="w-5 h-5 text-primary" />
             </div>
 
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Join Classroom</h2>
-              <p className="text-sm text-gray-500">Enter classroom code to join</p>
+              <h2 className="text-xl font-bold text-white">Join Classroom</h2>
+              <p className="text-sm text-primary-light">Enter classroom code to join</p>
             </div>
           </div>
         </div>
 
-        <div className="p-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Classroom Code</label>
+        <div className="px-6 py-4">
+          <label className="block text-sm font-medium text-gray-300 mb-2">Classroom Code</label>
 
           <input
             type="text"
@@ -97,7 +97,7 @@ export function JoinClassroomModal({ open, onClose }: JoinClassroomModalProps) {
             onChange={(e) => setClassCode(e.target.value.toUpperCase())}
             placeholder="ABCD1234"
             maxLength={12}
-            className="w-full h-12 rounded-xl border border-gray-300 px-4 text-center text-lg tracking-[0.25em] font-semibold uppercase outline-none focus:ring-2 focus:ring-black focus:border-black"
+            className="w-full h-12 rounded-xl border border-gray-300 px-4 text-center text-lg tracking-[0.25em] font-semibold uppercase outline-none focus:ring-1 focus:ring-primary focus:border-black"
           />
 
           <p className="mt-2 text-xs text-gray-500">
@@ -108,7 +108,7 @@ export function JoinClassroomModal({ open, onClose }: JoinClassroomModalProps) {
 
           <div className="flex items-center justify-end gap-3 mt-6">
             <Button
-              className="cursor-pointer"
+              className="cursor-pointer text-md"
               variant="outline"
               onClick={onClose}
               disabled={isSubmitting}
@@ -117,7 +117,7 @@ export function JoinClassroomModal({ open, onClose }: JoinClassroomModalProps) {
             </Button>
 
             <Button
-              className="cursor-pointer"
+              className="cursor-pointer text-md"
               onClick={handleJoinClassroom}
               disabled={isSubmitting || classCode.trim().length < 6}
             >

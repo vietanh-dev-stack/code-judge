@@ -5,7 +5,6 @@ import { Camera, Check, Code2, KeyRound, MailCheck, Pencil, X } from 'lucide-rea
 import type { UserProfile } from '@/services/auth.apis';
 import { profileApi } from '@/services/profile.apis';
 import { usersApi } from '@/services/user.apis';
-import { UserAvatar } from '@/components/shared/user-avatar';
 import { useAuthStore } from '@/store/auth-store';
 import type { UserProfileStats } from '@/services/profile.apis';
 import {
@@ -29,8 +28,8 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const setUser = useAuthStore((s) => s.setUser);
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(user.name);
@@ -231,8 +230,9 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
         body: file,
       });
       if (!uploadResponse.ok) throw new Error('Failed to upload image to MinIO');
-      const updated = await usersApi.confirmAvatar(uploadData.objectKey);
-      setUser(updated);
+      await usersApi.confirmAvatar(uploadData.objectKey);
+      setAvatarLoadError(false);
+      await refreshUser();
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Failed to upload avatar');
     } finally {
@@ -251,16 +251,23 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="flex flex-col items-center md:items-start md:col-span-1">
           <div className="relative mb-4">
-            <div className="relative h-32 w-32 rounded-full bg-gradient-to-br from-primary/40 via-primary/10 to-transparent p-[3px] shadow-lg shadow-primary/20">
-              <div className="relative h-full w-full overflow-hidden rounded-full border border-border/60 bg-secondary">
-                <UserAvatar
-                  name={user.name}
-                  imageUrl={user.image}
-                  fallbackClassName="text-3xl"
-                />
+            <div className="relative h-32 w-32 rounded-full bg-gradient-to-br from-primary/40 via-primary/10 to-transparen p-[3px] shadow-lg shadow-primary/20">
+              <div className="relative h-full w-full overflow-hidden rounded-full border border-border/60 ">
+                {!avatarLoadError && user.image ? (
+                  <img
+                    src={user.image}
+                    alt={user.name}
+                    className="h-full w-full object-cover"
+                    onError={() => setAvatarLoadError(true)}
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-muted text-3xl font-semibold text-foreground/80">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 {isUploading && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/45 text-xs font-medium text-white">
-                    Đang tải...
+                    Loading...
                   </div>
                 )}
               </div>
@@ -270,7 +277,7 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
               onClick={() => fileInputRef.current?.click()}
               className="absolute bottom-1 right-0 cursor-pointer rounded-full border border-border/50 bg-card p-2 text-primary shadow-md transition-all hover:scale-105 hover:bg-accent"
               disabled={isUploading}
-              aria-label="Đổi ảnh đại diện"
+              aria-label="Change profile picture"
             >
               <Camera className="w-5 h-5" />
             </button>
@@ -302,7 +309,7 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
                     type="button"
                     onClick={() => void handleSaveName()}
                     disabled={nameSaveStatus === 'saving'}
-                    className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                    className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60 cursor-pointer"
                     aria-label="Lưu tên"
                   >
                     <Check className="h-4 w-4" />
@@ -312,7 +319,7 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
                     type="button"
                     onClick={cancelEditingName}
                     disabled={nameSaveStatus === 'saving'}
-                    className="inline-flex items-center gap-1 rounded-lg border border-border bg-secondary px-3 py-1.5 text-sm font-medium hover:bg-accent disabled:opacity-60"
+                    className="inline-flex items-center gap-1 rounded-lg border border-primary bg-slate-900 px-3 py-1.5 text-sm font-medium hover:bg-accent disabled:opacity-60 text-primary cursor-pointer"
                     aria-label="Cancel"
                   >
                     <X className="h-4 w-4" />
@@ -331,7 +338,7 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
                 <button
                   type="button"
                   onClick={startEditingName}
-                  className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-primary cursor-pointer"
                   aria-label="Edit name"
                 >
                   <Pencil className="h-4 w-4" />
@@ -351,17 +358,17 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
 
         <div className="md:col-span-2">
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-secondary rounded-lg p-4 text-center">
+            <div className="bg-primary rounded-lg p-4 text-center">
               <div className="text-2xl font-bold">
                 {statsLoading ? '—' : (stats?.problemsSolved ?? 0)}
               </div>
-              <div className="text-xs text-muted-foreground mt-1">Problems Solved</div>
+              <div className="text-sm mt-1">Problems Solved</div>
             </div>
-            <div className="bg-secondary rounded-lg p-4 text-center">
+            <div className="bg-primary rounded-lg p-4 text-center">
               <div className="text-2xl font-bold">
                 {statsLoading ? '—' : `${stats?.successRate ?? 0}%`}
               </div>
-              <div className="text-xs text-muted-foreground mt-1">Success Rate</div>
+              <div className="text-sm mt-1">Success Rate</div>
             </div>
           </div>
         </div>
@@ -370,7 +377,7 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
       <button
         type="button"
         onClick={openPasswordModal}
-        className="absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-lg border border-border bg-secondary px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition-all duration-200 hover:border-primary/40 hover:bg-accent hover:text-accent-foreground hover:shadow-md hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+        className="absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-lg cursor-pointer bg-primary px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
       >
         <KeyRound className="h-4 w-4" />
         Change Password
@@ -553,7 +560,7 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
             {stats.languages.map((item) => (
               <span
                 key={item.language}
-                className="bg-secondary text-foreground px-4 py-2 rounded-full text-sm font-medium"
+                className="bg-primary text-foreground px-4 py-2 rounded-full text-sm font-medium"
               >
                 {item.language} ({item.count})
               </span>

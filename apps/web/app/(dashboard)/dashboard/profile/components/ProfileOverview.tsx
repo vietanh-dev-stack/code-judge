@@ -21,6 +21,13 @@ interface ProfileOverviewProps {
 }
 
 export function ProfileOverview({ stats, loading, error }: ProfileOverviewProps) {
+  const getStatusColorBadge = (status: string) => {
+    return status === 'Accepted'
+      ? 'bg-green-500/20 border-green-500 text-green-500'
+      : status === 'Wrong'
+        ? 'bg-red-500/20 border-red-500 text-red-500'
+        : 'bg-amber-900/20 border-amber-500 text-amber-500';
+  };
   if (loading) {
     return (
       <div className="bg-card border border-border rounded-lg p-6 text-muted-foreground">
@@ -51,8 +58,8 @@ export function ProfileOverview({ stats, loading, error }: ProfileOverviewProps)
   }
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6">
-      <h3 className="font-bold text-lg mb-4">Recent Activity</h3>
+    <div className="bg-slate-900 rounded-lg p-6">
+      <h3 className="font-bold text-lg mb-4 text-white">Recent Activity</h3>
       <div className="space-y-4">
         {activities.map((activity, idx) => (
           <div
@@ -61,12 +68,14 @@ export function ProfileOverview({ stats, loading, error }: ProfileOverviewProps)
           >
             <div className="w-3 h-3 rounded-full bg-primary mt-2 shrink-0" />
             <div className="flex-1">
-              <p className="font-medium text-foreground">{activity.title}</p>
+              <p className="font-medium text-primary">{activity.title}</p>
               <p className="text-sm text-muted-foreground mt-1">
                 {formatRelativeTime(activity.createdAt)}
               </p>
             </div>
-            <span className="text-xs bg-secondary text-foreground px-2 py-1 rounded whitespace-nowrap">
+            <span
+              className={`text-xs px-2 py-1 border rounded-lg whitespace-nowrap ${getStatusColorBadge(activity.status)}`}
+            >
               {activity.status}
             </span>
           </div>

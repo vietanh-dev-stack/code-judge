@@ -13,7 +13,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       <DashboardHeader />
       <div className="flex pt-16">
         <Sidebar />
-        <main className={cn('flex-1 p-6 transition-all', isOpen ? 'ml-64' : 'ml-[72px]')}>
+        <main className={cn('flex-1 p-6 transition-all min-w-0 overflow-hidden', isOpen ? 'ml-64' : 'ml-[72px]')}>
           {children}
         </main>
       </div>

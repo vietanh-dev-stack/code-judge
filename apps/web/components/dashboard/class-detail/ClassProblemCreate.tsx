@@ -53,7 +53,38 @@ import {
   mapAiDraftToFormTestCases,
 } from '@/components/problems/ai-testcase-draft.shared';
 
-const SUPPORTED_LANGUAGES = ['PYTHON', 'JAVASCRIPT', 'CPP', 'JAVA', 'GO', 'RUST'] as const;
+const SUPPORTED_LANGUAGES = [
+  {
+    name: 'PYTHON',
+    bg: 'bg-black',
+    text: 'text-white',
+  },
+  {
+    name: 'JAVASCRIPT',
+    bg: 'bg-yellow-400',
+    text: 'text-black',
+  },
+  {
+    name: 'CPP',
+    bg: 'bg-blue-600',
+    text: 'text-white',
+  },
+  {
+    name: 'JAVA',
+    bg: 'bg-orange-400',
+    text: 'text-white',
+  },
+  {
+    name: 'GO',
+    bg: 'bg-sky-500',
+    text: 'text-white',
+  },
+  {
+    name: 'RUST',
+    bg: 'bg-orange-200',
+    text: 'text-black',
+  },
+] as const;
 
 export default function ClassProblemCreate({ classId }: { classId: string }) {
   const router = useRouter();
@@ -73,7 +104,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
     memoryLimitMb: 256,
     isPublished: true,
     visibility: 'PRIVATE',
-    supportedLanguages: Array.from(SUPPORTED_LANGUAGES),
+    supportedLanguages: SUPPORTED_LANGUAGES.map((lang) => lang.name),
     maxTestCases: 100,
     testCases: [],
     dueAt: undefined,
@@ -110,7 +141,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
         memoryLimitMb: data.memoryLimitMb,
         isPublished: data.isPublished,
         visibility: data.visibility,
-        supportedLanguages: data.supportedLanguages ?? Array.from(SUPPORTED_LANGUAGES),
+        supportedLanguages: data.supportedLanguages ?? SUPPORTED_LANGUAGES.map((lang) => lang.name),
         maxTestCases: data.maxTestCases,
         testCases: (data.testCases ?? []).map(
           ({ id, problemId, orderIndex, createdAt, updatedAt, ...rest }: any) => rest,
@@ -366,10 +397,10 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-4xl font-extrabold tracking-tight text-white">
               {editId ? 'Edit Problem' : 'Create Problem'}
             </h1>
-            <p className="text-muted-foreground text-lg">
+            <p className="text-lg text-primary/70 max-w-2xl leading-relaxed">
               {editId
                 ? 'Update the details of your existing problem.'
                 : 'Design a new challenge for your students.'}
@@ -381,14 +412,14 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
             variant="outline"
             onClick={() => router.back()}
             disabled={loading}
-            className="cursor-pointer"
+            className="cursor-pointer border border-primary text-primary hover:text-primary hover:bg-primary/20"
           >
             Cancel
           </Button>
           <Button
             onClick={handleSave}
             disabled={loading}
-            className="cursor-pointer bg-black hover:bg-gray-800 text-white min-w-[120px]"
+            className="cursor-pointer bg-primary hover:bg-primary/80 text-white min-w-[120px]"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -405,12 +436,11 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column - Main Details */}
         <div className="lg:col-span-2 space-y-8">
-          <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden">
+          <Card className="border-none shadow-xl bg-slate-900 backdrop-blur-sm overflow-hidden">
             <CardHeader className="border-b flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-xl">Basic Information</CardTitle>
               <Button
                 type="button"
-                variant="secondary"
                 size="sm"
                 className="rounded-lg shrink-0 cursor-pointer hover:scale-105 transition-transform"
                 onClick={() => setAiProblemModalOpen(true)}
@@ -421,7 +451,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
             </CardHeader>
             <CardContent className="p-6 space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-sm font-semibold">
+                <Label htmlFor="title" className="text-sm font-semibold text-primary/70">
                   Problem Title
                 </Label>
                 <Input
@@ -432,7 +462,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                     if (errors.title) setErrors({ ...errors, title: '' });
                   }}
                   placeholder="e.g. Find the Maximum Sum Subarray"
-                  className={`text-lg font-medium h-12 rounded-xl border-gray-200 focus:border-black transition-all ${errors.title ? 'border-red-500 bg-red-50' : ''}`}
+                  className={`text-lg font-medium h-12 rounded-xl border-gray-700 focus:border-black transition-all ${errors.title ? 'border-red-500 bg-red-50' : ''}`}
                 />
                 {errors.title && (
                   <p className="text-xs text-red-500 mt-1 font-medium">{errors.title}</p>
@@ -440,7 +470,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-semibold">
+                <Label htmlFor="description" className="text-sm font-semibold text-primary/70">
                   Brief Description
                 </Label>
                 <Textarea
@@ -451,7 +481,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                     if (errors.description) setErrors({ ...errors, description: '' });
                   }}
                   placeholder="A short summary of what the problem is about..."
-                  className={`min-h-[80px] rounded-xl border-gray-200 focus:border-black transition-all resize-none ${errors.description ? 'border-red-500 bg-red-50' : ''}`}
+                  className={`min-h-[80px] rounded-xl border-gray-700 focus:border-black transition-all resize-none ${errors.description ? 'border-red-500 bg-red-50' : ''}`}
                 />
                 {errors.description && (
                   <p className="text-xs text-red-500 mt-1 font-medium">{errors.description}</p>
@@ -459,7 +489,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="statementMd" className="text-sm font-semibold">
+                <Label htmlFor="statementMd" className="text-sm font-semibold text-primary/70">
                   Full Problem Statement (Markdown)
                 </Label>
                 <Textarea
@@ -470,7 +500,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                     if (errors.statementMd) setErrors({ ...errors, statementMd: '' });
                   }}
                   placeholder="Describe the problem, input format, output format, and constraints in detail..."
-                  className={`min-h-[300px] rounded-xl border-gray-200 focus:border-black transition-all font-mono text-sm leading-relaxed ${errors.statementMd ? 'border-red-500 bg-red-50' : ''}`}
+                  className={`min-h-[300px] rounded-xl border-gray-700 focus:border-black transition-all font-mono text-sm leading-relaxed ${errors.statementMd ? 'border-red-500 bg-red-50' : ''}`}
                 />
                 {errors.statementMd && (
                   <p className="text-xs text-red-500 mt-1 font-medium">{errors.statementMd}</p>
@@ -479,11 +509,11 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden">
+          <Card className="border-none shadow-xl bg-slate-900 backdrop-blur-sm overflow-hidden">
             <CardHeader className="border-b flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <CardTitle className="text-xl">Test Cases</CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm">
                   Add cases manually or use AI to draft from title and statement (always preview
                   before applying; nothing is saved until you submit).
                 </CardDescription>
@@ -491,7 +521,6 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
               <div className="flex flex-wrap gap-2 shrink-0">
                 <Button
                   type="button"
-                  variant="secondary"
                   size="sm"
                   className="rounded-lg cursor-pointer"
                   disabled={aiDraftLoading || loading}
@@ -517,7 +546,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                   variant="outline"
                   size="sm"
                   onClick={addTestCase}
-                  className="rounded-lg cursor-pointer"
+                  className="rounded-lg cursor-pointer border-primary text-primary hover:bg-slate-900 hover:text-primary"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Case
@@ -543,21 +572,23 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                 )}
                 {formData.testCases?.length === 0 ? (
                   <div
-                    className={`flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-2xl bg-gray-50/50 text-gray-400 ${errors.testCases ? 'border-red-300' : ''}`}
+                    className={`flex flex-col items-center justify-center py-12 border-2 border-dashed border-primary rounded-2xl bg-gray-slate-800  ${errors.testCases ? 'border-red-300' : ''}`}
                   >
-                    <Beaker className="w-12 h-12 mb-3 opacity-20" />
-                    <p className="font-medium">No test cases added yet.</p>
-                    <p className="text-sm">Click "Add Case" to begin defining tests.</p>
+                    <Beaker className="w-12 h-12 mb-3 text-primary" />
+                    <p className="font-medium text-gray-400">No test cases added yet.</p>
+                    <p className="text-sm text-gray-400s">
+                      Click "Add Case" to begin defining tests.
+                    </p>
                   </div>
                 ) : (
                   formData.testCases?.map((tc, index) => (
                     <div
                       key={index}
-                      className="group relative border border-gray-100 rounded-2xl p-5 bg-gray-50/30 hover:bg-white hover:shadow-lg hover:border-black/5 transition-all duration-300"
+                      className="group relative border border-gray-800 rounded-2xl p-5 bg-slate-900  transition-all duration-300"
                     >
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                          <Label className="text-xs font-bold uppercase tracking-wider text-primary/70">
                             Input
                           </Label>
                           <Textarea
@@ -571,7 +602,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                               }
                             }}
                             placeholder="Input for this case"
-                            className={`min-h-[100px] rounded-xl border-gray-200 focus:border-black bg-white font-mono text-xs ${errors[`testCase_${index}_input`] ? 'border-red-500 bg-red-50' : ''}`}
+                            className={`min-h-[100px] rounded-xl border-gray-800 focus:border-black bg-gray-900 font-mono text-xs ${errors[`testCase_${index}_input`] ? 'border-red-500 bg-red-50' : ''}`}
                           />
                           {errors[`testCase_${index}_input`] && (
                             <p className="text-[10px] text-red-500 font-medium">
@@ -580,7 +611,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                           )}
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                          <Label className="text-xs font-bold uppercase tracking-wider text-primary/70">
                             Expected Output
                           </Label>
                           <Textarea
@@ -594,7 +625,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                               }
                             }}
                             placeholder="Expected output"
-                            className={`min-h-[100px] rounded-xl border-gray-200 focus:border-black bg-white font-mono text-xs ${errors[`testCase_${index}_output`] ? 'border-red-500 bg-red-50' : ''}`}
+                            className={`min-h-[100px] rounded-xl border-gray-800 focus:border-black bg-gray-900 font-mono text-xs ${errors[`testCase_${index}_output`] ? 'border-red-500 bg-red-50' : ''}`}
                           />
                           {errors[`testCase_${index}_output`] && (
                             <p className="text-[10px] text-red-500 font-medium">
@@ -604,7 +635,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-800">
                         <div className="flex items-center gap-6">
                           <div className="flex items-center gap-2">
                             <Switch
@@ -613,7 +644,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                               onCheckedChange={(checked) =>
                                 updateTestCase(index, 'isHidden', checked)
                               }
-                              className="cursor-pointer"
+                              className="cursor-pointer bg-primary"
                             />
                             <Label
                               htmlFor={`hidden-${index}`}
@@ -635,17 +666,16 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                               onChange={(e) =>
                                 updateTestCase(index, 'weight', Number(e.target.value))
                               }
-                              className="w-16 h-8 rounded-lg border-gray-200 text-center font-bold"
+                              className="w-16 h-8 rounded-lg border-gray-700 text-center font-bold"
                               min="1"
                             />
                           </div>
                         </div>
                         <Button
                           type="button"
-                          variant="ghost"
                           size="sm"
                           onClick={() => removeTestCase(index)}
-                          className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg h-8 px-2 transition-colors"
+                          className="bg-red-500 text-white hover:text-red-500 hover:bg-red-50 rounded-lg h-8 px-2 transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4 mr-1.5" />
                           Delete
@@ -661,7 +691,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
 
         {/* Right Column - Configuration */}
         <div className="space-y-8">
-          <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden sticky top-24">
+          <Card className="border-none shadow-xl bg-slate-900 backdrop-blur-sm overflow-hidden sticky top-24">
             <CardHeader className="border-b">
               <CardTitle className="text-xl">Configuration</CardTitle>
             </CardHeader>
@@ -669,14 +699,14 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-sm font-semibold">Difficulty</Label>
+                    <Label className="text-sm font-semibold text-primary/70">Difficulty</Label>
                     <Select
                       value={formData.difficulty}
                       onValueChange={(value: any) =>
                         setFormData({ ...formData, difficulty: value })
                       }
                     >
-                      <SelectTrigger className="rounded-xl border-gray-200 h-10">
+                      <SelectTrigger className="rounded-xl border-gray-700 h-10">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -702,12 +732,12 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm font-semibold">Mode</Label>
+                    <Label className="text-sm font-semibold text-primary/70">Mode</Label>
                     <Select
                       value={formData.mode}
                       onValueChange={(value: any) => setFormData({ ...formData, mode: value })}
                     >
-                      <SelectTrigger className="rounded-xl border-gray-200 h-10">
+                      <SelectTrigger className="rounded-xl border-gray-700 h-10">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -720,7 +750,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
 
                 <div className="grid grid-cols-2 gap-4 pt-2">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-gray-500 flex items-center gap-1.5">
+                    <Label className="text-xs font-bold text-primary/70 flex items-center gap-1.5">
                       <Clock className="w-3 h-3" /> TIME LIMIT (ms)
                     </Label>
                     <Input
@@ -729,11 +759,11 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                       onChange={(e) =>
                         setFormData({ ...formData, timeLimitMs: Number(e.target.value) })
                       }
-                      className="rounded-xl border-gray-200 h-10 font-bold"
+                      className="rounded-xl border-gray-700 h-10 font-bold"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-gray-500 flex items-center gap-1.5">
+                    <Label className="text-xs font-bold text-primary/70 flex items-center gap-1.5">
                       <Database className="w-3 h-3" /> MEMORY (MB)
                     </Label>
                     <Input
@@ -742,13 +772,13 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                       onChange={(e) =>
                         setFormData({ ...formData, memoryLimitMb: Number(e.target.value) })
                       }
-                      className="rounded-xl border-gray-200 h-10 font-bold"
+                      className="rounded-xl border-gray-700 h-10 font-bold"
                     />
                   </div>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
-                  <p className="text-xs text-blue-700">
+                <div className="bg-primary/20 border border-primary/60 rounded-lg p-3 mt-4">
+                  <p className="text-xs text-primary">
                     <strong>ℹ️ Class Problems Are Private:</strong> Problems created in this class
                     are automatically kept private to this class only. They won't appear in the
                     public problem bank.
@@ -757,7 +787,9 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
 
                 <div className="flex items-center justify-between mt-4 border-t pt-4">
                   <div className="space-y-0.5">
-                    <Label className="text-sm font-semibold">For Contest Only</Label>
+                    <Label className="text-sm font-semibold text-primary/70">
+                      For Contest Only
+                    </Label>
                     <p className="text-xs text-gray-500">
                       Hide this problem from students in the normal assignments list. It will only
                       be accessible within contests.
@@ -785,13 +817,17 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                 </div>
 
                 <div className="space-y-3 pt-4 border-t">
-                  <Label className="text-sm font-semibold flex items-center gap-2">
-                    <Languages className="w-4 h-4 text-gray-400" /> Supported Languages
+                  <Label className="text-sm font-semibold text-primary/70 flex items-center gap-2">
+                    <Languages className="w-4 h-4 text-primary/70" /> Supported Languages
                   </Label>
                   <div className="flex flex-wrap gap-1.5">
                     {SUPPORTED_LANGUAGES.map((lang) => (
-                      <Badge key={lang} variant="default" className="bg-black text-white">
-                        {lang}
+                      <Badge
+                        key={lang.name}
+                        variant="default"
+                        className={`${lang.bg} ${lang.text} rounded-sm py-3`}
+                      >
+                        {lang.name}
                       </Badge>
                     ))}
                   </div>

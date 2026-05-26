@@ -25,8 +25,8 @@ export default function ClassTabs({ classId }: { classId: string }) {
             className={cn(
               'px-4 py-3 text-sm font-medium transition-colors border-b-4',
               isActive
-                ? 'border-black text-black'
-                : 'border-transparent text-gray-500 hover:text-black hover:border-gray-300',
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-primary hover:border-primary',
             )}
           >
             {tab.name}

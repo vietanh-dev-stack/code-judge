@@ -48,7 +48,7 @@ export function ProblemTagPicker({
         e instanceof ApiRequestError
           ? e.body.message
           : locale === 'vi'
-            ? 'Không tải được danh sách tag.'
+            ? 'Failed to fetch problem tags.'
             : 'Could not load tags.';
       toast.error(msg, { position: 'top-center' });
     } finally {
@@ -69,10 +69,9 @@ export function ProblemTagPicker({
       return;
     }
     if (value.length >= MAX_TAGS) {
-      toast.error(
-        locale === 'vi' ? `Tối đa ${MAX_TAGS} tag.` : `At most ${MAX_TAGS} tags.`,
-        { position: 'top-center' },
-      );
+      toast.error(locale === 'vi' ? `Tối đa ${MAX_TAGS} tag.` : `At most ${MAX_TAGS} tags.`, {
+        position: 'top-center',
+      });
       return;
     }
     onChange([...value, id]);
@@ -94,10 +93,9 @@ export function ProblemTagPicker({
       if (!value.includes(created.id) && value.length < MAX_TAGS) {
         onChange([...value, created.id]);
       }
-      toast.success(
-        locale === 'vi' ? 'Đã tạo tag mới.' : 'Tag created.',
-        { position: 'top-center' },
-      );
+      toast.success(locale === 'vi' ? 'Đã tạo tag mới.' : 'Tag created.', {
+        position: 'top-center',
+      });
     } catch (e) {
       const msg =
         e instanceof ApiRequestError
@@ -116,24 +114,18 @@ export function ProblemTagPicker({
 
   return (
     <div className="space-y-3">
-      {label ? (
-        <Label className="text-sm font-semibold">{label}</Label>
-      ) : null}
+      {label ? <Label className="text-sm font-semibold text-primary/70">{label}</Label> : null}
       {hint ? <p className="text-[11px] text-muted-foreground leading-snug">{hint}</p> : null}
 
       {value.length > 0 ? (
         <div className="flex flex-wrap gap-1.5 min-h-[28px]">
           {selectedTags.map((t) => (
-            <Badge
-              key={t.id}
-              variant="secondary"
-              className="pl-2 pr-1 py-0.5 gap-1 font-normal"
-            >
+            <Badge key={t.id} className="pl-2 pr-1 py-0.5 gap-1 font-normal">
               {t.name}
               <button
                 type="button"
                 disabled={disabled}
-                className="rounded p-0.5 hover:bg-muted disabled:opacity-50"
+                className="rounded-full p-0.5 hover:bg-orange-300 disabled:opacity-50 cursor-pointer "
                 aria-label={locale === 'vi' ? `Gỡ ${t.name}` : `Remove ${t.name}`}
                 onClick={() => remove(t.id)}
               >
@@ -150,7 +142,7 @@ export function ProblemTagPicker({
           {locale === 'vi' ? 'Đang tải tag…' : 'Loading tags…'}
         </div>
       ) : (
-        <div className="max-h-40 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50/50 p-2">
+        <div className="max-h-40 overflow-y-auto rounded-xl border border-primary bg-slate-900 p-2">
           <div className="flex flex-wrap gap-1.5">
             {tags.map((t) => {
               const on = value.includes(t.id);
@@ -158,7 +150,7 @@ export function ProblemTagPicker({
                 <Badge
                   key={t.id}
                   variant={on ? 'default' : 'outline'}
-                  className={`cursor-pointer font-normal transition-all ${on ? 'bg-black' : 'text-gray-600 hover:border-black/40'} ${disabled ? 'pointer-events-none opacity-50' : ''}`}
+                  className={`cursor-pointer font-normal transition-all border-primary ${on ? 'bg-primary text-white' : 'text-primary hover:border-primary hover:scale-105 transition-transform'} ${disabled ? 'pointer-events-none opacity-50' : ''}`}
                   onClick={() => toggle(t.id)}
                 >
                   {t.name}

@@ -13,27 +13,19 @@ import { CreateClassroomModal } from './classroom/create-classroom-modal';
 export default function DashboardHeader() {
   const { user, loading } = useAuthStore();
 
-  const toggle = useSidebarStore(
-    (state) => state.toggle,
-  );
+  const toggle = useSidebarStore((state) => state.toggle);
 
-  const [isMenuOpen, setIsMenuOpen] =
-    useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const [isCreateModalOpen, setIsCreateModalOpen] =
-    useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const [isJoinModalOpen, setIsJoinModalOpen] =
-    useState(false);
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
 
   return (
     <>
-      <header className="fixed top-0 w-full h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-50">
+      <header className="fixed top-0 w-full h-16 bg-slate-900 flex items-center justify-between px-4 z-50">
         <div className="flex items-center gap-4">
-          <button
-            onClick={toggle}
-            className="p-2 hover:bg-gray-100 rounded-full cursor-pointer"
-          >
+          <button onClick={toggle} className="p-2 hover:bg-gray-100 rounded-full cursor-pointer">
             <Menu className="w-6 h-6 text-gray-600" />
           </button>
 
@@ -41,18 +33,14 @@ export default function DashboardHeader() {
             <Code2 className="w-5 h-5 text-primary-foreground" />
           </div>
 
-          <span className="text-xl font-bold">
-            CodeJudge
-          </span>
+          <span className="text-xl font-bold">CodeJudge</span>
         </div>
 
         <div className="flex items-center gap-2">
           <div className="relative">
             <Button
-              onClick={() =>
-                setIsMenuOpen(!isMenuOpen)
-              }
-              className="rounded-full w-10 h-10 cursor-pointer hover:bg-gray-700"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="rounded-full w-10 h-10 cursor-pointer hover:bg-primary/20 hover:border-primary hover:text-primary"
             >
               <Plus className="w-5 h-5" />
             </Button>
@@ -86,19 +74,9 @@ export default function DashboardHeader() {
         </div>
       </header>
 
-      <CreateClassroomModal
-        open={isCreateModalOpen}
-        onClose={() =>
-          setIsCreateModalOpen(false)
-        }
-      />
+      <CreateClassroomModal open={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
 
-      <JoinClassroomModal
-        open={isJoinModalOpen}
-        onClose={() =>
-          setIsJoinModalOpen(false)
-        }
-      />
+      <JoinClassroomModal open={isJoinModalOpen} onClose={() => setIsJoinModalOpen(false)} />
     </>
   );
 }

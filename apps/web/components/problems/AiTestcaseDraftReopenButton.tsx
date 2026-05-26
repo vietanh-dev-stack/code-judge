@@ -61,7 +61,7 @@ export function AiTestcaseDraftReopenButton(props: {
       type="button"
       variant="outline"
       size="sm"
-      className="rounded-lg cursor-pointer"
+      className="rounded-lg cursor-pointer border-primary/70 text-primary hover:bg-primary/20 hover:text-primary"
       title={t.title}
       disabled={disabled}
       onClick={() => {

@@ -46,23 +46,30 @@ export default function ClassDropdown() {
     router.push(`?${params.toString()}`);
   };
 
+  const selectedClassroom = classrooms.find((c) => c.classRoom.id === selectedClassId);
+
   return (
     <Select value={selectedClassId} onValueChange={handleValueChange}>
-      <SelectTrigger className="w-full max-w-80 cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-6 text-sm shadow-sm transition-all hover:border-black focus:ring-0">
-        <SelectValue placeholder="Select a class" />
+      <SelectTrigger className="w-full max-w-80 cursor-pointer rounded-xl border bg-primary px-4 py-6 text-sm shadow-sm transition-all text-white">
+        <SelectValue>
+          {selectedClassId === 'all' ? 'All Classes' : selectedClassroom?.classRoom.name}
+        </SelectValue>
       </SelectTrigger>
+
       <SelectContent side="bottom" className="rounded-xl border-gray-100 shadow-xl">
         <SelectGroup>
           <SelectLabel className="text-gray-400 font-bold text-[10px] uppercase tracking-wider px-2 py-2">
             My Classes
           </SelectLabel>
-          <SelectItem className="cursor-pointer py-2.5 rounded-lg focus:bg-gray-50" value="all">
+
+          <SelectItem className="cursor-pointer py-2.5 rounded-lg" value="all">
             All Classes
           </SelectItem>
+
           {classrooms.map((item) => (
             <SelectItem
               key={item.classRoom.id}
-              className="cursor-pointer py-2.5 rounded-lg focus:bg-gray-50"
+              className="cursor-pointer py-2.5 rounded-lg"
               value={item.classRoom.id}
             >
               {item.classRoom.name}

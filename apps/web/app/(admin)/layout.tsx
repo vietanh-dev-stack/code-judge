@@ -11,10 +11,10 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen w-full bg-slate-50/50">
+    <div className="flex min-h-screen w-full bg-background text-foreground">
       
       {/* 1. SIDEBAR CHO DESKTOP (Ẩn trên mobile) */}
-      <aside className="hidden w-64 shrink-0 border-r border-slate-200 md:block">
+      <aside className="hidden w-64 shrink-0 border-r border-border md:block">
         <div className="fixed inset-y-0 w-64">
           <AdminSidebar />
         </div>
@@ -24,7 +24,7 @@ export default function AdminLayout({
       <div className="flex flex-1 flex-col">
         
         {/* HEADER DÀNH CHO MOBILE (Chỉ hiện trên màn hình nhỏ) */}
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:h-16 md:hidden">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border bg-background px-4 sm:h-16 md:hidden">
           <Sheet>
               <Button variant="outline" size="icon" className="shrink-0 md:hidden">
                 <Menu className="h-5 w-5" />

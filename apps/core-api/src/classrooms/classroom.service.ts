@@ -125,6 +125,7 @@ export class ClassroomService {
             id: true,
             ownerId: true,
             name: true,
+            description: true,
             academicYear: true,
             classCode: true,
             isActive: true,
@@ -141,6 +142,11 @@ export class ClassroomService {
               include: {
                 problem: true,
                 contest: true,
+              },
+            },
+            _count: {
+              select: {
+                enrollments: true,
               },
             },
           },

@@ -45,7 +45,7 @@ export default function WeekNavigation() {
           <ChevronLeft className="h-6 w-6" />
         </Button>
 
-        <span className="text-lg font-medium text-zinc-800 min-w-[240px] text-center capitalize">
+        <span className="text-lg font-medium text-white min-w-[240px] text-center capitalize">
           {formatRange()}
         </span>
 

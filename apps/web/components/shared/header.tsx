@@ -24,6 +24,13 @@ export default function Header() {
         {/* Menu */}
         <div className="hidden md:flex items-center gap-8">
           <Link
+            href="/#features"
+            className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1.5 group"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+            Features
+          </Link>
+          <Link
             href="/#for-educators"
             className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1.5 group"
           >
@@ -36,13 +43,6 @@ export default function Header() {
           >
             <span className="w-1.5 h-1.5 rounded-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
             Students
-          </Link>
-          <Link
-            href="/#features"
-            className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1.5 group"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-            Features
           </Link>
         </div>
 
@@ -60,7 +60,7 @@ export default function Header() {
             </Button>
           ) : (
             <>
-              <Button variant="ghost" asChild className="hover:bg-primary/5">
+              <Button variant="ghost" asChild className="hover:text-primary hover:bg-transparent">
                 <Link href="/login">Sign In</Link>
               </Button>
               <Button

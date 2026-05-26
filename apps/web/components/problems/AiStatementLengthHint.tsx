@@ -49,7 +49,7 @@ export function AiStatementLengthHint(props: {
     <div
       className={`rounded-lg border px-3 py-2 text-xs space-y-1 ${
         isLong
-          ? 'border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100'
+          ? 'border-primary/70 bg-primary/10 text-red-500'
           : 'border-muted bg-muted/30 text-muted-foreground'
       } ${className}`}
     >

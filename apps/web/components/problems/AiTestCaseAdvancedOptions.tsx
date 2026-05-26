@@ -121,17 +121,15 @@ export function AiTestCaseAdvancedOptions(props: {
   const cap = Math.min(maxTestCasesForProblem ?? 100, 25);
 
   return (
-    <details className="group rounded-xl border border-violet-200/70 bg-violet-50/35 dark:bg-violet-950/20 dark:border-violet-800/50 mb-6 overflow-hidden">
+    <details className="group rounded-xl border border-primary/70 bg-primary/5 mb-6 overflow-hidden">
       <summary className="cursor-pointer select-none list-none px-4 py-3 text-sm font-semibold text-violet-950 dark:text-violet-100 flex items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
-        <span className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 shrink-0 text-violet-600" />
+        <span className="flex items-center gap-2 text-primary">
+          <Sparkles className="h-4 w-4 shrink-0 " />
           {t.summaryTitle}
         </span>
-        <span className="text-xs font-normal text-violet-700/80 dark:text-violet-300/80">
-          {t.summaryHint}
-        </span>
+        <span className="text-xs font-normal text-primary/80">{t.summaryHint}</span>
       </summary>
-      <div className="border-t border-violet-200/60 dark:border-violet-800/40 px-4 py-4 space-y-4 text-sm">
+      <div className="border-t border-primary/60 px-4 py-4 space-y-4 text-sm">
         <AiStatementLengthHint
           description={problemDescription}
           statementMd={problemStatementMd}
@@ -139,7 +137,10 @@ export function AiTestCaseAdvancedOptions(props: {
           locale={locale}
         />
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}ai-io-spec`} className="text-xs font-semibold text-foreground">
+          <Label
+            htmlFor={`${idPrefix}ai-io-spec`}
+            className="text-xs font-semibold text-primary/70"
+          >
             {t.ioSpec}
           </Label>
           <p className="text-[11px] text-muted-foreground leading-snug">{t.ioSpecHelp}</p>
@@ -148,13 +149,16 @@ export function AiTestCaseAdvancedOptions(props: {
             value={aiGenOptions.ioSpec}
             onChange={(e) => setAiGenOptions((o) => ({ ...o, ioSpec: e.target.value }))}
             placeholder={t.ioPlaceholder}
-            className="min-h-[72px] rounded-lg border-violet-200/80 bg-white/90 dark:bg-background font-mono text-xs"
+            className="min-h-[72px] rounded-lg border-gray-800 bg-gray-900 font-mono text-xs"
             rows={3}
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}ai-supplementary`} className="text-xs font-semibold">
+          <Label
+            htmlFor={`${idPrefix}ai-supplementary`}
+            className="text-xs font-semibold text-primary/70"
+          >
             {t.supplementary}
           </Label>
           <Textarea
@@ -162,23 +166,26 @@ export function AiTestCaseAdvancedOptions(props: {
             value={aiGenOptions.supplementaryText}
             onChange={(e) => setAiGenOptions((o) => ({ ...o, supplementaryText: e.target.value }))}
             placeholder={t.supplementaryPh}
-            className="min-h-[56px] rounded-lg border-violet-200/80 bg-white/90 dark:bg-background text-xs"
+            className="min-h-[56px] rounded-lg border-gray-800 bg-gray-900 text-xs"
             rows={2}
           />
         </div>
 
-        <div className="flex items-start gap-2 rounded-lg border border-violet-200/60 bg-white/80 dark:bg-background/60 px-3 py-2">
+        <div className="flex items-start gap-2 rounded-lg border border-gray-800 bg-gray-900 dark:bg-background/60 px-3 py-2">
           <input
             id={`${idPrefix}ai-full-io`}
             type="checkbox"
-            className="mt-1 h-4 w-4 rounded border-violet-300"
+            className="mt-1 h-4 w-4 rounded border-primary/70 bg-primary/70"
             checked={aiGenOptions.preferFullIoOutput}
             onChange={(e) =>
               setAiGenOptions((o) => ({ ...o, preferFullIoOutput: e.target.checked }))
             }
           />
           <div className="space-y-0.5">
-            <Label htmlFor={`${idPrefix}ai-full-io`} className="text-xs font-semibold cursor-pointer">
+            <Label
+              htmlFor={`${idPrefix}ai-full-io`}
+              className="text-xs font-semibold cursor-pointer text-primary/70"
+            >
               {t.fullIo}
             </Label>
             <p className="text-[11px] text-muted-foreground leading-snug">{t.fullIoHelp}</p>
@@ -187,7 +194,7 @@ export function AiTestCaseAdvancedOptions(props: {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label className="text-xs font-semibold">{t.maxSuggestions}</Label>
+            <Label className="text-xs font-semibold text-primary/70">{t.maxSuggestions}</Label>
             <Input
               type="number"
               min={1}
@@ -200,11 +207,11 @@ export function AiTestCaseAdvancedOptions(props: {
                   maxSuggestions: Number.isFinite(n) ? Math.min(25, Math.max(1, n)) : 10,
                 }));
               }}
-              className="h-9 rounded-lg border-violet-200/80"
+              className="h-9 rounded-lg border-gray-800 bg-gray-900"
             />
             <p className="text-[11px] text-muted-foreground">{t.maxHint(cap)}</p>
           </div>
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <Label className="text-xs font-semibold">{t.provider}</Label>
             <Select
               value={aiGenOptions.provider || 'default'}
@@ -224,11 +231,11 @@ export function AiTestCaseAdvancedOptions(props: {
                 <SelectItem value="openai">{t.provOpenai}</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </div> */}
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}ai-model`} className="text-xs font-semibold">
+          <Label htmlFor={`${idPrefix}ai-model`} className="text-xs font-semibold text-primary/70">
             {t.model}
           </Label>
           <Input
@@ -236,25 +243,25 @@ export function AiTestCaseAdvancedOptions(props: {
             value={aiGenOptions.model}
             onChange={(e) => setAiGenOptions((o) => ({ ...o, model: e.target.value }))}
             placeholder={t.modelPh}
-            className="h-9 rounded-lg border-violet-200/80 font-mono text-xs"
+            className="h-9 rounded-lg border-gray-800 bg-gray-900 font-mono text-xs"
           />
         </div>
 
         <div className="space-y-2 pt-2 border-t border-violet-200/50 dark:border-violet-800/40">
-          <p className="text-xs font-semibold text-foreground">{t.revisionTitle}</p>
+          <p className="text-xs font-semibold text-primary/70">{t.revisionTitle}</p>
           <p className="text-[11px] text-muted-foreground">{t.revisionHelp}</p>
           <Textarea
             value={aiGenOptions.revisionSummary}
             onChange={(e) => setAiGenOptions((o) => ({ ...o, revisionSummary: e.target.value }))}
             placeholder={t.revSummaryPh}
-            className="min-h-[48px] rounded-lg text-xs"
+            className="min-h-[48px] rounded-lg text-xs border-gray-800 bg-gray-900"
             rows={2}
           />
           <Textarea
             value={aiGenOptions.revisionFeedback}
             onChange={(e) => setAiGenOptions((o) => ({ ...o, revisionFeedback: e.target.value }))}
             placeholder={t.revFeedbackPh}
-            className="min-h-[48px] rounded-lg text-xs"
+            className="min-h-[48px] rounded-lg text-xs border-gray-800 bg-gray-900"
             rows={2}
           />
           <Textarea
@@ -263,7 +270,7 @@ export function AiTestCaseAdvancedOptions(props: {
               setAiGenOptions((o) => ({ ...o, revisionValidatorLines: e.target.value }))
             }
             placeholder={t.revValidatorPh}
-            className="min-h-[40px] rounded-lg font-mono text-[11px]"
+            className="min-h-[40px] rounded-lg font-mono text-[11px] border-gray-800 bg-gray-900"
             rows={2}
           />
         </div>

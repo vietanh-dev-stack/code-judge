@@ -24,12 +24,12 @@ function DifficultyBar({
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium">{label}</span>
+        <span className={`text-sm font-medium text-primary/80`}>{label}</span>
         <span className="text-sm text-muted-foreground">
           {solved}/{attempted} problems ({pct}%)
         </span>
       </div>
-      <div className="w-full bg-secondary rounded-full h-2">
+      <div className="w-full bg-slate-400 rounded-full h-2">
         <div
           className={`${colorClass} h-2 rounded-full transition-all`}
           style={{ width: `${pct}%` }}
@@ -60,7 +60,7 @@ export function ProfileStatsTab({ stats, loading, error }: ProfileStatsTabProps)
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <div className="bg-card border border-border rounded-lg p-6">
-        <h3 className="font-bold text-lg mb-1 flex items-center gap-2">
+        <h3 className="font-bold text-lg mb-1 flex items-center gap-2 text-primary">
           <Target className="w-5 h-5" />
           Progress by Difficulty
         </h3>
@@ -72,25 +72,25 @@ export function ProfileStatsTab({ stats, loading, error }: ProfileStatsTabProps)
             label="Easy"
             solved={stats.byDifficulty.easy.solved}
             attempted={stats.byDifficulty.easy.attempted}
-            colorClass="bg-green-600"
+            colorClass="bg-emerald-500"
           />
           <DifficultyBar
             label="Medium"
             solved={stats.byDifficulty.medium.solved}
             attempted={stats.byDifficulty.medium.attempted}
-            colorClass="bg-yellow-500"
+            colorClass="bg-amber-500"
           />
           <DifficultyBar
             label="Hard"
             solved={stats.byDifficulty.hard.solved}
             attempted={stats.byDifficulty.hard.attempted}
-            colorClass="bg-red-600"
+            colorClass="bg-rose-500"
           />
         </div>
       </div>
 
       <div className="bg-card border border-border rounded-lg p-6">
-        <h3 className="font-bold text-lg mb-1 flex items-center gap-2">
+        <h3 className="font-bold text-lg mb-1 flex items-center gap-2 text-primary">
           <Zap className="w-5 h-5" />
           Performance
         </h3>
@@ -98,22 +98,22 @@ export function ProfileStatsTab({ stats, loading, error }: ProfileStatsTabProps)
           Success Rate = Problems Accepted / Problems Attempted (with submissions)
         </p>
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-primary rounded-lg">
             <span className="text-sm font-medium">Success Rate</span>
             <span className="text-lg font-bold">{stats.successRate}%</span>
           </div>
           <p className="text-xs text-muted-foreground px-1 -mt-2">
             {stats.problemsSolved} / {stats.problemsAttempted} problems
           </p>
-          <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-primary rounded-lg">
             <span className="text-sm font-medium">Problems Attempted</span>
             <span className="text-lg font-bold">{stats.problemsAttempted}</span>
           </div>
-          <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-primary rounded-lg">
             <span className="text-sm font-medium">Problems Solved (Accepted)</span>
             <span className="text-lg font-bold">{stats.problemsSolved}</span>
           </div>
-          <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-primary rounded-lg">
             <span className="text-sm font-medium">Average Runtime (Accepted)</span>
             <span className="text-lg font-bold">
               {stats.avgRuntimeMs != null ? `${stats.avgRuntimeMs}ms` : '—'}

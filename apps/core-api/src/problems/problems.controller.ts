@@ -62,6 +62,16 @@ export class ProblemsController {
   }
 
   @ApiBearerAuth('JWT')
+  @ApiOperation({
+    summary:
+      'Tiến độ problem bank của user (toàn bộ bài public, không áp dụng search/difficulty/mode/tag)',
+  })
+  @Get('bank/progress')
+  async getBankProgress(@CurrentUser() user: RequestUser) {
+    return this.problemsService.getBankProgress(user.userId);
+  }
+
+  @ApiBearerAuth('JWT')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Admin: danh sách tất cả problem (kèm private / unpublished)' })
   @Get('admin/all')

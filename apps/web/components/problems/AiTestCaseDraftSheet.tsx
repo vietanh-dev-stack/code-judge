@@ -104,15 +104,15 @@ const GOLDEN_COPY: Record<Locale, GoldenCopy> = {
       'Chế độ golden trên server cần lưu bài trước — dùng "Dán mã" để verify khi đang tạo mới.',
     inlineLabel: 'Mã golden',
     inlineFileLabel: 'Tải file mã (tuỳ chọn)',
-    inlineFileHint: 'Chọn .py, .java, .cpp, … — nội dung sẽ điền vào ô bên dưới để verify (không lưu MinIO).',
+    inlineFileHint:
+      'Chọn .py, .java, .cpp, … — nội dung sẽ điền vào ô bên dưới để verify (không lưu MinIO).',
     uploadLabel: 'File golden',
     uploadButton: 'Upload golden',
     uploadReady: 'Đã upload & xác nhận golden.',
     storedFromServer: 'Đã có golden trên server cho bài này.',
     syncPreview: 'Đồng bộ test từ preview',
     verifyButton: 'Chạy golden & kiểm tra',
-    verifyWorkerHint:
-      'Nếu lỗi timeout/service: kiểm tra worker đang chạy và queue golden-verify.',
+    verifyWorkerHint: 'Nếu lỗi timeout/service: kiểm tra worker đang chạy và queue golden-verify.',
     modeInline: 'Dán mã',
     modeStored: 'Golden đã upload / trên server',
     addCase: 'Thêm test',
@@ -144,7 +144,8 @@ const GOLDEN_COPY: Record<Locale, GoldenCopy> = {
     storedFromServer: 'A golden solution already exists on the server for this problem.',
     syncPreview: 'Sync tests from preview',
     verifyButton: 'Run golden & verify',
-    verifyWorkerHint: 'If you see service errors, ensure the worker is running (golden-verify queue).',
+    verifyWorkerHint:
+      'If you see service errors, ensure the worker is running (golden-verify queue).',
     modeInline: 'Paste code',
     modeStored: 'Uploaded / server golden',
     addCase: 'Add test',
@@ -292,7 +293,10 @@ function TestCaseIoBlock(props: {
           <span className="text-[10px] text-muted-foreground">{metaLabel(text.length, lines)}</span>
         ) : null}
         {suspectPlaceholder ? (
-          <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-800 dark:text-amber-200">
+          <Badge
+            variant="outline"
+            className="text-[10px] border-amber-500/50 text-amber-800 dark:text-amber-200"
+          >
             placeholder
           </Badge>
         ) : null}
@@ -353,17 +357,22 @@ export function AiTestCaseDraftSheet(props: {
 
   const user = useAuthStore((s) => s.user);
 
-  const [editableCases, setEditableCases] = useState<Array<{ input: string; expectedOutput: string }>>([]);
+  const [editableCases, setEditableCases] = useState<
+    Array<{ input: string; expectedOutput: string }>
+  >([]);
   const [goldenMode, setGoldenMode] = useState<'inline' | 'stored'>('inline');
   const [goldenInline, setGoldenInline] = useState('');
-  const [goldenLanguage, setGoldenLanguage] = useState<(typeof GOLDEN_LANG_OPTIONS)[number]['value']>('python');
+  const [goldenLanguage, setGoldenLanguage] =
+    useState<(typeof GOLDEN_LANG_OPTIONS)[number]['value']>('python');
   const [uploadBusy, setUploadBusy] = useState(false);
   const [verifyBusy, setVerifyBusy] = useState(false);
   const [verifyResult, setVerifyResult] = useState<VerifyTestcasesWithGoldenResult | null>(null);
   const [diagnoseBusy, setDiagnoseBusy] = useState(false);
   const [diagnosisModalOpen, setDiagnosisModalOpen] = useState(false);
   const [showRawJson, setShowRawJson] = useState(false);
-  const [lastSavedDiagnosis, setLastSavedDiagnosis] = useState<SavedGoldenVerifyDiagnosis | null>(null);
+  const [lastSavedDiagnosis, setLastSavedDiagnosis] = useState<SavedGoldenVerifyDiagnosis | null>(
+    null,
+  );
 
   const diagnosisStorageScope = problemId ?? 'draft';
   /** Session upload OK in this sheet */
@@ -473,10 +482,16 @@ export function AiTestCaseDraftSheet(props: {
       setSessionUploadOk(true);
       setGoldenMode('stored');
       setServerGoldenReady(true);
-      toast.success(locale === 'vi' ? 'Đã upload golden.' : 'Golden uploaded.', { position: 'top-center' });
+      toast.success(locale === 'vi' ? 'Đã upload golden.' : 'Golden uploaded.', {
+        position: 'top-center',
+      });
     } catch (err) {
       const msg =
-        err instanceof ApiRequestError ? err.body.message : err instanceof Error ? err.message : String(err);
+        err instanceof ApiRequestError
+          ? err.body.message
+          : err instanceof Error
+            ? err.message
+            : String(err);
       toast.error(msg, { position: 'top-center' });
     } finally {
       setUploadBusy(false);
@@ -552,7 +567,11 @@ export function AiTestCaseDraftSheet(props: {
       }
     } catch (err) {
       const msg =
-        err instanceof ApiRequestError ? err.body.message : err instanceof Error ? err.message : String(err);
+        err instanceof ApiRequestError
+          ? err.body.message
+          : err instanceof Error
+            ? err.message
+            : String(err);
       toast.error(msg, { position: 'top-center', description: g.verifyWorkerHint });
     } finally {
       setVerifyBusy(false);
@@ -586,13 +605,19 @@ export function AiTestCaseDraftSheet(props: {
       saveSavedGoldenVerifyDiagnosis(diagnosisStorageScope, saved);
       if (!res.structured) {
         toast.warning(
-          locale === 'vi' ? 'AI trả về nhưng parse JSON thất bại.' : 'AI responded but JSON parse failed.',
+          locale === 'vi'
+            ? 'AI trả về nhưng parse JSON thất bại.'
+            : 'AI responded but JSON parse failed.',
           { position: 'top-center', description: res.parseError },
         );
       }
     } catch (err) {
       const msg =
-        err instanceof ApiRequestError ? err.body.message : err instanceof Error ? err.message : String(err);
+        err instanceof ApiRequestError
+          ? err.body.message
+          : err instanceof Error
+            ? err.message
+            : String(err);
       toast.error(msg, { position: 'top-center' });
     } finally {
       setDiagnoseBusy(false);
@@ -611,14 +636,20 @@ export function AiTestCaseDraftSheet(props: {
         j === editableIndex
           ? {
               input: fix.input !== undefined ? fix.input : row.input,
-              expectedOutput: fix.expectedOutput !== undefined ? fix.expectedOutput : row.expectedOutput,
+              expectedOutput:
+                fix.expectedOutput !== undefined ? fix.expectedOutput : row.expectedOutput,
             }
           : row,
       ),
     );
-    toast.success(locale === 'vi' ? `Đã áp dụng gợi ý test #${verifyIndex + 1}` : `Applied suggestion for test #${verifyIndex + 1}`, {
-      position: 'top-center',
-    });
+    toast.success(
+      locale === 'vi'
+        ? `Đã áp dụng gợi ý test #${verifyIndex + 1}`
+        : `Applied suggestion for test #${verifyIndex + 1}`,
+      {
+        position: 'top-center',
+      },
+    );
   };
 
   const applyAllSuggestions = (structured: GoldenVerifyFailureDiagnosis) => {
@@ -633,7 +664,9 @@ export function AiTestCaseDraftSheet(props: {
         next[editableIndex] = {
           input: d.suggestedFix.input !== undefined ? d.suggestedFix.input : row.input,
           expectedOutput:
-            d.suggestedFix.expectedOutput !== undefined ? d.suggestedFix.expectedOutput : row.expectedOutput,
+            d.suggestedFix.expectedOutput !== undefined
+              ? d.suggestedFix.expectedOutput
+              : row.expectedOutput,
         };
         count++;
       }
@@ -658,7 +691,7 @@ export function AiTestCaseDraftSheet(props: {
         className="w-full sm:max-w-xl flex flex-col gap-0 p-0 h-full max-h-dvh"
       >
         <SheetHeader className="border-b shrink-0 text-left px-4 py-3 pr-12">
-          <SheetTitle>{t.title}</SheetTitle>
+          <SheetTitle className="text-primary">{t.title}</SheetTitle>
           <SheetDescription>{t.description}</SheetDescription>
         </SheetHeader>
 
@@ -679,9 +712,7 @@ export function AiTestCaseDraftSheet(props: {
                   <p>
                     {locale === 'vi' ? 'Độ dài đề' : 'Statement length'}:{' '}
                     {draftResult.statementCharCount.toLocaleString()}
-                    {draftResult.maxTokensUsed
-                      ? ` · maxTokens≈${draftResult.maxTokensUsed}`
-                      : ''}
+                    {draftResult.maxTokensUsed ? ` · maxTokens≈${draftResult.maxTokensUsed}` : ''}
                   </p>
                 ) : null}
                 {draftResult.generationMode ? (
@@ -736,9 +767,9 @@ export function AiTestCaseDraftSheet(props: {
               ) : null}
 
               {draftResult.parsed?.notes ? (
-                <div className="rounded-lg border bg-muted/40 px-3 py-2 text-sm">
-                  <p className="font-medium text-foreground mb-1">{t.notesTitle}</p>
-                  <p className="whitespace-pre-wrap break-words text-muted-foreground">
+                <div className="rounded-lg border bg-muted/40 border-primary bg-primary/10 px-3 py-2 text-sm">
+                  <p className="font-medium text-primary mb-1">{t.notesTitle}</p>
+                  <p className="whitespace-pre-wrap break-words text-primary-light">
                     {draftResult.parsed.notes}
                   </p>
                 </div>
@@ -819,249 +850,275 @@ export function AiTestCaseDraftSheet(props: {
               )}
 
               <div className="space-y-3 border-t pt-4">
-                  {!problemId ? (
-                    <p className="text-xs text-emerald-900 dark:text-emerald-100 bg-emerald-500/10 border border-emerald-500/30 rounded-md px-2.5 py-2 leading-relaxed">
-                      {g.draftVerifyBanner}
-                    </p>
-                  ) : null}
-                  <div>
-                    <h3 className="text-sm font-semibold">{g.goldenTitle}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">{g.goldenHint}</p>
-                  </div>
+                {!problemId ? (
+                  <p className="text-xs text-primary  bg-primary/10 border border-primary/80 rounded-md px-2.5 py-2 leading-relaxed">
+                    {g.draftVerifyBanner}
+                  </p>
+                ) : null}
+                <div>
+                  <h3 className="text-sm font-semibold">{g.goldenTitle}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">{g.goldenHint}</p>
+                </div>
 
-                  <div className="grid gap-2 md:max-w-xs">
-                    <Label className="text-xs">{g.languageLabel}</Label>
-                    <Select
-                      value={goldenLanguage}
-                      onValueChange={(v) => {
-                        if (GOLDEN_LANG_OPTIONS.some((o) => o.value === v)) {
-                          setGoldenLanguage(v as (typeof GOLDEN_LANG_OPTIONS)[number]['value']);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="h-9 text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {GOLDEN_LANG_OPTIONS.map((o) => (
-                          <SelectItem key={o.value} value={o.value}>
-                            {o.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="grid gap-2 md:max-w-xs">
+                  <Label className="text-xs">{g.languageLabel}</Label>
+                  <Select
+                    value={goldenLanguage}
+                    onValueChange={(v) => {
+                      if (GOLDEN_LANG_OPTIONS.some((o) => o.value === v)) {
+                        setGoldenLanguage(v as (typeof GOLDEN_LANG_OPTIONS)[number]['value']);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GOLDEN_LANG_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  {goldenMode === 'stored' && problemId ? (
-                    <p className="text-xs text-muted-foreground">{g.storedUsesDbLang}</p>
-                  ) : null}
+                {goldenMode === 'stored' && problemId ? (
+                  <p className="text-xs text-muted-foreground">{g.storedUsesDbLang}</p>
+                ) : null}
 
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={goldenMode === 'inline' ? 'default' : 'outline'}
-                      onClick={() => setGoldenMode('inline')}
-                      disabled={!canShowInline}
-                    >
-                      {g.modeInline}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={goldenMode === 'stored' ? 'default' : 'outline'}
-                      onClick={() => setGoldenMode('stored')}
-                      disabled={!problemId}
-                    >
-                      {g.modeStored}
-                    </Button>
-                  </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={goldenMode === 'inline' ? 'default' : 'outline'}
+                    onClick={() => setGoldenMode('inline')}
+                    disabled={!canShowInline}
+                  >
+                    {g.modeInline}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={goldenMode === 'stored' ? 'default' : 'outline'}
+                    onClick={() => setGoldenMode('stored')}
+                    disabled={!problemId}
+                  >
+                    {g.modeStored}
+                  </Button>
+                </div>
 
-                  {goldenMode === 'inline' && canShowInline ? (
-                    <div className="grid gap-2">
-                      <Label className="text-xs">{g.inlineLabel}</Label>
-                      <div className="grid gap-1.5">
-                        <Label className="text-[10px] font-normal text-muted-foreground">
-                          {g.inlineFileLabel}
-                        </Label>
-                        <p className="text-[10px] text-muted-foreground leading-snug">{g.inlineFileHint}</p>
-                        <Input
-                          type="file"
-                          accept=".py,.js,.mjs,.ts,.tsx,.jsx,.java,.cpp,.cc,.cxx,.c,.h,.go,.rs,.kt,.cs,text/plain,application/octet-stream"
-                          className="max-w-sm cursor-pointer text-xs"
-                          onChange={handleGoldenInlineFile}
-                        />
-                      </div>
-                      <Textarea
-                        value={goldenInline}
-                        onChange={(e) => setGoldenInline(e.target.value)}
-                        className="min-h-[120px] font-mono text-xs"
-                        spellCheck={false}
+                {goldenMode === 'inline' && canShowInline ? (
+                  <div className="grid gap-2">
+                    <Label className="text-xs">{g.inlineLabel}</Label>
+                    <div className="grid gap-1.5">
+                      <Label className="text-[10px] font-normal text-muted-foreground">
+                        {g.inlineFileLabel}
+                      </Label>
+                      <p className="text-[10px] text-muted-foreground leading-snug">
+                        {g.inlineFileHint}
+                      </p>
+                      <Input
+                        type="file"
+                        accept=".py,.js,.mjs,.ts,.tsx,.jsx,.java,.cpp,.cc,.cxx,.c,.h,.go,.rs,.kt,.cs,text/plain,application/octet-stream"
+                        className="max-w-sm cursor-pointer text-xs"
+                        onChange={handleGoldenInlineFile}
                       />
                     </div>
-                  ) : goldenMode === 'inline' && !canShowInline ? (
-                    <p className="text-xs text-muted-foreground">{g.saveFirstHint}</p>
-                  ) : null}
-
-                  {goldenMode === 'stored' && problemId ? (
-                    <div className="space-y-2">
-                      {(sessionUploadOk || serverGoldenReady) && (
-                        <p className="text-xs text-green-700 dark:text-green-300">
-                          {sessionUploadOk ? g.uploadReady : g.storedFromServer}
-                        </p>
-                      )}
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Label className="text-xs shrink-0">{g.uploadLabel}</Label>
-                        <Input
-                          type="file"
-                          accept=".py,.js,.mjs,.ts,.java,.cpp,.cc,.cxx,.c,.go,.rs,text/plain,application/octet-stream"
-                          className="max-w-[220px] text-xs"
-                          disabled={uploadBusy || !canUploadFile}
-                          onChange={handleUploadGolden}
-                        />
-                        {uploadBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                      </div>
-                    </div>
-                  ) : goldenMode === 'stored' && !problemId ? (
-                    <p className="text-xs text-muted-foreground">{g.storedNeedsProblemId}</p>
-                  ) : null}
-
-                  <div className="flex flex-wrap gap-2">
-                    <Button type="button" size="sm" variant="secondary" onClick={syncFromPreview}>
-                      {g.syncPreview}
-                    </Button>
-                    <Button type="button" size="sm" variant="outline" onClick={() => setEditableCases((prev) => [...prev, { input: '', expectedOutput: '' }])}>
-                      {g.addCase}
-                    </Button>
-                  </div>
-
-                  <div className="space-y-3 max-h-[min(40vh,360px)] overflow-y-auto pr-1">
-                    {editableCases.map((tc, i) => (
-                      <div key={i} className="rounded-lg border bg-muted/20 p-2 space-y-2">
-                        <div className="flex justify-between items-center gap-2">
-                          <span className="text-xs font-medium text-muted-foreground">{g.caseN(i + 1)}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs text-destructive"
-                            onClick={() => setEditableCases((prev) => prev.filter((_, j) => j !== i))}
-                          >
-                            {g.remove}
-                          </Button>
-                        </div>
-                        <div className="grid gap-1">
-                          <Label className="text-[10px] text-muted-foreground">{t.input}</Label>
-                          <Textarea
-                            value={tc.input}
-                            onChange={(e) =>
-                              setEditableCases((prev) =>
-                                prev.map((row, j) => (j === i ? { ...row, input: e.target.value } : row)),
-                              )
-                            }
-                            className="min-h-[56px] font-mono text-[11px]"
-                            spellCheck={false}
-                          />
-                        </div>
-                        <div className="grid gap-1">
-                          <Label className="text-[10px] text-muted-foreground">{t.output}</Label>
-                          <Textarea
-                            value={tc.expectedOutput}
-                            onChange={(e) =>
-                              setEditableCases((prev) =>
-                                prev.map((row, j) =>
-                                  j === i ? { ...row, expectedOutput: e.target.value } : row,
-                                ),
-                              )
-                            }
-                            className="min-h-[56px] font-mono text-[11px]"
-                            spellCheck={false}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <Button type="button" disabled={verifyBusy || !canRunVerify} onClick={handleVerify}>
-                    {verifyBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {g.verifyButton}
-                  </Button>
-
-                  {verifyResult ? (
-                    <div className="space-y-2 rounded-lg border p-3 text-sm">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">
-                          {locale === 'vi' ? 'Kết quả' : 'Result'}
-                        </span>
-                        <Badge variant={verifyResult.summary.failed === 0 ? 'default' : 'destructive'}>
-                          {verifyResult.summary.passed}/{verifyResult.summary.total} OK
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          ({verifyResult.goldenSource}
-                          {verifyResult.goldenSolutionId ? ` · id=${verifyResult.goldenSolutionId.slice(0, 8)}…` : ''})
-                        </span>
-                      </div>
-                      <div className="space-y-2 max-h-[220px] overflow-y-auto">
-                        {verifyResult.results.map((r) => (
-                          <div
-                            key={r.index}
-                            className={`rounded border p-2 text-xs ${
-                              r.passed
-                                ? 'border-green-600/30 bg-green-500/5'
-                                : 'border-destructive/30 bg-destructive/5'
-                            }`}
-                          >
-                            <div className="flex flex-wrap gap-2 items-center">
-                              <span className="font-medium">#{r.index + 1}</span>
-                              <Badge variant={r.passed ? 'secondary' : 'destructive'}>{r.verdict}</Badge>
-                            </div>
-                            {!r.passed && r.expectedOutput ? (
-                              <div className="mt-1 space-y-0.5">
-                                <p className="text-[10px] font-medium text-muted-foreground">Expected</p>
-                                <pre className="max-h-16 overflow-auto whitespace-pre-wrap font-mono text-[11px] text-muted-foreground">
-                                  {r.expectedOutput}
-                                </pre>
-                              </div>
-                            ) : null}
-                            {r.actualOutput !== undefined && r.actualOutput !== '' ? (
-                              <div className="mt-1 space-y-0.5">
-                                <p className="text-[10px] font-medium text-muted-foreground">
-                                  {locale === 'vi' ? 'Actual (stdout)' : 'Actual (stdout)'}
-                                </p>
-                                <pre className="max-h-20 overflow-auto whitespace-pre-wrap font-mono text-[11px]">
-                                  {r.actualOutput}
-                                </pre>
-                              </div>
-                            ) : r.actualOutput === '' && !r.passed ? (
-                              <p className="mt-1 text-[10px] text-muted-foreground">
-                                {locale === 'vi' ? '(Không có stdout)' : '(No stdout)'}
-                              </p>
-                            ) : null}
-                            {r.stderr ? (
-                              <pre className="mt-1 text-destructive whitespace-pre-wrap font-mono">{r.stderr}</pre>
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {(verifyResult?.summary.failed ?? 0) > 0 || lastSavedDiagnosis ? (
-                    <GoldenVerifyDiagnosisModal
-                      locale={locale}
-                      open={diagnosisModalOpen}
-                      onOpenChange={setDiagnosisModalOpen}
-                      lastSaved={lastSavedDiagnosis}
-                      canAnalyze={Boolean(verifyResult && verifyResult.summary.failed > 0)}
-                      diagnoseBusy={diagnoseBusy}
-                      verifyBusy={verifyBusy}
-                      onAnalyze={handleAnalyzeFailures}
-                      onRecheck={handleVerify}
-                      onApplySuggestion={applySuggestionAtVerifyIndex}
-                      onApplyAllSuggestions={applyAllSuggestions}
+                    <Textarea
+                      value={goldenInline}
+                      onChange={(e) => setGoldenInline(e.target.value)}
+                      className="min-h-[120px] font-mono text-xs"
+                      spellCheck={false}
                     />
-                  ) : null}
+                  </div>
+                ) : goldenMode === 'inline' && !canShowInline ? (
+                  <p className="text-xs text-muted-foreground">{g.saveFirstHint}</p>
+                ) : null}
+
+                {goldenMode === 'stored' && problemId ? (
+                  <div className="space-y-2">
+                    {(sessionUploadOk || serverGoldenReady) && (
+                      <p className="text-xs text-green-700 dark:text-green-300">
+                        {sessionUploadOk ? g.uploadReady : g.storedFromServer}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Label className="text-xs shrink-0">{g.uploadLabel}</Label>
+                      <Input
+                        type="file"
+                        accept=".py,.js,.mjs,.ts,.java,.cpp,.cc,.cxx,.c,.go,.rs,text/plain,application/octet-stream"
+                        className="max-w-[220px] text-xs"
+                        disabled={uploadBusy || !canUploadFile}
+                        onChange={handleUploadGolden}
+                      />
+                      {uploadBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    </div>
+                  </div>
+                ) : goldenMode === 'stored' && !problemId ? (
+                  <p className="text-xs text-muted-foreground">{g.storedNeedsProblemId}</p>
+                ) : null}
+
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="cursor-pointer"
+                    onClick={syncFromPreview}
+                  >
+                    {g.syncPreview}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="border-primary text-primary bg-primary/10 hover:text-primary cursor-pointer"
+                    onClick={() =>
+                      setEditableCases((prev) => [...prev, { input: '', expectedOutput: '' }])
+                    }
+                  >
+                    {g.addCase}
+                  </Button>
                 </div>
+
+                <div className="space-y-3 max-h-[min(40vh,360px)] overflow-y-auto pr-1">
+                  {editableCases.map((tc, i) => (
+                    <div key={i} className="rounded-lg border bg-muted/20 p-2 space-y-2">
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-xs font-medium text-primary">{g.caseN(i + 1)}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs text-white bg-red-500 hover:bg-red-500 hover:text-white cursor-pointer"
+                          onClick={() => setEditableCases((prev) => prev.filter((_, j) => j !== i))}
+                        >
+                          {g.remove}
+                        </Button>
+                      </div>
+                      <div className="grid gap-1">
+                        <Label className="text-[10px] text-muted-foreground">{t.input}</Label>
+                        <Textarea
+                          value={tc.input}
+                          onChange={(e) =>
+                            setEditableCases((prev) =>
+                              prev.map((row, j) =>
+                                j === i ? { ...row, input: e.target.value } : row,
+                              ),
+                            )
+                          }
+                          className="min-h-[56px] font-mono text-[11px]"
+                          spellCheck={false}
+                        />
+                      </div>
+                      <div className="grid gap-1">
+                        <Label className="text-[10px] text-muted-foreground">{t.output}</Label>
+                        <Textarea
+                          value={tc.expectedOutput}
+                          onChange={(e) =>
+                            setEditableCases((prev) =>
+                              prev.map((row, j) =>
+                                j === i ? { ...row, expectedOutput: e.target.value } : row,
+                              ),
+                            )
+                          }
+                          className="min-h-[56px] font-mono text-[11px]"
+                          spellCheck={false}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <Button type="button" disabled={verifyBusy || !canRunVerify} onClick={handleVerify}>
+                  {verifyBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {g.verifyButton}
+                </Button>
+
+                {verifyResult ? (
+                  <div className="space-y-2 rounded-lg border p-3 text-sm">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium">{locale === 'vi' ? 'Kết quả' : 'Result'}</span>
+                      <Badge
+                        variant={verifyResult.summary.failed === 0 ? 'default' : 'destructive'}
+                      >
+                        {verifyResult.summary.passed}/{verifyResult.summary.total} OK
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        ({verifyResult.goldenSource}
+                        {verifyResult.goldenSolutionId
+                          ? ` · id=${verifyResult.goldenSolutionId.slice(0, 8)}…`
+                          : ''}
+                        )
+                      </span>
+                    </div>
+                    <div className="space-y-2 max-h-[220px] overflow-y-auto">
+                      {verifyResult.results.map((r) => (
+                        <div
+                          key={r.index}
+                          className={`rounded border p-2 text-xs ${
+                            r.passed
+                              ? 'border-green-600/30 bg-green-500/5'
+                              : 'border-destructive/30 bg-destructive/5'
+                          }`}
+                        >
+                          <div className="flex flex-wrap gap-2 items-center">
+                            <span className="font-medium">#{r.index + 1}</span>
+                            <Badge variant={r.passed ? 'secondary' : 'destructive'}>
+                              {r.verdict}
+                            </Badge>
+                          </div>
+                          {!r.passed && r.expectedOutput ? (
+                            <div className="mt-1 space-y-0.5">
+                              <p className="text-[10px] font-medium text-muted-foreground">
+                                Expected
+                              </p>
+                              <pre className="max-h-16 overflow-auto whitespace-pre-wrap font-mono text-[11px] text-muted-foreground">
+                                {r.expectedOutput}
+                              </pre>
+                            </div>
+                          ) : null}
+                          {r.actualOutput !== undefined && r.actualOutput !== '' ? (
+                            <div className="mt-1 space-y-0.5">
+                              <p className="text-[10px] font-medium text-muted-foreground">
+                                {locale === 'vi' ? 'Actual (stdout)' : 'Actual (stdout)'}
+                              </p>
+                              <pre className="max-h-20 overflow-auto whitespace-pre-wrap font-mono text-[11px]">
+                                {r.actualOutput}
+                              </pre>
+                            </div>
+                          ) : r.actualOutput === '' && !r.passed ? (
+                            <p className="mt-1 text-[10px] text-muted-foreground">
+                              {locale === 'vi' ? '(Không có stdout)' : '(No stdout)'}
+                            </p>
+                          ) : null}
+                          {r.stderr ? (
+                            <pre className="mt-1 text-destructive whitespace-pre-wrap font-mono">
+                              {r.stderr}
+                            </pre>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {(verifyResult?.summary.failed ?? 0) > 0 || lastSavedDiagnosis ? (
+                  <GoldenVerifyDiagnosisModal
+                    locale={locale}
+                    open={diagnosisModalOpen}
+                    onOpenChange={setDiagnosisModalOpen}
+                    lastSaved={lastSavedDiagnosis}
+                    canAnalyze={Boolean(verifyResult && verifyResult.summary.failed > 0)}
+                    diagnoseBusy={diagnoseBusy}
+                    verifyBusy={verifyBusy}
+                    onAnalyze={handleAnalyzeFailures}
+                    onRecheck={handleVerify}
+                    onApplySuggestion={applySuggestionAtVerifyIndex}
+                    onApplyAllSuggestions={applyAllSuggestions}
+                  />
+                ) : null}
+              </div>
             </>
           ) : (
             <p className="text-sm text-muted-foreground">{t.noData}</p>
@@ -1069,18 +1126,28 @@ export function AiTestCaseDraftSheet(props: {
         </div>
 
         <SheetFooter className="border-t shrink-0 flex-col sm:flex-row gap-2 sm:justify-end">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            className="cursor-pointer border-primary text-primary hover:text-primary"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
             {t.close}
           </Button>
           <Button
             type="button"
-            variant="secondary"
+            className="cursor-pointer"
             disabled={previewCases.length === 0}
             onClick={onApplyAppend}
           >
             {t.append}
           </Button>
-          <Button type="button" disabled={previewCases.length === 0} onClick={onApplyReplace}>
+          <Button
+            type="button"
+            className="cursor-pointer"
+            disabled={previewCases.length === 0}
+            onClick={onApplyReplace}
+          >
             {t.replace}
           </Button>
         </SheetFooter>

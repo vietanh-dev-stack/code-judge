@@ -219,10 +219,10 @@ export function AiGenerateProblemModal(props: {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton
-        className="flex h-[min(92vh,820px)] w-[min(96vw,720px)] max-w-none flex-col gap-0 p-4 sm:max-w-none"
+        className="flex h-[min(92vh,820px)] w-[min(96vw,720px)] max-w-none flex-col gap-0 p-4 sm:max-w-none bg-slate-900"
       >
         <DialogHeader className="shrink-0 border-b px-5 py-4 text-left">
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-primary">
             <Sparkles className="h-5 w-5" />
             {t.title}
           </DialogTitle>
@@ -231,7 +231,7 @@ export function AiGenerateProblemModal(props: {
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-4">
           <div className="grid gap-2">
-            <Label>{t.topic}</Label>
+            <Label className="text-primary">{t.topic}</Label>
             <Textarea
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
@@ -242,7 +242,7 @@ export function AiGenerateProblemModal(props: {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label>{t.difficulty}</Label>
+              <Label className="text-primary">{t.difficulty}</Label>
               <Select
                 value={difficulty}
                 onValueChange={(v) => {
@@ -260,26 +260,10 @@ export function AiGenerateProblemModal(props: {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-2">
-              <Label>{t.provider}</Label>
-              <Select
-                value={provider}
-                onValueChange={(v) => setProvider(v as 'default' | 'google' | 'openai')}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="default">{t.provDefault}</SelectItem>
-                  <SelectItem value="google">{t.provGoogle}</SelectItem>
-                  <SelectItem value="openai">{t.provOpenai}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           <div className="grid gap-2">
-            <Label>{t.supplementary}</Label>
+            <Label className="text-primary">{t.supplementary}</Label>
             <Textarea
               value={supplementary}
               onChange={(e) => setSupplementary(e.target.value)}
@@ -290,7 +274,7 @@ export function AiGenerateProblemModal(props: {
 
           {result ? (
             <div className="grid gap-2">
-              <Label>{t.reviseLabel}</Label>
+              <Label className="text-primary">{t.reviseLabel}</Label>
               <Textarea
                 value={revisionFeedback}
                 onChange={(e) => setRevisionFeedback(e.target.value)}
@@ -349,21 +333,21 @@ export function AiGenerateProblemModal(props: {
           ) : null}
         </div>
 
-        <DialogFooter className="shrink-0 flex-col gap-2 sm:flex-row sm:justify-between border-t px-5 py-4">
+        <DialogFooter className="shrink-0 flex-col gap-2 sm:flex-row sm:justify-between border-t px-5 py-4 bg-slate-900">
           <p className="text-xs text-muted-foreground sm:max-w-[55%]">{t.applyHint}</p>
           <div className="flex flex-wrap gap-2 justify-end">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="cursor-pointer"
+              className="cursor-pointer border-primary/70 text-primary hover:text-primary hover:bg-primary/20"
             >
               {locale === 'vi' ? 'Đóng' : 'Close'}
             </Button>
             <Button
               type="button"
               variant="outline"
-              className="cursor-pointer"
+              className="cursor-pointer border-primary/70 text-primary hover:text-primary hover:bg-primary/20"
               disabled={busy}
               onClick={() => void handleGenerate()}
             >

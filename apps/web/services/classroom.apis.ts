@@ -29,6 +29,7 @@ export type ClassroomAssignment = {
 export type ClassroomListItem = {
   id: string;
   name: string;
+  description?: string | null;
   academicYear?: string | null;
   classCode: string;
   isActive: boolean;
@@ -38,6 +39,9 @@ export type ClassroomListItem = {
     image?: string | null;
   };
   assignments: ClassroomAssignment[];
+  _count?: {
+    enrollments: number;
+  };
 };
 
 export interface Classroom {

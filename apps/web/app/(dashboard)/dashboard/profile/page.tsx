@@ -67,7 +67,7 @@ function ProfilePageContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="h-32 md:h-48 relative bg-gradient-to-r from-primary/20 to-transparent" />
+      <div className="h-28 md:h-32 relative" />
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         <ProfileHeader user={user} stats={stats} statsLoading={statsLoading} />

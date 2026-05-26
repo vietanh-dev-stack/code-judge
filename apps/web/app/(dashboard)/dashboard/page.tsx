@@ -2,15 +2,21 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import ClassCard from '@/components/dashboard/ClassCard';
-import { getClassroomBannerColor } from '@/lib/classroom-banner';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
-import Pagination from '@/components/shared/pagination';
+import Link from 'next/link';
+import { History } from 'lucide-react';
 
 import { archiveClassroom, restoreClassroom } from '@/services/classroom.apis';
 import { useClassroomStore } from '@/store/classroom-store';
 import { useAuthStore } from '@/store/auth-store';
+
+import TeachingClassCard from '@/components/dashboard/classroom/teaching-class-card';
+import EnrolledClassCard from '@/components/dashboard/classroom/enrolled-class-card';
+import CreateClassCard from '@/components/dashboard/classroom/create-class-card';
+import { CreateClassroomModal } from '@/components/dashboard/classroom/create-classroom-modal';
+import { JoinClassroomModal } from '@/components/dashboard/classroom/join-classroom-modal';
+import { Button } from '@/components/ui/button';
 
 export default function StudentDashboardPage() {
   const { teaching, enrolled, loading, fetchClassrooms } = useClassroomStore(
@@ -22,26 +28,45 @@ export default function StudentDashboardPage() {
     })),
   );
 
-  const classrooms = useMemo(() => [...teaching, ...enrolled], [teaching, enrolled]);
-  const activeClasses = useMemo(() => classrooms.filter((c) => c.isActive), [classrooms]);
   const user = useAuthStore((s) => s.user);
 
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
-  const totalPages = Math.ceil(activeClasses.length / itemsPerPage);
+  // Client-side lazy loading limits
+  const [teachingLimit, setTeachingLimit] = useState(4);
+  const [enrolledLimit, setEnrolledLimit] = useState(4);
 
-  const paginatedClasses = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return activeClasses.slice(startIndex, startIndex + itemsPerPage);
-  }, [activeClasses, currentPage]);
+  // Visible sliced classrooms
+  const visibleTeaching = useMemo(
+    () => teaching.slice(0, teachingLimit),
+    [teaching, teachingLimit],
+  );
+  const visibleEnrolled = useMemo(
+    () => enrolled.slice(0, enrolledLimit),
+    [enrolled, enrolledLimit],
+  );
 
-  // Adjust page if it gets out of bounds (e.g. after archiving)
-  useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(totalPages);
+  // Modal states
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+
+  // Scroll detection for Teaching section
+  const handleTeachingScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    if (target.scrollWidth - target.scrollLeft <= target.clientWidth + 150) {
+      if (teachingLimit < teaching.length) {
+        setTeachingLimit((prev) => Math.min(prev + 4, teaching.length));
+      }
     }
-  }, [totalPages, currentPage]);
+  };
+
+  // Scroll detection for Enrolled section
+  const handleEnrolledScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    if (target.scrollWidth - target.scrollLeft <= target.clientWidth + 150) {
+      if (enrolledLimit < enrolled.length) {
+        setEnrolledLimit((prev) => Math.min(prev + 4, enrolled.length));
+      }
+    }
+  };
 
   // DIALOG STATE
   const [confirmConfig, setConfirmConfig] = useState<{
@@ -111,15 +136,15 @@ export default function StudentDashboardPage() {
   const handleLeave = (id: string) => {
     setConfirmConfig({
       isOpen: true,
-      title: 'Archive (Leave) Class?',
-      description: 'Are you sure you want to archive this class from your list?',
+      title: 'Leave Class?',
+      description: 'Are you sure you want to leave this class from your list?',
       variant: 'destructive',
       loading: false,
       onConfirm: async () => {
         setConfirmConfig((p) => ({ ...p, loading: true }));
         try {
-          // Logic for member to "Archive" could be unenroll or just hiding it
-          toast.info('Hành động Archive (Rời lớp) đang được xử lý...');
+          // Logic for member to leave
+          toast.info('Hành động Leave Class đang được xử lý...');
           await fetchClassrooms();
           closeDialog();
         } catch (error) {
@@ -131,50 +156,166 @@ export default function StudentDashboardPage() {
     });
   };
 
-  if (loading && classrooms.length === 0) {
-    return <div>Loading classrooms...</div>;
+  if (loading && teaching.length === 0 && enrolled.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-[50vh] text-slate-400">
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+          <span>Loading classrooms...</span>
+        </div>
+      </div>
+    );
   }
 
-  if (activeClasses.length === 0) {
+  const isWorkspaceEmpty = teaching.length === 0 && enrolled.length === 0;
+
+  if (isWorkspaceEmpty) {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] text-gray-500">
-        <p className="text-lg font-medium">No active classrooms yet.</p>
-        <p className="text-sm">Join a class or check your archived classes in the sidebar.</p>
+      <div className="space-y-8">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-4xl font-extrabold tracking-tight text-white">
+            My Learning Workspace
+          </h1>
+          <p className="text-lg text-primary/70 max-w-2xl leading-relaxed">
+            Manage your dual-role ecosystem. Coordinate curriculum as an instructor while tracking
+            your personal upskilling progress across technical modules.
+          </p>
+        </div>
+
+        <div className="flex flex-col items-center justify-center h-[50vh] border border-dashed border-white/10 rounded-3xl bg-white/[0.02] p-8 text-center max-w-3xl mx-auto mt-8 animate-in fade-in zoom-in-95 duration-500">
+          <p className="text-xl font-bold text-white mb-2">No active classrooms yet</p>
+          <p className="text-sm text-slate-400 mb-8 max-w-md">
+            Get started by creating your own classroom as an instructor or joining an existing one
+            with a code.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 w-full justify-center max-w-md">
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex-1 py-3 bg-[#f97316] hover:bg-[#ea580c] text-white font-bold rounded-xl transition duration-300 shadow-md cursor-pointer"
+            >
+              Create Classroom
+            </button>
+            <button
+              onClick={() => setIsJoinModalOpen(true)}
+              className="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-xl transition duration-300 cursor-pointer"
+            >
+              Join with Code
+            </button>
+          </div>
+        </div>
+
+        <CreateClassroomModal
+          open={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+        />
+        <JoinClassroomModal open={isJoinModalOpen} onClose={() => setIsJoinModalOpen(false)} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {paginatedClasses.map((item) => {
-          const bannerColors = getClassroomBannerColor(item.id);
-          const isOwner = item.owner.id === user?.id;
-
-          return (
-            <ClassCard
-              key={item.id}
-              id={item.id}
-              title={item.name}
-              subTitle={item.academicYear ?? ''}
-              teacher={item.owner?.name ?? 'Unknown'}
-              bannerBg={bannerColors}
-              avatar={item.owner?.image}
-              isActive={item.isActive}
-              isOwner={isOwner}
-              onArchive={() => handleArchive(item.id)}
-              onRestore={() => handleRestore(item.id)}
-              onLeave={() => handleLeave(item.id)}
-            />
-          );
-        })}
+    <div className="space-y-12 pb-12">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-4xl font-extrabold tracking-tight text-white">
+            My Learning Workspace
+          </h1>
+          <p className="text-lg text-primary/70 max-w-2xl leading-relaxed">
+            Manage your dual-role ecosystem. Coordinate curriculum as an instructor while tracking
+            your personal upskilling progress across technical modules.
+          </p>
+        </div>
       </div>
 
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-      />
+      {/* Teaching Section */}
+      <div className="flex flex-col gap-4">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-1.5 h-8 bg-[#f97316] rounded-full"></div>
+            <h3 className="text-2xl font-bold text-white tracking-tight">Teaching</h3>
+            <span className="px-2.5 py-0.5 text-xs font-semibold bg-[#f97316]/10 text-[#f97316] border border-[#f97316]/20 rounded-full">
+              Active: {teaching.length}
+            </span>
+          </div>
+        </div>
+
+        {/* Teaching List - Horizontal Scroll with stationary Create New Class Card */}
+        <div className="flex gap-6 items-stretch w-full overflow-hidden">
+          <div
+            onScroll={handleTeachingScroll}
+            className="flex-1 flex gap-6 overflow-x-auto pb-4 scroll-smooth no-scrollbar"
+          >
+            {visibleTeaching.map((item) => (
+              <TeachingClassCard
+                key={item.id}
+                classroom={item}
+                onArchive={() => handleArchive(item.id)}
+                onRestore={() => handleRestore(item.id)}
+                onLeave={() => handleLeave(item.id)}
+              />
+            ))}
+          </div>
+
+          <div className="shrink-0 pb-4">
+            <CreateClassCard onClick={() => setIsCreateModalOpen(true)} />
+          </div>
+        </div>
+      </div>
+
+      {/* Enrolled Section */}
+      <div className="flex flex-col gap-4">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-1.5 h-8 bg-[#10b981] rounded-full"></div>
+            <h3 className="text-2xl font-bold text-white tracking-tight">Enrolled</h3>
+            <span className="px-2.5 py-0.5 text-xs font-semibold bg-[#10b981]/10 text-[#10b981] border border-[#10b981]/20 rounded-full">
+              Learning: {enrolled.length}
+            </span>
+          </div>
+          <button
+            onClick={() => setIsJoinModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-xl text-sm transition cursor-pointer shadow-sm"
+          >
+            Join with Code
+          </button>
+        </div>
+
+        {/* Enrolled List - Horizontal Scroll */}
+        {enrolled.length === 0 ? (
+          <div className="h-[190px] border border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center text-slate-500 bg-white/[0.01]">
+            <p className="text-sm font-medium text-slate-400">
+              You haven't joined any classrooms yet.
+            </p>
+            <Button
+              variant={'link'}
+              onClick={() => setIsJoinModalOpen(true)}
+              className="text-[#10b981] hover:underline cursor-pointer text-sm mt-1 font-semibold"
+            >
+              Join one now
+            </Button>
+          </div>
+        ) : (
+          <div className="relative">
+            <div
+              onScroll={handleEnrolledScroll}
+              className="flex gap-6 overflow-x-auto pb-4 scroll-smooth no-scrollbar"
+            >
+              {visibleEnrolled.map((item) => (
+                <EnrolledClassCard
+                  key={item.id}
+                  classroom={item}
+                  onLeave={() => handleLeave(item.id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Modals and Dialogs */}
+      <CreateClassroomModal open={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+      <JoinClassroomModal open={isJoinModalOpen} onClose={() => setIsJoinModalOpen(false)} />
 
       <ConfirmDialog
         isOpen={confirmConfig.isOpen}

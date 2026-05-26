@@ -4,17 +4,23 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Difficulty, ProblemMode, ProblemVisibility, Prisma, Problem, Role } from '@prisma/client';
+import {
+  Difficulty,
+  ProblemMode,
+  ProblemVisibility,
+  Prisma,
+  Problem,
+  Role,
+  SubmissionStatus,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProblemDto } from './dto/create-problem.dto';
 import { UpdateProblemDto } from './dto/update-problem.dto';
 import { buildUniqueProblemSlug } from './problem-slug.util';
-import { ProblemAccessService } from './problem-access.service';
 import { ProblemVisibilityService } from './problem-visibility.service';
 import { replaceProblemTags } from './problem-tag-sync.util';
 
-import { MailerService } from '../mail/mail.service';
-import { ConfigService } from '@nestjs/config';
+import * as jwt from 'jsonwebtoken';
 
 const PROBLEM_LIST_INCLUDE = {
   tags: { include: { tag: true } },
@@ -30,10 +36,7 @@ const PROBLEM_DETAIL_INCLUDE = {
 export class ProblemsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly mailerService: MailerService,
-    private readonly configService: ConfigService,
     private readonly visibilityService: ProblemVisibilityService,
-    private readonly problemAccess: ProblemAccessService,
   ) {}
 
   async create(dto: CreateProblemDto, creatorId: string, role?: Role): Promise<Problem> {
@@ -78,7 +81,7 @@ export class ProblemsService {
       }
 
       // Create ClassAssignment automatically
-      const assignment = await tx.classAssignment.create({
+      await tx.classAssignment.create({
         data: {
           classRoomId,
           title: problem.title,
@@ -87,43 +90,7 @@ export class ProblemsService {
           publishedAt: new Date(),
           dueAt: dto.dueAt ? new Date(dto.dueAt) : null,
         },
-        include: {
-          classRoom: {
-            include: {
-              enrollments: {
-                where: { status: 'ACTIVE', role: 'MEMBER' },
-                include: { user: { select: { email: true } } },
-              },
-            },
-          },
-        },
       });
-
-      // Send email notification (async)
-      const memberEmails = assignment.classRoom.enrollments
-        .map((e: any) => e.user.email)
-        .filter((email: string | null): email is string => !!email);
-
-      console.log(
-        `[ProblemsService] Found ${memberEmails.length} members to notify for problem "${problem.title}" in class "${assignment.classRoom.name}"`,
-      );
-
-      if (memberEmails.length > 0 && problem.visibility !== 'CONTEST_ONLY') {
-        const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3001';
-        this.mailerService
-          .sendAssignmentNotification({
-            to: memberEmails,
-            classroomName: assignment.classRoom.name,
-            type: 'problem',
-            title: problem.title,
-            description: problem.description ?? undefined,
-            dueAt: dto.dueAt ? new Date(dto.dueAt).toLocaleString() : undefined,
-            url: `${frontendUrl}/dashboard/${classRoomId}/classwork`,
-          })
-          .catch((err) =>
-            console.error('[ProblemsService] Failed to send assignment notification emails:', err),
-          );
-      }
 
       if (dto.tagIds !== undefined) {
         await replaceProblemTags(tx, problem.id, dto.tagIds);
@@ -133,20 +100,23 @@ export class ProblemsService {
     });
   }
 
-  async findAll(
-    query: {
-      search?: string;
-      page?: number;
-      limit?: number;
-      classRoomId?: string;
-      difficulty?: string;
-      mode?: string;
-      tagId?: string;
-      tagSlug?: string;
-    },
-    req?: Parameters<ProblemAccessService['resolveViewer']>[0],
-  ) {
-    const { page, limit, skip } = this.normalizeListPagination(query.page, query.limit);
+  /** Base scope for public problem bank (published + PUBLIC visibility only). */
+  buildPublicBankBaseWhere(): Prisma.ProblemWhereInput {
+    return {
+      isPublished: true,
+      ...this.visibilityService.getPublicProblemBankVisibilityFilter(),
+    };
+  }
+
+  /** List filters: base bank + search / difficulty / mode / tag / classRoom. */
+  buildPublicBankWhere(query: {
+    search?: string;
+    classRoomId?: string;
+    difficulty?: string;
+    mode?: string;
+    tagId?: string;
+    tagSlug?: string;
+  }): Prisma.ProblemWhereInput {
     const search = query.search?.trim();
     const difficultyFilter =
       query.difficulty === 'EASY' || query.difficulty === 'MEDIUM' || query.difficulty === 'HARD'
@@ -155,23 +125,16 @@ export class ProblemsService {
     const modeFilter =
       query.mode === 'ALGO' || query.mode === 'PROJECT' ? { mode: query.mode as ProblemMode } : {};
 
-    const classRoomId = query.classRoomId?.trim();
-    const viewer = this.problemAccess.resolveViewer(req);
-
-    if (classRoomId) {
-      await this.problemAccess.assertCanListClassProblems(classRoomId, viewer);
-    }
-
-    const visibilityFilter = classRoomId
-      ? await this.problemAccess.buildClassListVisibilityFilter(classRoomId, viewer!)
+    const visibilityFilter = query.classRoomId
+      ? {}
       : this.visibilityService.getPublicProblemBankVisibilityFilter();
 
-    const where: Prisma.ProblemWhereInput = {
+    return {
       isPublished: true,
-      ...visibilityFilter,
+      ...(query.classRoomId ? {} : visibilityFilter),
       ...difficultyFilter,
       ...modeFilter,
-      ...(classRoomId ? { assignments: { some: { classRoomId } } } : {}),
+      ...(query.classRoomId ? { assignments: { some: { classRoomId: query.classRoomId } } } : {}),
       ...(query.tagId ? { tags: { some: { tagId: query.tagId } } } : {}),
       ...(query.tagSlug ? { tags: { some: { tag: { slug: query.tagSlug } } } } : {}),
       ...(search
@@ -184,6 +147,56 @@ export class ProblemsService {
           }
         : {}),
     };
+  }
+
+  /** User progress across the entire public problem bank (ignores list filters). */
+  async getBankProgress(userId: string) {
+    const where = this.buildPublicBankBaseWhere();
+    const solvedWhere: Prisma.ProblemWhereInput = {
+      ...where,
+      submissions: {
+        some: {
+          userId,
+          status: SubmissionStatus.Accepted,
+          isDryRun: false,
+        },
+      },
+    };
+
+    const [total, solved, solvedGroups] = await Promise.all([
+      this.prisma.problem.count({ where }),
+      this.prisma.problem.count({ where: solvedWhere }),
+      this.prisma.problem.groupBy({
+        by: ['difficulty'],
+        where: solvedWhere,
+        _count: { _all: true },
+      }),
+    ]);
+
+    const byDifficulty = {
+      EASY: 0,
+      MEDIUM: 0,
+      HARD: 0,
+    };
+    for (const row of solvedGroups) {
+      byDifficulty[row.difficulty] = row._count._all;
+    }
+
+    return { total, solved, byDifficulty };
+  }
+
+  async findAll(query: {
+    search?: string;
+    page?: number;
+    limit?: number;
+    classRoomId?: string;
+    difficulty?: string;
+    mode?: string;
+    tagId?: string;
+    tagSlug?: string;
+  }) {
+    const { page, limit, skip } = this.normalizeListPagination(query.page, query.limit);
+    const where = this.buildPublicBankWhere(query);
 
     const [items, total] = await Promise.all([
       this.prisma.problem.findMany({
@@ -236,11 +249,7 @@ export class ProblemsService {
     return { items, total, page, limit };
   }
 
-  async findById(
-    problemId: string,
-    req?: Parameters<ProblemAccessService['resolveViewer']>[0],
-    opts?: { contestId?: string },
-  ) {
+  async findById(problemId: string, req?: any) {
     const problem = await this.prisma.problem.findUnique({
       where: { id: problemId },
       include: PROBLEM_DETAIL_INCLUDE,
@@ -249,14 +258,23 @@ export class ProblemsService {
       throw new NotFoundException('Problem not found');
     }
 
-    const viewer = this.problemAccess.resolveViewer(req);
-    await this.problemAccess.assertCanViewProblem(problem, viewer, opts);
-
-    const isAuthorized = await this.problemAccess.canManageProblem(
-      problem,
-      viewer?.userId,
-      viewer?.role,
-    );
+    // Check if the user is authorized to view raw, unsanitized test cases (admin/creator/teacher)
+    let isAuthorized = false;
+    if (req) {
+      const token = req.cookies?.accessToken;
+      if (token) {
+        try {
+          const decoded: any = jwt.decode(token);
+          if (decoded && decoded.sub) {
+            const userId = decoded.sub;
+            const role = decoded.role;
+            isAuthorized = await this.canManageProblem(problem, userId, role);
+          }
+        } catch (err) {
+          // Token decode fail, treat as unauthorized (student)
+        }
+      }
+    }
 
     if (!isAuthorized && problem.testCases) {
       // Sanitize hidden test cases for students/guests!
@@ -292,7 +310,7 @@ export class ProblemsService {
       throw new NotFoundException('Problem not found');
     }
 
-    if (!(await this.problemAccess.canManageProblem(existing, updaterId, role))) {
+    if (!(await this.canManageProblem(existing, updaterId, role))) {
       throw new ForbiddenException('Only creator, class owner, or admin can update this problem');
     }
 
@@ -385,7 +403,7 @@ export class ProblemsService {
       throw new NotFoundException('Problem not found');
     }
 
-    if (!(await this.problemAccess.canManageProblem(existing, userId, role))) {
+    if (!(await this.canManageProblem(existing, userId, role))) {
       throw new ForbiddenException('Only creator, class owner, or admin can delete this problem');
     }
 
@@ -435,6 +453,57 @@ export class ProblemsService {
     if (!asOwnerEnrollment) {
       throw new ForbiddenException('Only the class owner can create problems for this class');
     }
+  }
+
+  /** Admin, creator, hoặc chủ lớp (ownerId / enrollment OWNER) của một lớp đang gán bài. */
+  private async canManageProblem(
+    existing: {
+      creatorId: string | null;
+      assignments: { classRoomId: string }[];
+    },
+    userId: string,
+    role?: Role,
+  ): Promise<boolean> {
+    if (role === Role.ADMIN) {
+      return true;
+    }
+    if (existing.creatorId === userId) {
+      return true;
+    }
+    for (const a of existing.assignments) {
+      if (await this.userIsClassOwnerForRoom(a.classRoomId, userId)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private async userIsClassOwnerForRoom(classRoomId: string, userId: string): Promise<boolean> {
+    const classRoom = await this.prisma.classRoom.findUnique({
+      where: { id: classRoomId },
+      select: { ownerId: true, isActive: true },
+    });
+    if (!classRoom) {
+      return false;
+    }
+
+    // Nếu lớp học đã bị lưu trữ, không cho phép owner chỉnh sửa nữa
+    if (!classRoom.isActive) {
+      return false;
+    }
+
+    if (classRoom.ownerId === userId) {
+      return true;
+    }
+    const enrollment = await this.prisma.classEnrollment.findFirst({
+      where: {
+        classRoomId,
+        userId,
+        role: 'OWNER',
+        status: 'ACTIVE',
+      },
+    });
+    return Boolean(enrollment);
   }
 
   private async ensureClassExists(classRoomId: string) {
