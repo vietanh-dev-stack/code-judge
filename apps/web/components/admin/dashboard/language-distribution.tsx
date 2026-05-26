@@ -10,8 +10,6 @@ import {
   Cell
 } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Code } from 'lucide-react';
 
 interface LanguageDistributionProps {
   languageData: {
@@ -21,6 +19,23 @@ interface LanguageDistributionProps {
     percentage: string;
   }[];
 }
+
+const LANGUAGE_COLORS: Record<string, string> = {
+  JavaScript: '#eab308', // Yellow
+  TypeScript: '#3b82f6', // Sky Blue
+  Python: '#06b6d4',     // Cyan
+  'C++': '#a855f7',      // Purple
+  C: '#6366f1',          // Indigo
+  Java: '#ef4444',       // Red
+  Go: '#14b8a6',         // Teal
+  Rust: '#f97316',       // Orange
+};
+
+const getLanguageColor = (name: string, index: number) => {
+  if (LANGUAGE_COLORS[name]) return LANGUAGE_COLORS[name];
+  const palette = ['#eab308', '#3b82f6', '#06b6d4', '#a855f7', '#6366f1', '#ef4444', '#14b8a6', '#f97316'];
+  return palette[index % palette.length];
+};
 
 export function LanguageDistribution({ languageData }: LanguageDistributionProps) {
 
@@ -59,9 +74,11 @@ export function LanguageDistribution({ languageData }: LanguageDistributionProps
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
+                    const index = languageData.findIndex(l => l.name === data.name);
+                    const color = getLanguageColor(data.name, index);
                     return (
                       <div className="rounded-xl border border-border bg-popover p-2.5 shadow-md text-xs">
-                        <span className="font-semibold text-foreground">{data.name}</span>
+                        <span className="font-semibold" style={{ color }}>{data.name}</span>
                         <div className="mt-1 text-muted-foreground">
                           Submissions: <span className="font-bold text-foreground">{data.value.toLocaleString()}</span>
                         </div>
@@ -82,7 +99,7 @@ export function LanguageDistribution({ languageData }: LanguageDistributionProps
                 {languageData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={entry.color}
+                    fill={getLanguageColor(entry.name, index)}
                     className="opacity-90 hover:opacity-100 transition-opacity"
                   />
                 ))}
@@ -96,10 +113,10 @@ export function LanguageDistribution({ languageData }: LanguageDistributionProps
           className="mt-4 grid gap-1 text-center border-t border-border/50 pt-4"
           style={{ gridTemplateColumns: `repeat(${languageData.length}, minmax(0, 1fr))` }}
         >
-          {languageData.map((lang) => (
+          {languageData.map((lang, index) => (
             <div key={lang.name} className="flex flex-col items-center">
               <span className="text-3xs font-bold text-muted-foreground uppercase">{lang.name === 'JavaScript' ? 'JS' : lang.name}</span>
-              <span className="text-xs font-semibold mt-0.5" style={{ color: lang.color }}>{lang.percentage}</span>
+              <span className="text-xs font-semibold mt-0.5" style={{ color: getLanguageColor(lang.name, index) }}>{lang.percentage}</span>
             </div>
           ))}
         </div>

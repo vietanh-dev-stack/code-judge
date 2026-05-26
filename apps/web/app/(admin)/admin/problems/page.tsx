@@ -233,7 +233,7 @@ export default function AdminProblemsPage() {
           </TableBody>
         </Table>
 
-        <div className="p-4 border-t border-border bg-muted/10 flex items-center justify-between">
+        <div className="p-4 border-t border-border border-slate-100 bg-muted/10 flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
             Showing {problems.length} of {total} problems
           </p>
