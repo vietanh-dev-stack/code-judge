@@ -209,7 +209,7 @@ export default function ContestDetailPage() {
         <section className="flex flex-col gap-2 space-y-6 rounded-3xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Status */}
-            <div className="flex items-center justify-center gap-6 border border-border bg-slate-900 rounded-xl py-5">
+            <div className="flex items-center justify-start gap-6 border border-border bg-slate-900 rounded-xl py-5 px-8">
               <div className="rounded-lg bg-amber-700/20 p-2">
                 <ChartNoAxesColumnIncreasing className="h-7 w-7 text-primary" />
               </div>
@@ -239,7 +239,7 @@ export default function ContestDetailPage() {
             </div>
 
             {/* Duration */}
-            <div className="flex items-center justify-center gap-6 border border-border bg-slate-900 rounded-xl py-5">
+            <div className="flex items-center justify-start gap-6 border border-border bg-slate-900 rounded-xl py-5 px-8">
               <div className="rounded-lg bg-sky-900 p-2">
                 <Clock11 className="h-7 w-7 text-blue-400" />
               </div>

@@ -285,20 +285,19 @@ export default function ContestDetailPage() {
         <section className="space-y-6 rounded-3xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Status */}
-            <div className="flex items-center justify-center gap-6 border border-border bg-slate-900 rounded-xl py-5">
+            <div className="flex items-center justify-start gap-6 border border-border bg-slate-900 rounded-xl py-5 px-8">
               <div className="rounded-lg bg-amber-700/20 p-2">
                 <ChartNoAxesColumnIncreasing className="h-7 w-7 text-primary" />
               </div>
               <div className="flex flex-col items-start">
                 <h3 className="text-lg text-primary-light tracking-widest">STATUS</h3>
                 <p
-                  className={`text-2xl font-semibold ${
-                    currentStatus === 'UPCOMING'
+                  className={`text-2xl font-semibold ${currentStatus === 'UPCOMING'
                       ? 'text-primary/80'
                       : currentStatus === 'RUNNING'
                         ? 'text-green-600'
                         : 'text-red-600'
-                  }`}
+                    }`}
                 >
                   {currentStatus === 'UPCOMING' && 'Starting Soon'}
                   {currentStatus === 'RUNNING' && 'Running'}
@@ -315,7 +314,7 @@ export default function ContestDetailPage() {
             </div>
 
             {/* Duration */}
-            <div className="flex items-center justify-center gap-6 border border-border bg-slate-900 rounded-xl py-5">
+            <div className="flex items-center justify-start gap-6 border border-border bg-slate-900 rounded-xl py-5 px-8">
               <div className="rounded-lg bg-sky-900 p-2">
                 <Clock11 className="h-7 w-7 text-blue-400" />
               </div>
@@ -426,7 +425,7 @@ export default function ContestDetailPage() {
 
                   return (
                     <div
-                      key={student.userId}
+                      key={student.id}
                       className="grid grid-cols-[1.5fr_1fr] items-center px-6 py-6"
                     >
                       {/* Student Info */}
