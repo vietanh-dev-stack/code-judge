@@ -609,7 +609,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
     <div
       className={cn(
         'h-screen flex flex-col bg-background text-foreground transition-colors duration-300',
-        isDarkMode && 'dark',
+        isDarkMode ? 'dark' : 'light',
       )}
     >
       <div className="flex flex-1 overflow-hidden relative">
