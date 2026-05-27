@@ -98,7 +98,7 @@ export function AssignmentPost({
             </p>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5 max-w-md">
+            <div className="mt-5 max-w-xs">
               <div className="bg-muted/10 border border-border/60 rounded-xl p-3.5 flex items-center gap-3">
                 <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
                   <Clock className="w-4 h-4" />
@@ -106,15 +106,6 @@ export function AssignmentPost({
                 <div>
                   <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Duration</p>
                   <p className="text-xs font-bold text-foreground mt-0.5">{getContestDuration()}</p>
-                </div>
-              </div>
-              <div className="bg-muted/10 border border-border/60 rounded-xl p-3.5 flex items-center gap-3">
-                <div className="h-9 w-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
-                  <BarChart3 className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Intensity</p>
-                  <p className="text-xs font-bold text-foreground mt-0.5">Medium-Hard</p>
                 </div>
               </div>
             </div>
