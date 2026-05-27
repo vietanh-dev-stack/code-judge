@@ -5,6 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { authApi, ApiRequestError } from '@/services/auth.apis';
 import { useAuthStore } from '@/store/auth-store';
+import {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_POLICY_MESSAGE_EN,
+  validatePasswordPolicyClient,
+} from '@/lib/password-policy';
 
 const BG_IMAGE =
   'https://w0.peakpx.com/wallpaper/925/598/HD-wallpaper-technology-programming-code-python-programming-language.jpg';
@@ -28,6 +33,12 @@ export default function RegisterPage() {
       return;
     }
 
+    const policyError = validatePasswordPolicyClient(password);
+    if (policyError) {
+      setError(policyError);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -36,11 +47,15 @@ export default function RegisterPage() {
       // Đợi lấy thông tin user xong
       await refreshUser();
 
-      // Lấy state mới nhất từ Zustand
       const user = useAuthStore.getState().user;
+      if (!user) {
+        setError(
+          'Account was created but the session could not be loaded. Try logging in, or check that the API URL and cookies (CORS) are configured correctly.',
+        );
+        return;
+      }
 
-      // Bẻ lái dựa theo Role
-      if (user?.role === 'ADMIN') {
+      if (user.role === 'ADMIN') {
         router.push('/admin/users');
       } else {
         router.push('/dashboard');
@@ -146,12 +161,13 @@ export default function RegisterPage() {
                 id="register-password"
                 type="password"
                 required
-                minLength={6}
+                minLength={PASSWORD_MIN_LENGTH}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none transition-colors focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
               />
+              <p className="mt-1 text-xs text-slate-400">{PASSWORD_POLICY_MESSAGE_EN}</p>
             </div>
 
             <div>
@@ -165,7 +181,7 @@ export default function RegisterPage() {
                 id="register-confirm"
                 type="password"
                 required
-                minLength={6}
+                minLength={PASSWORD_MIN_LENGTH}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Re-enter your password"

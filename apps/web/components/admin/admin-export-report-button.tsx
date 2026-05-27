@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { adminToast } from '@/lib/admin-toast';
 import { reportsApi } from '@/services/reports.apis';
 
 type AdminExportKind = 'problem' | 'contest';
@@ -38,12 +38,11 @@ export function AdminExportReportButton({
       } else {
         throw new Error('Missing export parameters');
       }
-      toast.success('Report ready', {
+      adminToast.success('Report ready', {
         description: 'Your XLSX file is downloading.',
       });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Could not export report';
-      toast.error(message);
+      adminToast.errorFrom(err, 'Could not export report.');
     } finally {
       setLoading(false);
     }

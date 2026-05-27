@@ -28,7 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { toast } from 'sonner';
+import { adminToast } from '@/lib/admin-toast';
 
 export default function AdminTagsPage() {
   const [tags, setTags] = useState<Tag[]>([]);
@@ -50,7 +50,7 @@ export default function AdminTagsPage() {
       const data = await tagsApi.findAll();
       setTags(data);
     } catch (error) {
-      toast.error('Failed to load tags');
+      adminToast.errorFrom(error, 'Failed to load tags.');
     } finally {
       setLoading(false);
     }
@@ -87,20 +87,19 @@ export default function AdminTagsPage() {
           name: trimmedName,
           slug: slug.trim() || undefined,
         });
-        toast.success('Tag updated successfully');
+        adminToast.success('Tag updated successfully.');
       } else {
         // Create tag
         await tagsApi.create({
           name: trimmedName,
           slug: slug.trim() || undefined,
         });
-        toast.success('Tag created successfully');
+        adminToast.success('Tag created successfully.');
       }
       setIsDialogOpen(false);
       void loadTags();
-    } catch (error: any) {
-      const msg = error?.body?.message || 'Failed to save tag';
-      toast.error(msg);
+    } catch (error: unknown) {
+      adminToast.errorFrom(error, 'Failed to save tag.');
     } finally {
       setSubmitting(false);
     }
@@ -116,11 +115,10 @@ export default function AdminTagsPage() {
     }
     try {
       await tagsApi.delete(tag.id);
-      toast.success('Tag deleted successfully');
+      adminToast.success('Tag deleted successfully.');
       void loadTags();
-    } catch (error: any) {
-      const msg = error?.body?.message || 'Failed to delete tag';
-      toast.error(msg);
+    } catch (error: unknown) {
+      adminToast.errorFrom(error, 'Failed to delete tag.');
     }
   };
 

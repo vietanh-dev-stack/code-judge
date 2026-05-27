@@ -33,7 +33,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { toast } from 'sonner';
+import { adminToast } from '@/lib/admin-toast';
 import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
 
@@ -52,7 +52,7 @@ export default function AdminProblemsPage() {
       setProblems(data.items);
       setTotal(data.total);
     } catch (error) {
-      toast.error('Failed to load problems');
+      adminToast.errorFrom(error, 'Failed to load problems.');
     } finally {
       setLoading(false);
     }
@@ -71,19 +71,21 @@ export default function AdminProblemsPage() {
   const togglePublished = async (problemId: string, currentStatus: boolean) => {
     try {
       await problemsApi.update(problemId, { isPublished: !currentStatus });
-      toast.success(`Problem ${!currentStatus ? 'published' : 'unpublished'}`);
+      adminToast.success(`Problem ${!currentStatus ? 'published' : 'unpublished'}.`);
       loadProblems();
     } catch (error) {
-      toast.error('Failed to update status');
+      adminToast.errorFrom(error, 'Failed to update publish status.');
     }
   };
 
   const handleExport = async (id: string) => {
     try {
       await reportsApi.downloadAdminProblemReport(id);
-      toast.success('Problem report ready');
+      adminToast.success('Problem report ready', {
+        description: 'Your XLSX file is downloading.',
+      });
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Export failed');
+      adminToast.errorFrom(err, 'Failed to export problem report.');
     }
   };
 
@@ -91,10 +93,10 @@ export default function AdminProblemsPage() {
     if (!confirm('Are you sure you want to delete this problem?')) return;
     try {
       await problemsApi.delete(id);
-      toast.success('Problem deleted');
+      adminToast.success('Problem deleted.');
       loadProblems();
     } catch (error) {
-      toast.error('Failed to delete problem');
+      adminToast.errorFrom(error, 'Failed to delete problem.');
     }
   };
 

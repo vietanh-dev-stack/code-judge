@@ -36,6 +36,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { UserProfile } from '@/services/auth.apis';
+import { adminToast } from '@/lib/admin-toast';
 import CreateUserDialog from './create-user-dialog';
 
 export default function UserTable() {
@@ -69,7 +70,7 @@ export default function UserTable() {
       const res = await usersApi.getUsers({ page, limit, search: debouncedSearch });
       setData(res);
     } catch (error) {
-      console.error('Failed to fetch users:', error);
+      adminToast.errorFrom(error, 'Failed to load users.');
     } finally {
       setLoading(false);
     }
@@ -84,9 +85,12 @@ export default function UserTable() {
     const newRole = user.role === Role.ADMIN ? Role.CLIENT : Role.ADMIN;
     try {
       await usersApi.updateUserRole(user.id, { role: newRole });
+      adminToast.success(
+        newRole === Role.ADMIN ? 'User promoted to Admin.' : 'User changed to Client.',
+      );
       fetchUsers();
     } catch (error) {
-      alert('Permission update error!');
+      adminToast.errorFrom(error, 'Failed to update user role.');
     }
   };
 
@@ -95,9 +99,10 @@ export default function UserTable() {
     try {
       // Giả sử UserProfile có trường isActive (nếu chưa có trong type, bạn cần thêm vào auth.apis.ts)
       await usersApi.toggleUserStatus(user.id, { isActive: !user.isActive });
+      adminToast.success(user.isActive ? 'User locked.' : 'User unlocked.');
       fetchUsers();
     } catch (error) {
-      alert('Status update error!');
+      adminToast.errorFrom(error, 'Failed to update user status.');
     }
   };
 
@@ -106,9 +111,10 @@ export default function UserTable() {
     if (!confirm('Are you sure you want to disable this user?')) return;
     try {
       await usersApi.deleteUser(id);
+      adminToast.success('User deleted.');
       fetchUsers();
     } catch (error) {
-      alert('User deletion error!');
+      adminToast.errorFrom(error, 'Failed to delete user.');
     }
   };
 

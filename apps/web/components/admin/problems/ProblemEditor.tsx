@@ -36,7 +36,7 @@ import {
   problemsApi,
   UpdateProblemDto,
 } from '@/services/problem.apis';
-import { toast } from 'sonner';
+import { adminToast } from '@/lib/admin-toast';
 import { ProblemTagPicker } from '@/components/problems/ProblemTagPicker';
 import { AdminExportReportButton } from '@/components/admin/admin-export-report-button';
 
@@ -92,7 +92,7 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
         tagIds: (data.tags ?? []).map((t: any) => t.tag.id),
       });
     } catch (error) {
-      toast.error('Failed to load problem data');
+      adminToast.errorFrom(error, 'Failed to load problem data.');
     } finally {
       setInitialLoading(false);
     }
@@ -127,7 +127,7 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
 
   const handleCalibrateLimits = async () => {
     if (!problemId) {
-      toast.error('Save the problem first before calibrating limits');
+      adminToast.error('Save the problem first before calibrating limits.');
       return;
     }
     setCalibrating(true);
@@ -135,10 +135,9 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
     try {
       const result = await problemsApi.calibrateLimits(problemId);
       setCalibrateResult(result);
-      toast.success('Measured limits from golden solution');
+      adminToast.success('Measured limits from golden solution.');
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Calibration failed';
-      toast.error(msg);
+      adminToast.errorFrom(error, 'Calibration failed.');
     } finally {
       setCalibrating(false);
     }
@@ -151,12 +150,12 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
       timeLimitMs: calibrateResult.suggestedTimeLimitMs,
       memoryLimitMb: calibrateResult.suggestedMemoryLimitMb,
     });
-    toast.success('Applied suggested limits to form — save to persist');
+    adminToast.success('Applied suggested limits to form — save to persist.');
   };
 
   const handleSave = async () => {
     if (!formData.title) {
-      toast.error('Please enter a title');
+      adminToast.error('Please enter a title.');
       return;
     }
 
@@ -164,14 +163,14 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
     try {
       if (problemId) {
         await problemsApi.update(problemId, formData as UpdateProblemDto);
-        toast.success('Problem updated successfully');
+        adminToast.success('Problem updated successfully.');
       } else {
         await problemsApi.create(formData as CreateProblemDto);
-        toast.success('Problem created successfully');
+        adminToast.success('Problem created successfully.');
       }
       router.push('/admin/problems');
     } catch (error) {
-      toast.error('Failed to save problem');
+      adminToast.errorFrom(error, 'Failed to save problem.');
     } finally {
       setLoading(false);
     }

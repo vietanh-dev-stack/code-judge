@@ -30,7 +30,7 @@ import { Badge } from '@/components/ui/badge';
 import { contestsApi, CreateContestDto, UpdateContestDto } from '@/services/contest.apis';
 import { problemsApi, Problem } from '@/services/problem.apis';
 import { dateTimeLocalToUtcIso, utcIsoToDateTimeLocal } from '@/lib/utils';
-import { toast } from 'sonner';
+import { adminToast } from '@/lib/admin-toast';
 
 export default function AdminContestEditor({ contestId }: { contestId?: string }) {
   const router = useRouter();
@@ -79,7 +79,7 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
         });
       }
     } catch (error) {
-      toast.error('Failed to load data');
+      adminToast.errorFrom(error, 'Failed to load contest data.');
     } finally {
       setInitialLoading(false);
     }
@@ -149,7 +149,7 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
 
   const handleSave = async () => {
     if (!validate()) {
-      toast.error('Please fix the errors in the form');
+      adminToast.error('Please fix the errors in the form.');
       return;
     }
 
@@ -163,14 +163,14 @@ export default function AdminContestEditor({ contestId }: { contestId?: string }
 
       if (contestId) {
         await contestsApi.update(contestId, payload as UpdateContestDto);
-        toast.success('Contest updated');
+        adminToast.success('Contest updated.');
       } else {
         await contestsApi.create(payload as CreateContestDto);
-        toast.success('Contest created');
+        adminToast.success('Contest created.');
       }
       router.push('/admin/contests');
     } catch (error) {
-      toast.error('Failed to save contest');
+      adminToast.errorFrom(error, 'Failed to save contest.');
     } finally {
       setLoading(false);
     }

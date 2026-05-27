@@ -35,8 +35,7 @@ import {
   UpdateProblemDto,
   type GenerateTestCasesDraftResult,
 } from '@/services/problem.apis';
-import { ApiRequestError } from '@/services/api-client';
-import { toast } from 'sonner';
+import { adminToast } from '@/lib/admin-toast';
 import { AiGenerateProblemModal } from '@/components/problems/AiGenerateProblemModal';
 import { AiTestCaseAdvancedOptions } from '@/components/problems/AiTestCaseAdvancedOptions';
 import { AiTestCaseDraftSheet } from '@/components/problems/AiTestCaseDraftSheet';
@@ -133,9 +132,7 @@ export default function AdminProblemCreate() {
         tagIds: (data.tags ?? []).map((t: any) => t.tag.id),
       });
     } catch (error) {
-      console.error('Failed to load problem:', error);
-      const msg = error instanceof ApiRequestError ? error.body.message : 'Failed to load problem.';
-      toast.error(msg, { position: 'top-center' });
+      adminToast.errorFrom(error, 'Failed to load problem.');
     } finally {
       setInitialLoading(false);
     }
@@ -182,7 +179,7 @@ export default function AdminProblemCreate() {
 
   const handleSave = async () => {
     if (!validate()) {
-      toast.error('Please fix the errors in the form.', { position: 'top-center' });
+      adminToast.error('Please fix the errors in the form.');
       return;
     }
 
@@ -204,17 +201,12 @@ export default function AdminProblemCreate() {
         const { dueAt: _due, ...forAdmin } = payload;
         await problemsApi.createAdmin(forAdmin as CreateAdminProblemDto);
       }
-      toast.success(editId ? 'Problem updated successfully.' : 'Problem created successfully.', {
-        position: 'top-center',
-      });
+      adminToast.success(
+        editId ? 'Problem updated successfully.' : 'Problem created successfully.',
+      );
       router.push('/admin/problems');
     } catch (error) {
-      console.error('Failed to save problem:', error);
-      const msg =
-        error instanceof ApiRequestError
-          ? error.body.message
-          : 'Failed to save problem. Please check your data or try again later.';
-      toast.error(msg, { position: 'top-center' });
+      adminToast.errorFrom(error, 'Failed to save problem. Please check your data or try again later.');
     } finally {
       setLoading(false);
     }
@@ -279,15 +271,11 @@ export default function AdminProblemCreate() {
 
   const handleGenerateAiDraft = async () => {
     if (!formData.title.trim()) {
-      toast.error('Please enter a title for the problem before calling AI.', {
-        position: 'top-center',
-      });
+      adminToast.error('Please enter a title for the problem before calling AI.');
       return;
     }
     if (!formData.statementMd?.trim()) {
-      toast.error('Please enter the problem statement (markdown) before calling AI.', {
-        position: 'top-center',
-      });
+      adminToast.error('Please enter the problem statement (markdown) before calling AI.');
       return;
     }
     const previousDraft = aiDraftResult;
@@ -321,9 +309,8 @@ export default function AdminProblemCreate() {
           timeLimitMs: suggestedLimits.timeLimitMs,
           memoryLimitMb: suggestedLimits.memoryLimitMb,
         }));
-        toast.info(
+        adminToast.info(
           `Applied AI limits: ${suggestedLimits.timeLimitMs}ms / ${suggestedLimits.memoryLimitMb}MB`,
-          { position: 'top-center' },
         );
       }
       const mapped = mapAiDraftToFormTestCases(res.parsed);
@@ -338,30 +325,20 @@ export default function AdminProblemCreate() {
         setAiDraftStorageKey((k) => k + 1);
       }
       if (res.generationMode === 'summarized') {
-        toast.info('Long statement — server summarized it before generating test cases.', {
-          position: 'top-center',
-        });
+        adminToast.info('Long statement — server summarized it before generating test cases.');
       }
       if (res.parseError && mapped.length === 0) {
-        toast.warning(
+        adminToast.warning(
           res.truncationSuspected
             ? 'AI output was truncated. Try fewer suggested cases or fill ioSpec.'
             : 'AI returned a response but failed to parse the test cases. See the panel for details.',
-          {
-            position: 'top-center',
-            description: res.parseError,
-          },
+          { description: res.parseError },
         );
       } else if (mapped.length === 0) {
-        toast.warning('No valid test cases found in the AI response.', { position: 'top-center' });
+        adminToast.warning('No valid test cases found in the AI response.');
       }
     } catch (error) {
-      console.error(error);
-      const msg =
-        error instanceof ApiRequestError
-          ? error.body.message
-          : 'Failed to call AI. Please check your login and server configuration.';
-      toast.error(msg, { position: 'top-center' });
+      adminToast.errorFrom(error, 'Failed to call AI. Please check your login and server configuration.');
     } finally {
       setAiDraftLoading(false);
     }
@@ -370,7 +347,7 @@ export default function AdminProblemCreate() {
   const applyAiTestCases = (mode: 'replace' | 'append', sheetCases: AiDraftSheetCase[]) => {
     const mapped = normalizeAiDraftSheetCases(sheetCases);
     if (mapped.length === 0) {
-      toast.error('No test cases available to apply.', { position: 'top-center' });
+      adminToast.error('No test cases available to apply.');
       return;
     }
     clearTestCaseFieldErrors();
@@ -382,11 +359,11 @@ export default function AdminProblemCreate() {
     setAiDraftPreviewCases(null);
     clearSavedAiTestcaseDraft(aiDraftScope);
     setAiDraftStorageKey((k) => k + 1);
-    toast.success(
+    adminToast.success(
       mode === 'replace'
         ? `Successfully replaced with ${mapped.length} test cases from AI.`
         : `Successfully added ${mapped.length} test cases from AI.`,
-      { position: 'top-center' },
+      {},
     );
   };
 
@@ -399,9 +376,9 @@ export default function AdminProblemCreate() {
       formData.title.trim() &&
       saved.problemTitle !== formData.title.trim()
     ) {
-      toast.info('Bản AI được lưu cho tiêu đề khác — vẫn xem được, hãy kiểm tra lại trước khi áp dụng.', {
-        position: 'top-center',
-      });
+      adminToast.info(
+        'Bản AI được lưu cho tiêu đề khác — vẫn xem được, hãy kiểm tra lại trước khi áp dụng.',
+      );
     }
   };
 
@@ -770,9 +747,9 @@ export default function AdminProblemCreate() {
             delete next.statementMd;
             return next;
           });
-          toast.info('Problem draft applied. Use AI Suggestions below to generate test cases.', {
-            position: 'top-center',
-          });
+          adminToast.info(
+            'Problem draft applied. Use AI Suggestions below to generate test cases.',
+          );
         }}
       />
 
@@ -790,7 +767,7 @@ export default function AdminProblemCreate() {
             timeLimitMs: limits.timeLimitMs,
             memoryLimitMb: limits.memoryLimitMb,
           }));
-          toast.success('Limits applied to form', { position: 'top-center' });
+          adminToast.success('Limits applied to form');
         }}
         problemId={editId ?? undefined}
         problemTitle={formData.title}

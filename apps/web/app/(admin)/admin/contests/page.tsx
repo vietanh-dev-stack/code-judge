@@ -33,7 +33,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { toast } from 'sonner';
+import { adminToast } from '@/lib/admin-toast';
 import { format } from 'date-fns';
 import Link from 'next/link';
 
@@ -52,7 +52,7 @@ export default function AdminContestsPage() {
       setContests(data.items);
       setTotal(data.total);
     } catch (error) {
-      toast.error('Failed to load contests');
+      adminToast.errorFrom(error, 'Failed to load contests.');
     } finally {
       setLoading(false);
     }
@@ -75,19 +75,21 @@ export default function AdminContestsPage() {
       await contestsApi.update(contestId, { 
         // We might need to handle specific status logic if backend doesn't auto-flip
       } as any);
-      toast.success(`Contest status updated`);
+      adminToast.success('Contest status updated.');
       loadContests();
     } catch (error) {
-      toast.error('Failed to update status');
+      adminToast.errorFrom(error, 'Failed to update contest status.');
     }
   };
 
   const handleExport = async (id: string) => {
     try {
       await reportsApi.downloadAdminContestReport(id);
-      toast.success('Contest report ready');
+      adminToast.success('Contest report ready', {
+        description: 'Your XLSX file is downloading.',
+      });
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Export failed');
+      adminToast.errorFrom(err, 'Failed to export contest report.');
     }
   };
 
@@ -95,10 +97,10 @@ export default function AdminContestsPage() {
     if (!confirm('Are you sure you want to delete this contest?')) return;
     try {
       await contestsApi.delete(id);
-      toast.success('Contest deleted');
+      adminToast.success('Contest deleted.');
       loadContests();
     } catch (error) {
-      toast.error('Failed to delete contest');
+      adminToast.errorFrom(error, 'Failed to delete contest.');
     }
   };
 

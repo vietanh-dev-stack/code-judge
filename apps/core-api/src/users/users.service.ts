@@ -58,7 +58,7 @@ export class UsersService {
     }
   }
 
-  async create(dto: CreateUserDto): Promise<User> {
+  async create(dto: CreateUserDto): Promise<PublicUser> {
     const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (exists) throw new ConflictException('Email đã được sử dụng');
 
@@ -67,7 +67,7 @@ export class UsersService {
       validatePasswordPolicy(dto.password);
     }
     const passwordHash = dto.password ? await hashPassword(dto.password) : null;
-    return this.prisma.user.create({
+    const created = await this.prisma.user.create({
       data: {
         id,
         name: dto.name,
@@ -77,7 +77,9 @@ export class UsersService {
         isActive: true,
         emailVerified: true,
       },
+      select: PUBLIC_USER_WITH_AVATAR_KEY_SELECT,
     });
+    return this.toPublicUser(created);
   }
 
   async findAll(query: ListUsersDto) {
