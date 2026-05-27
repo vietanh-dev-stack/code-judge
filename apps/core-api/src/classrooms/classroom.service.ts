@@ -179,7 +179,7 @@ export class ClassroomService {
       throw new ForbiddenException('You are not in this class');
     }
 
-    return this.prisma.classRoom.findUnique({
+    const classroom = await this.prisma.classRoom.findUnique({
       where: { id: classRoomId },
       include: {
         owner: true,
@@ -197,6 +197,15 @@ export class ClassroomService {
         },
       },
     });
+
+    if (!classroom) {
+      throw new NotFoundException('Classroom not found');
+    }
+
+    return {
+      ...classroom,
+      owner: await this.mapUserAvatar(classroom.owner),
+    };
   }
 
   async getPeople(classRoomId: string, userId: string) {

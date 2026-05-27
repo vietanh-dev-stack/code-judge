@@ -1,13 +1,39 @@
 'use client'
 
-import { ArrowRight, CalendarDays, Trophy, ClipboardList, Send, MoreHorizontal, Clock, BarChart3 } from 'lucide-react';
+import { ArrowRight, CalendarDays, Send, MoreHorizontal, Clock, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { UserAvatar } from '@/components/shared/user-avatar';
 
-export function AssignmentPost({ assignment, classId }: { assignment: any; classId: string }) {
+type PostAuthor = {
+  name?: string | null;
+  image?: string | null;
+};
+
+function PostAuthorAvatar({ author }: { author?: PostAuthor | null }) {
+  return (
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/60">
+      <UserAvatar
+        name={author?.name ?? 'Instructor'}
+        imageUrl={author?.image}
+        fallbackClassName="bg-primary/10 text-sm font-bold text-primary"
+      />
+    </div>
+  );
+}
+
+export function AssignmentPost({
+  assignment,
+  classId,
+  author,
+}: {
+  assignment: any;
+  classId: string;
+  author?: PostAuthor | null;
+}) {
   const { title, description, publishedAt, dueAt, problem, contest } = assignment;
 
   const isContest = !!contest;
@@ -46,9 +72,7 @@ export function AssignmentPost({ assignment, classId }: { assignment: any; class
     return (
       <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-md transition-all hover:shadow-lg group">
         <div className="flex items-start gap-4">
-          <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-primary/10 text-primary border border-primary/25 flex items-center justify-center">
-            <Trophy className="w-5 h-5" />
-          </div>
+          <PostAuthorAvatar author={author} />
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-2">
@@ -126,9 +150,7 @@ export function AssignmentPost({ assignment, classId }: { assignment: any; class
   return (
     <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-md transition-all hover:shadow-lg group">
       <div className="flex items-start gap-4">
-        <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/25 flex items-center justify-center">
-          <ClipboardList className="w-5 h-5" />
-        </div>
+        <PostAuthorAvatar author={author} />
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-2">

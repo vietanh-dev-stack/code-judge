@@ -1,3 +1,4 @@
+import { normalizePagedList, type ApiPagedListRaw } from '@/lib/paged-list';
 import { Role } from '@/types/enums';
 import { apiFetch } from './api-client';
 import type { UserProfile } from './auth.apis';
@@ -138,9 +139,10 @@ export const usersApi = {
 
     const query = searchParams.toString();
 
-    return apiFetch<
-      PaginatedResponse<UserProfile>
-    >(`/users${query ? `?${query}` : ''}`);
+    const raw = await apiFetch<ApiPagedListRaw<UserProfile>>(
+      `/users${query ? `?${query}` : ''}`,
+    );
+    return normalizePagedList(raw);
   },
 
   async searchUsers(

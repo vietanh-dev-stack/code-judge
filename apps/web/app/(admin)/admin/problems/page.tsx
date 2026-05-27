@@ -44,10 +44,11 @@ export default function AdminProblemsPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  const loadProblems = async () => {
+  const loadProblems = async (pageOverride?: number) => {
+    const effectivePage = pageOverride ?? page;
     setLoading(true);
     try {
-      const data = await problemsApi.findAllAdmin({ search, page, limit: 10 });
+      const data = await problemsApi.findAllAdmin({ search, page: effectivePage, limit: 10 });
       setProblems(data.items);
       setTotal(data.total);
     } catch (error) {
@@ -58,13 +59,13 @@ export default function AdminProblemsPage() {
   };
 
   useEffect(() => {
-    loadProblems();
+    void loadProblems();
   }, [page]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    loadProblems();
+    void loadProblems(1);
   };
 
   const togglePublished = async (problemId: string, currentStatus: boolean) => {

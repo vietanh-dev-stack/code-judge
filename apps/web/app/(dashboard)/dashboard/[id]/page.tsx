@@ -121,11 +121,11 @@ export default async function ClassStreamPage({ params }: { params: Promise<{ id
               className="cursor-pointer bg-card border border-border rounded-xl p-4 shadow-md flex items-center justify-between hover:bg-muted/15 transition-all group"
             >
               <div className="flex items-center gap-4 flex-1">
-                <div className="w-9 h-9 rounded-full overflow-hidden border border-border/60">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/60">
                   <UserAvatar
                     name={classroom.owner?.name ?? 'Instructor'}
                     imageUrl={classroom.owner?.image}
-                    fallbackClassName="text-xs bg-muted text-foreground"
+                    fallbackClassName="bg-primary/10 text-xs font-bold text-primary"
                   />
                 </div>
                 <p className="text-muted-foreground text-sm font-medium">Share an update or post a question...</p>
@@ -145,7 +145,12 @@ export default async function ClassStreamPage({ params }: { params: Promise<{ id
           <div className="space-y-4">
             {sortedAssignments.length > 0 ? (
               sortedAssignments.map((assignment) => (
-                <AssignmentPost key={assignment.id} assignment={assignment} classId={id} />
+                <AssignmentPost
+                  key={assignment.id}
+                  assignment={assignment}
+                  classId={id}
+                  author={classroom.owner}
+                />
               ))
             ) : (
               <div className="bg-card border border-border rounded-xl p-10 text-center space-y-3 shadow-md">

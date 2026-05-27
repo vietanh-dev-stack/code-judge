@@ -10,6 +10,13 @@ type UserAvatarProps = {
   fallbackClassName?: string;
 };
 
+/** Chỉ dùng URL có thể load trong <img> (presigned / OAuth). Bỏ qua object key thô trong DB. */
+function isDisplayableAvatarUrl(url: string | null | undefined): boolean {
+  const trimmed = url?.trim();
+  if (!trimmed) return false;
+  return /^https?:\/\//i.test(trimmed) || trimmed.startsWith('data:');
+}
+
 /**
  * Avatar dùng thẻ img (presigned MinIO / URL ngoài), không dùng next/image.
  * Presigned URL đổi theo TTL — reset lỗi khi imageUrl thay đổi.
@@ -21,16 +28,17 @@ export function UserAvatar({ name, imageUrl, className, fallbackClassName }: Use
     setLoadError(false);
   }, [imageUrl]);
 
-  const initial = (name?.charAt(0) ?? '?').toUpperCase();
-  const showImage = Boolean(imageUrl?.trim()) && !loadError;
+  const initial = (name?.trim().charAt(0) || '?').toUpperCase();
+  const showImage = isDisplayableAvatarUrl(imageUrl) && !loadError;
 
   if (!showImage) {
     return (
       <div
         className={cn(
-          'flex h-full w-full items-center justify-center bg-muted font-semibold text-foreground/80',
+          'flex size-full min-h-0 min-w-0 items-center justify-center bg-muted text-sm font-semibold text-foreground/80',
           fallbackClassName,
         )}
+        aria-hidden
       >
         {initial}
       </div>
@@ -39,9 +47,9 @@ export function UserAvatar({ name, imageUrl, className, fallbackClassName }: Use
 
   return (
     <img
-      src={imageUrl!}
+      src={imageUrl!.trim()}
       alt={name}
-      className={cn('h-full w-full object-cover', className)}
+      className={cn('size-full min-h-0 min-w-0 object-cover', className)}
       referrerPolicy="no-referrer"
       onError={() => setLoadError(true)}
     />

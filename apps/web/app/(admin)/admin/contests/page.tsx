@@ -44,10 +44,11 @@ export default function AdminContestsPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  const loadContests = async () => {
+  const loadContests = async (pageOverride?: number) => {
+    const effectivePage = pageOverride ?? page;
     setLoading(true);
     try {
-      const data = await contestsApi.findAllAdmin({ search, page, limit: 10 });
+      const data = await contestsApi.findAllAdmin({ search, page: effectivePage, limit: 10 });
       setContests(data.items);
       setTotal(data.total);
     } catch (error) {
@@ -58,13 +59,13 @@ export default function AdminContestsPage() {
   };
 
   useEffect(() => {
-    loadContests();
+    void loadContests();
   }, [page]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    loadContests();
+    void loadContests(1);
   };
 
   const toggleStatus = async (contestId: string, currentStatus: string) => {

@@ -37,6 +37,7 @@ import { toast } from 'sonner';
 import { cn, formatDate, formatDuration } from '@/lib/utils';
 import { useClassDetail } from '@/components/dashboard/class-detail/class-detail-context';
 import { ExportReportButton } from '@/components/dashboard/class-detail/export-report-button';
+import { UserAvatar } from '@/components/shared/user-avatar';
 
 export default function ContestDetailPage() {
   const { canExportReports } = useClassDetail();
@@ -162,7 +163,7 @@ export default function ContestDetailPage() {
             return {
               id: student.id,
               name: student.name,
-              image: student.image,
+              image: student.image ?? lbEntry?.userAvatar ?? null,
               hasSubmitted,
             };
           });
@@ -447,12 +448,12 @@ export default function ContestDetailPage() {
                     >
                       {/* Student Info */}
                       <div className="flex items-center gap-4">
-                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#2A2F4A] text-lg font-bold text-orange-200">
-                          {student.name
-                            ?.split(' ')
-                            .map((word: string) => word[0])
-                            .slice(0, 2)
-                            .join('')}
+                        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full border border-white/10">
+                          <UserAvatar
+                            name={student.name}
+                            imageUrl={student.image}
+                            fallbackClassName="bg-[#2A2F4A] text-lg font-bold text-orange-200"
+                          />
                         </div>
 
                         <div>
