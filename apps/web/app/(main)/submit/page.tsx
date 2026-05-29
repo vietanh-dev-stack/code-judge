@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { Problem, problemsApi } from '@/services/problem.apis';
 import { submissionsApi } from '@/services/submission.apis';
 import { diagnoseApiError, logApiErrorDiagnostics } from '@/lib/api-error-diagnostics';
+import { useAuthStore } from '@/store/auth-store';
 
 const languageOptions = [
   { value: 'PYTHON', label: 'Python', extension: 'py' },
@@ -27,10 +28,10 @@ const languageOptions = [
 ];
 
 export default function SubmitPage() {
+  const { user } = useAuthStore();
   const [problems, setProblems] = useState<Problem[]>([]);
   const [selectedProblemId, setSelectedProblemId] = useState('');
   const [language, setLanguage] = useState('PYTHON');
-  const [userId, setUserId] = useState('');
   const [sourceCode, setSourceCode] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -59,8 +60,8 @@ export default function SubmitPage() {
   const handleSubmit = async () => {
     setFeedback(null);
 
-    if (!userId.trim()) {
-      setFeedback({ type: 'error', message: 'User ID is required.' });
+    if (!user?.id) {
+      setFeedback({ type: 'error', message: 'Please log in to submit code.' });
       return;
     }
     if (!selectedProblemId) {
@@ -76,7 +77,6 @@ export default function SubmitPage() {
 
     try {
       await submissionsApi.create({
-        userId: userId.trim(),
         problemId: selectedProblemId,
         mode: selectedProblem?.mode ?? 'ALGO',
         language,
@@ -129,13 +129,11 @@ export default function SubmitPage() {
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="userId">User ID</Label>
+                  <Label>Account</Label>
                   <Input
-                    id="userId"
-                    value={userId}
-                    onChange={(e) => setUserId(e.target.value)}
-                    placeholder="Enter your user ID"
-                    className="h-10"
+                    readOnly
+                    value={user?.email ?? 'Not signed in'}
+                    className="h-10 bg-muted/40"
                   />
                 </div>
                 <div className="space-y-2">

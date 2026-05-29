@@ -25,7 +25,7 @@ export class AdminProblemsService {
           timeLimitMs: dto.timeLimitMs ?? 1000,
           memoryLimitMb: dto.memoryLimitMb ?? 256,
           isPublished: dto.isPublished ?? true,
-          visibility: dto.visibility ?? ProblemVisibility.PUBLIC,
+          visibility: ProblemVisibility.PUBLIC,
           supportedLanguages: supportedLanguages.length > 0 ? supportedLanguages : undefined,
           maxTestCases: dto.maxTestCases ?? 100,
           creatorId,

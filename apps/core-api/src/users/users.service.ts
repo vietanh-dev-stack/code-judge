@@ -6,8 +6,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Role, User } from '@prisma/client';
+import type { RequestUser } from '../common/interfaces/request-user.interface';
+import { ProblemAccessService } from '../problems/problem-access.service';
 import { randomBytes } from 'crypto';
-import { formatPagedList, hashPassword } from '../common';
+import { formatPagedList, hashPassword, validatePasswordPolicy } from '../common';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildAvatarObjectKey } from '../storage/storage-key.builder';
 import { StorageService } from '../storage/storage.service';
@@ -16,14 +18,25 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { ListUsersDto } from './dto/list-users.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { PUBLIC_USER_SELECT, type PublicUser } from './user-public.select';
+import {
+  PUBLIC_USER_WITH_AVATAR_KEY_SELECT,
+  type PublicUser,
+  type UserWithAvatarKey,
+} from './user-public.select';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly problemAccess: ProblemAccessService,
   ) {}
+
+  private async toPublicUser(row: UserWithAvatarKey): Promise<PublicUser> {
+    const image = await this.storage.resolveAvatarImageUrl(row.imageObjectKey, row.image);
+    const { imageObjectKey: _key, ...rest } = row;
+    return { ...rest, image };
+  }
 
   private async ensureNotLastAdmin(userId: string) {
     const user = await this.findById(userId);
@@ -45,13 +58,16 @@ export class UsersService {
     }
   }
 
-  async create(dto: CreateUserDto): Promise<User> {
+  async create(dto: CreateUserDto): Promise<PublicUser> {
     const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (exists) throw new ConflictException('Email đã được sử dụng');
 
     const id = dto.id ?? randomBytes(12).toString('hex');
+    if (dto.password) {
+      validatePasswordPolicy(dto.password);
+    }
     const passwordHash = dto.password ? await hashPassword(dto.password) : null;
-    return this.prisma.user.create({
+    const created = await this.prisma.user.create({
       data: {
         id,
         name: dto.name,
@@ -61,7 +77,9 @@ export class UsersService {
         isActive: true,
         emailVerified: true,
       },
+      select: PUBLIC_USER_WITH_AVATAR_KEY_SELECT,
     });
+    return this.toPublicUser(created);
   }
 
   async findAll(query: ListUsersDto) {
@@ -99,10 +117,10 @@ export class UsersService {
   async findPublicById(userId: string): Promise<PublicUser> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: PUBLIC_USER_SELECT,
+      select: PUBLIC_USER_WITH_AVATAR_KEY_SELECT,
     });
     if (!user) throw new NotFoundException('Người dùng không tồn tại');
-    return user;
+    return this.toPublicUser(user);
   }
 
   async deactivateMe(userId: string): Promise<{ success: boolean }> {
@@ -121,11 +139,12 @@ export class UsersService {
       return this.findPublicById(userId);
     }
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { name: dto.name },
-      select: PUBLIC_USER_SELECT,
+      select: PUBLIC_USER_WITH_AVATAR_KEY_SELECT,
     });
+    return this.toPublicUser(updated);
   }
 
   async update(userId: string, dto: UpdateUserDto): Promise<User> {
@@ -240,20 +259,36 @@ export class UsersService {
 
   async confirmAvatarObjectKey(userId: string, objectKey: string): Promise<PublicUser> {
     await this.findById(userId);
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        image: this.storage.getObjectUrl(objectKey),
+        image: null,
         imageObjectKey: objectKey,
       },
-      select: PUBLIC_USER_SELECT,
+      select: PUBLIC_USER_WITH_AVATAR_KEY_SELECT,
     });
+    return this.toPublicUser(updated);
   }
 
-  async searchByEmail(q: string) {
+  async searchByEmail(q: string, requester: RequestUser, classRoomId?: string) {
     const query = q.trim();
 
     if (!query) return [];
+
+    if (query.length < 3) {
+      throw new BadRequestException('Search query must be at least 3 characters');
+    }
+
+    if (requester.role !== Role.ADMIN) {
+      const classId = classRoomId?.trim();
+      if (!classId) {
+        throw new ForbiddenException('classRoomId is required to search users');
+      }
+      await this.problemAccess.assertCanListClassProblems(classId, {
+        userId: requester.userId,
+        role: requester.role,
+      });
+    }
 
     const users = await this.prisma.user.findMany({
       where: {
@@ -279,20 +314,32 @@ export class UsersService {
         email: true,
         name: true,
         image: true,
+        imageObjectKey: true,
       },
       take: 10,
     });
 
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(query);
-    if (isEmail && !users.find((u) => u.email === query)) {
+    const canSuggestExternal =
+      requester.role === Role.ADMIN ||
+      (Boolean(classRoomId?.trim()) &&
+        (await this.problemAccess.userIsClassManager(classRoomId!.trim(), requester.userId)));
+    if (isEmail && canSuggestExternal && !users.find((u) => u.email === query)) {
       users.push({
         id: `external-${query}`,
         email: query,
         name: query,
         image: null,
+        imageObjectKey: null,
       });
     }
 
-    return users;
+    return Promise.all(
+      users.map(async (u) => {
+        const image = await this.storage.resolveAvatarImageUrl(u.imageObjectKey, u.image);
+        const { imageObjectKey: _key, ...rest } = u;
+        return { ...rest, image };
+      }),
+    );
   }
 }

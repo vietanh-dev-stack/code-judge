@@ -155,6 +155,71 @@ export interface ExplainProjectTestFileResult {
   explanation?: string;
 }
 
+export type GoldenVerifyRootCause =
+  | 'wrong_expected'
+  | 'wrong_input'
+  | 'io_format_mismatch'
+  | 'golden_runtime'
+  | 'time_limit'
+  | 'statement_ambiguous'
+  | 'other';
+
+export interface GoldenVerifySuggestedFix {
+  input?: string;
+  expectedOutput?: string;
+}
+
+export interface GoldenVerifyCaseDiagnosis {
+  index: number;
+  verdict: string;
+  rootCause: GoldenVerifyRootCause;
+  explanation: string;
+  suggestedFix?: GoldenVerifySuggestedFix;
+  confidence: 'high' | 'medium' | 'low';
+}
+
+export interface GoldenVerifyFailureDiagnosis {
+  summary: string;
+  caseDiagnoses: GoldenVerifyCaseDiagnosis[];
+  globalNotes?: string;
+}
+
+/** Payload lồng verifyResult — khớp DTO backend (chỉ summary + results). */
+export type AnalyzeGoldenVerifyResultPayload = Pick<
+  VerifyTestcasesWithGoldenResult,
+  'summary' | 'results'
+>;
+
+export interface AnalyzeGoldenVerifyFailuresBody {
+  problemId?: string;
+  title?: string;
+  statement?: string;
+  ioSpec?: string;
+  language: string;
+  testCases: Array<{ input: string; expectedOutput: string }>;
+  verifyResult: VerifyTestcasesWithGoldenResult;
+  provider?: 'openai' | 'google';
+  model?: string;
+  goldenSnippet?: string;
+}
+
+export function toAnalyzeGoldenVerifyPayload(
+  result: VerifyTestcasesWithGoldenResult,
+): AnalyzeGoldenVerifyResultPayload {
+  return {
+    summary: result.summary,
+    results: result.results,
+  };
+}
+
+export interface AnalyzeGoldenVerifyFailuresResult {
+  provider: 'openai' | 'google';
+  model: string;
+  structured: GoldenVerifyFailureDiagnosis | null;
+  parseError?: string;
+  rawPreview?: string;
+}
+
 export interface TestGenerateProjectSampleResult {
   mode: 'single' | 'all';
   results: Array<{
@@ -182,6 +247,20 @@ export const aiTestcaseApi = {
       ...options,
       method: 'POST',
       body,
+    });
+  },
+
+  async analyzeGoldenVerifyFailures(
+    body: AnalyzeGoldenVerifyFailuresBody,
+    options?: RequestInit,
+  ): Promise<AnalyzeGoldenVerifyFailuresResult> {
+    return apiFetch('/ai-testcase/analyze-golden-verify-failures', {
+      ...options,
+      method: 'POST',
+      body: {
+        ...body,
+        verifyResult: toAnalyzeGoldenVerifyPayload(body.verifyResult),
+      },
     });
   },
 

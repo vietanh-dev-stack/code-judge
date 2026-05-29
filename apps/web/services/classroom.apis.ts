@@ -29,6 +29,7 @@ export type ClassroomAssignment = {
 export type ClassroomListItem = {
   id: string;
   name: string;
+  description?: string | null;
   academicYear?: string | null;
   classCode: string;
   isActive: boolean;
@@ -38,6 +39,9 @@ export type ClassroomListItem = {
     image?: string | null;
   };
   assignments: ClassroomAssignment[];
+  _count?: {
+    enrollments: number;
+  };
 };
 
 export interface Classroom {
@@ -188,5 +192,12 @@ export async function joinClassroom(dto: JoinClassroomDto): Promise<{
 export async function removeMember(classRoomId: string, userId: string): Promise<void> {
   return apiFetch<void>(`/classroom/${classRoomId}/members/${userId}`, {
     method: 'DELETE',
+  });
+}
+
+// LEAVE CLASSROOM
+export async function leaveClassroom(classRoomId: string): Promise<void> {
+  return apiFetch<void>(`/classroom/${classRoomId}/leave`, {
+    method: 'POST',
   });
 }

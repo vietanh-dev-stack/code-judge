@@ -35,7 +35,7 @@ export class VerifyTestcasesWithGoldenDto {
 
   @ApiPropertyOptional({
     description:
-      'Mã golden (stdin/stdout). ADMIN hoặc chủ đề khi có problemId. Khi dùng golden trong DB, worker lấy ngôn ngữ từ bản ghi GoldenSolution.',
+      'Mã golden (stdin/stdout). Verify nháp không cần problemId khi đã đăng nhập; có problemId thì chủ đề hoặc admin. Golden trong DB: worker lấy ngôn ngữ từ bản ghi GoldenSolution.',
   })
   @IsOptional()
   @IsString()

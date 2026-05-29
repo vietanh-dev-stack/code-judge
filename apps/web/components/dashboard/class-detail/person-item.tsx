@@ -1,5 +1,4 @@
-import Image from 'next/image';
-
+import { UserAvatar } from '@/components/shared/user-avatar';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,7 +10,7 @@ import { MoreVertical, UserMinus } from 'lucide-react';
 
 interface PersonItemProps {
   name: string;
-  avatarUrl?: string;
+  avatarUrl?: string | null;
   showRemove?: boolean;
   onRemove?: () => void;
 }
@@ -23,19 +22,13 @@ export default function PersonItem({
   onRemove,
 }: PersonItemProps) {
   return (
-    <div className="flex items-center justify-between py-4 border-b border-gray-200 group hover:bg-gray-50 px-2 rounded-md transition-colors">
+    <div className="group flex items-center justify-between rounded-md border-b border-border px-2 py-4 transition-colors hover:bg-muted/30">
       <div className="flex items-center gap-4">
-        {avatarUrl ? (
-          <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
-            <Image src={avatarUrl} alt={name} fill className="object-cover" />
-          </div>
-        ) : (
-          <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center font-semibold text-sm flex-shrink-0">
-            {name.charAt(0)}
-          </div>
-        )}
+        <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+          <UserAvatar name={name} imageUrl={avatarUrl} />
+        </div>
 
-        <span className="font-medium text-gray-900">{name}</span>
+        <span className="font-medium text-foreground">{name}</span>
       </div>
 
       {showRemove && (
@@ -45,7 +38,7 @@ export default function PersonItem({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-gray-500 hover:text-black hover:bg-gray-200 rounded-full"
+                className="h-8 w-8 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <MoreVertical className="w-4 h-4" />
               </Button>

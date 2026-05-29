@@ -11,6 +11,7 @@
    - `docker compose up -d`
    - Service gồm: `app-db` (Postgres + pgvector), `app-redis`, `minio`, Judge0 (`judge0-server`, `judge0-worker`, `db`, `redis` riêng cho Judge0).
    - Chạy Judge0 trên Windows / WSL: [docs/JUDGE0-WINDOWS-WSL.md](docs/JUDGE0-WINDOWS-WSL.md)
+   - VPS: chuyển cgroup v2 → v1 (memory enforce): [docs/JUDGE0-CGROUP-V1-MIGRATION.md](docs/JUDGE0-CGROUP-V1-MIGRATION.md)
 2. Generate Prisma client và migration:
    - `npm run prisma:generate -w @code-judge/core-api`
    - `npm run prisma:migrate -w @code-judge/core-api`

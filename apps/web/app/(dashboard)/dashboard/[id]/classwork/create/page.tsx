@@ -38,7 +38,7 @@ export default async function CreateProblemPage({ params }: { params: Promise<{ 
   }
 
   return (
-    <div className="py-8">
+    <div className="py-6 min-h-0">
       <Suspense fallback={<div className="h-32 animate-pulse rounded-md bg-muted" />}>
         <ClassProblemCreate classId={id} />
       </Suspense>

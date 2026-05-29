@@ -52,7 +52,7 @@ export function ConfirmDialog({
             variant="outline"
             onClick={onClose}
             disabled={loading}
-            className="cursor-pointer sm:w-32 rounded-xl hover:bg-gray-100"
+            className="cursor-pointer sm:w-32 rounded-xl hover:bg-gray-100 hover:text-slate-900"
           >
             {cancelText}
           </Button>
@@ -61,7 +61,7 @@ export function ConfirmDialog({
             variant={variant === 'destructive' ? 'destructive' : 'default'}
             onClick={onConfirm}
             disabled={loading}
-            className={`cursor-pointer sm:w-32 border-0 rounded-xl ${variant === 'default' ? 'bg-black hover:bg-gray-800 text-white' : ''}`}
+            className={`cursor-pointer sm:w-32 rounded-xl ${variant === 'default' ? 'bg-primary hover:bg-gray-800 text-white' : 'bg-red-500 hover:text-white hover:bg-red-600'}`}
           >
             {loading ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

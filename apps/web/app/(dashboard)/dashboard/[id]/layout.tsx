@@ -19,6 +19,7 @@ export default async function ClassDetailLayout({
 
   let classroom;
   let userId: string | null = null;
+  let userRole: string | null = null;
 
   try {
     const [classroomRes, userRes] = await Promise.all([
@@ -29,6 +30,7 @@ export default async function ClassDetailLayout({
     ]);
     classroom = classroomRes;
     userId = userRes?.id ?? null;
+    userRole = userRes?.role ?? null;
   } catch {
     redirect('/dashboard');
   }
@@ -36,6 +38,7 @@ export default async function ClassDetailLayout({
   const isActive = classroom.isActive !== false;
   const isOwner = classroom.ownerId === userId;
   const canManage = isOwner && isActive;
+  const canExportReports = userRole === 'ADMIN' || (isOwner && isActive);
 
   return (
     <ClassDetailProvider
@@ -45,10 +48,11 @@ export default async function ClassDetailLayout({
         isActive,
         isOwner,
         canManage,
+        canExportReports,
       }}
     >
       <div className="flex flex-col">
-        <div className="border-b border-gray-200 bg-white -mx-6 -mt-6 mb-6 px-6">
+        <div className="-mx-6 -mt-6 mb-6 border-b border-border bg-card px-6">
           <ClassTabs classId={id} />
         </div>
         <div className="flex-1 px-0">

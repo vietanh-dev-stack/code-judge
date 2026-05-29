@@ -102,4 +102,16 @@ export class GenerateAiTestcaseDto {
     userFeedback?: string;
     validatorIssues?: string[];
   };
+
+  @ApiPropertyOptional({
+    description: 'Chỉ bỏ explanation; không rút gọn input/output',
+  })
+  @IsOptional()
+  preferCompactOutput?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Lưới/ma trận: bắt buộc input/output đầy đủ, không dùng "..."',
+  })
+  @IsOptional()
+  preferFullIoOutput?: boolean;
 }

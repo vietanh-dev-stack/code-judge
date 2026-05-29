@@ -88,18 +88,19 @@ export default function SchedulePageContent({ filter }: { filter?: string }) {
 
     return matchClass && matchType;
   });
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-gray-500 font-medium">Loading schedule...</p>
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-muted-foreground font-medium">Loading schedule...</p>
       </div>
     );
   }
 
   return (
-    <div className="border border-zinc-200 rounded-xl overflow-hidden bg-white shadow-sm h-full">
-      <div className="grid grid-cols-7 divide-x divide-zinc-200 h-full min-h-[600px]">
+    <div className="border border-border rounded-xl overflow-hidden bg-card shadow-md h-full">
+      <div className="grid grid-cols-7 divide-x divide-border h-full min-h-[600px]">
         {daysInWeek.map((day, index) => {
           const dayEvents = filteredEvents
             .filter((e) => isSameDay(new Date(e.date), day))
@@ -108,14 +109,14 @@ export default function SchedulePageContent({ filter }: { filter?: string }) {
           return (
             <div key={index} className="flex flex-col min-h-full">
               {/* Header */}
-              <div className="py-4 flex flex-col items-center ">
+              <div className="py-4 flex flex-col items-center border-b border-border bg-muted/10">
                 <span
-                  className={`text-[10px] font-bold uppercase tracking-wider ${isSameDay(day, new Date()) ? 'text-black' : 'text-zinc-500'}`}
+                  className={`text-[10px] font-bold uppercase tracking-wider ${isSameDay(day, new Date()) ? 'text-primary' : 'text-muted-foreground'}`}
                 >
                   {format(day, 'EEE', { locale: enUS })}
                 </span>
                 <span
-                  className={`text-2xl font-light ${isSameDay(day, new Date()) ? 'text-white font-bold bg-black rounded-full p-1' : 'text-zinc-400'}`}
+                  className={`text-2xl font-light mt-1 flex items-center justify-center h-10 w-10 rounded-full ${isSameDay(day, new Date()) ? 'text-primary-foreground font-bold bg-primary' : 'text-muted-foreground'}`}
                 >
                   {format(day, 'd')}
                 </span>
@@ -130,12 +131,12 @@ export default function SchedulePageContent({ filter }: { filter?: string }) {
                         
                         ${
                           event.type === 'Contest'
-                            ? 'bg-orange-50/70 border-orange-100 hover:border-orange-300 hover:bg-orange-50'
-                            : 'bg-indigo-50/70 border-indigo-100 hover:border-indigo-300 hover:bg-indigo-50'
+                            ? 'bg-primary/10 border-primary/20 hover:border-primary/40 hover:bg-primary/15'
+                            : 'bg-emerald-500/10 border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-500/15'
                         }
                       `;
 
-                  const dotColor = event.type === 'Contest' ? 'bg-orange-500' : 'bg-indigo-500';
+                  const dotColor = event.type === 'Contest' ? 'bg-primary' : 'bg-emerald-500';
 
                   const content = (
                     <div className={itemClasses}>
@@ -143,11 +144,11 @@ export default function SchedulePageContent({ filter }: { filter?: string }) {
                         <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${dotColor}`} />
 
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-zinc-800 line-clamp-2">
+                          <p className="text-sm font-semibold text-foreground line-clamp-2">
                             {event.title}
                           </p>
 
-                          <div className="mt-2 flex items-center justify-between text-xs text-zinc-500">
+                          <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
                             <span className="truncate font-medium">{event.className}</span>
 
                             <span className="tabular-nums">{event.time}</span>

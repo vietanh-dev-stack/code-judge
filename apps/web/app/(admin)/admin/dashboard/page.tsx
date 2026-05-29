@@ -8,7 +8,7 @@ import { LanguageDistribution } from '@/components/admin/dashboard/language-dist
 import { TopProblems } from '@/components/admin/dashboard/top-problems';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
-import { toast } from 'sonner';
+import { adminToast } from '@/lib/admin-toast';
 import { getDashboardAnalytics, type DashboardAnalytics } from '@/services/admin-dashboard.apis';
 
 export default function DashboardPage() {
@@ -21,10 +21,9 @@ export default function DashboardPage() {
     try {
       const data = await getDashboardAnalytics();
       setAnalytics(data);
-    } catch (err: any) {
-      console.error('Failed to load dashboard analytics:', err);
-      toast.error('Failed to load system analytics', {
-        description: err.message || 'Please ensure the core backend is running.',
+    } catch (err: unknown) {
+      adminToast.errorFrom(err, 'Failed to load system analytics.', {
+        description: 'Please ensure the core API is running.',
       });
     } finally {
       if (!silent) setIsLoading(false);
@@ -37,35 +36,35 @@ export default function DashboardPage() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    toast.success('Refreshing analytics data...', {
-      description: 'Fetching latest submission and classroom logs from judge core.',
+    adminToast.info('Refreshing analytics…', {
+      description: 'Fetching latest submission and classroom data.',
     });
     await loadData(true);
     setIsRefreshing(false);
-    toast.success('Analytics updated successfully!');
+    adminToast.success('Analytics updated successfully.');
   };
 
   const handleExport = () => {
-    toast.success('Exporting report...', {
-      description: 'Your report PDF is compiling and will download automatically.',
+    adminToast.info('Exporting report…', {
+      description: 'Your report will download when ready.',
     });
   };
 
   if (isLoading || !analytics) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <RefreshCw className="h-10 w-10 text-indigo-600 animate-spin" />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 bg-background text-foreground">
+        <RefreshCw className="h-10 w-10 text-primary animate-spin" />
         <p className="text-sm font-medium text-muted-foreground animate-pulse">Loading system dashboard analytics...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-8 p-6 md:p-8 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-8 p-6 md:p-8 max-w-7xl mx-auto bg-background text-foreground">
       {/* 1. Header Section */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-50">
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
             System Analytics
           </h1>
           <p className="text-sm text-muted-foreground mt-1">

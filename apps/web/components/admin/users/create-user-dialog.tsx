@@ -2,7 +2,13 @@
 
 import { useState } from 'react';
 import { usersApi } from '@/services/user.apis';
+import { adminToast, getApiErrorMessage } from '@/lib/admin-toast';
 import { Role } from '@/types/enums';
+import {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_POLICY_MESSAGE_EN,
+  validatePasswordPolicyClient,
+} from '@/lib/password-policy';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,17 +32,27 @@ export default function CreateUserDialog({ onSuccess }: { onSuccess: () => void 
     password: '',
     role: Role.CLIENT,
   });
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    const policyError = validatePasswordPolicyClient(formData.password);
+    if (policyError) {
+      setError(policyError);
+      return;
+    }
     setLoading(true);
     try {
       await usersApi.createUser(formData);
+      adminToast.success('User created successfully.');
       setOpen(false);
       setFormData({ name: '', email: '', password: '', role: Role.CLIENT });
-      onSuccess(); // Refresh table
-    } catch (error) {
-      alert('An error occurred while creating the user!');
+      onSuccess();
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Failed to create user.');
+      setError(msg);
+      adminToast.errorFrom(err, 'Failed to create user.');
     } finally {
       setLoading(false);
     }
@@ -44,7 +60,12 @@ export default function CreateUserDialog({ onSuccess }: { onSuccess: () => void 
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>
+      <Button
+        onClick={() => {
+          setError('');
+          setOpen(true);
+        }}
+      >
         <Plus className="mr-2 h-4 w-4" /> Add New
       </Button>
 
@@ -58,6 +79,11 @@ export default function CreateUserDialog({ onSuccess }: { onSuccess: () => void 
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
+              {error ? (
+                <p className="text-sm text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">
+                  {error}
+                </p>
+              ) : null}
               <div className="grid gap-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input
@@ -83,10 +109,11 @@ export default function CreateUserDialog({ onSuccess }: { onSuccess: () => void 
                   id="password"
                   type="password"
                   required
-                  minLength={6}
+                  minLength={PASSWORD_MIN_LENGTH}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 />
+                <p className="text-xs text-muted-foreground">{PASSWORD_POLICY_MESSAGE_EN}</p>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="role">Role</Label>

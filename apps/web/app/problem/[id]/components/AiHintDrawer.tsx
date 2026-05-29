@@ -176,7 +176,7 @@ export default function AiHintDrawer({
           )}
           {state === 'error' && (
             <p className="text-sm text-rose-500 leading-relaxed">
-              {errorMessage || 'Không thể tải gợi ý. Hãy thử lại sau.'}
+              {errorMessage || 'Could not load hint. Please try again later.'}
             </p>
           )}
           {state === 'ready' && data?.hints && <HintContent data={data} />}

@@ -1,8 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
-import { slugifyTagName } from './tag-slug.util';
+import { buildUniqueTagSlug, slugifyTagName } from './tag-slug.util';
 
 @Injectable()
 export class TagsService {
@@ -16,11 +16,10 @@ export class TagsService {
   }
 
   async create(dto: CreateTagDto) {
-    const slug = (dto.slug?.trim() || slugifyTagName(dto.name)).toLowerCase();
-    const exists = await this.prisma.tag.findUnique({ where: { slug } });
-    if (exists) {
-      throw new ConflictException(`Tag với slug "${slug}" đã tồn tại`);
-    }
+    const slugSource = dto.slug?.trim() ? dto.slug : dto.name;
+    const baseSlug = slugifyTagName(slugSource).toLowerCase();
+    const slug = await buildUniqueTagSlug(this.prisma.tag, baseSlug);
+
     return this.prisma.tag.create({
       data: {
         name: dto.name.trim(),
@@ -40,14 +39,12 @@ export class TagsService {
     if (dto.name && !dto.slug) {
       slug = slugifyTagName(dto.name).toLowerCase();
     } else if (dto.slug) {
-      slug = dto.slug.trim().toLowerCase();
+      slug = slugifyTagName(dto.slug).toLowerCase();
     }
 
     if (slug !== tag.slug) {
-      const exists = await this.prisma.tag.findUnique({ where: { slug } });
-      if (exists) {
-        throw new ConflictException(`Tag với slug "${slug}" đã tồn tại`);
-      }
+      // Make it unique instead of failing create/update due to @unique constraint.
+      slug = await buildUniqueTagSlug(this.prisma.tag, slug);
     }
 
     return this.prisma.tag.update({

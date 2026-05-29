@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiFetch, authApi } from '@/services/auth.apis';
+import { clearLocalAppStorage } from '@/lib/clear-local-storage';
 import { Button } from '@/components/ui/button';
 
 export function AcceptInviteContent() {
@@ -63,6 +64,7 @@ export function AcceptInviteContent() {
               variant="destructive"
               onClick={async () => {
                 await authApi.logout();
+                clearLocalAppStorage();
                 router.push(
                   `/login?callbackUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`,
                 );

@@ -10,7 +10,7 @@ const baseHints = {
 
 describe('sanitizeAiHintOutput', () => {
   it('redacts when hint contains public expected output', () => {
-    const forbidden = ['42\n'];
+    const forbidden = ['kết quả đúng là 42'];
     const result = sanitizeAiHintOutput(
       {
         ...baseHints,

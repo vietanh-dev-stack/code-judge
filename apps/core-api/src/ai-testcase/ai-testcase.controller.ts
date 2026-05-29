@@ -3,11 +3,13 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { CurrentUser, Roles } from '../common';
 import type { RequestUser } from '../common/interfaces/request-user.interface';
+import { GenerateAiProblemStatementDto } from './dto/generate-ai-problem-statement.dto';
 import { GenerateAiTestcaseDto } from './dto/generate-ai-testcase.dto';
 import { GenerateAiProjectTestcaseDto } from './dto/generate-ai-project-testcase.dto';
 import { AiTestcaseService } from './ai-testcase.service';
 import { QuickGenerateAiTestcaseDto } from './dto/quick-generate-ai-testcase.dto';
 import { GenerateAndSaveAiTestcaseDto } from './dto/generate-and-save-ai-testcase.dto';
+import { AnalyzeGoldenVerifyFailuresDto } from './dto/analyze-golden-verify-failures.dto';
 import { VerifyTestcasesWithGoldenDto } from './dto/verify-testcases-with-golden.dto';
 import { AiGoldenVerifyService } from './ai-golden-verify.service';
 import { ExplainProjectTestFileDto } from './dto/explain-project-test-file.dto';
@@ -30,6 +32,15 @@ export class AiTestcaseController {
   @Post('quick-generate')
   async quickGenerate(@Body() dto: QuickGenerateAiTestcaseDto) {
     return this.aiTestcaseService.quickGenerate(dto);
+  }
+
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: 'Quick test AI (chỉ ADMIN): nhập ý tưởng và sinh đề bài đầy đủ',
+  })
+  @Post('quick-generate-problem-statement')
+  async quickGenerateProblemStatement(@Body() dto: GenerateAiProblemStatementDto) {
+    return this.aiTestcaseService.generateProblemStatement(dto);
   }
 
   @Roles(Role.ADMIN)
@@ -128,6 +139,19 @@ export class AiTestcaseController {
     @Body() dto: VerifyTestcasesWithGoldenDto,
   ) {
     return this.aiGoldenVerifyService.verify(dto, user);
+  }
+
+  @ApiOperation({
+    summary: 'Phân tích AI các test FAIL sau golden verify — gợi ý sửa input/expected',
+    description:
+      'Cần JWT (creator/admin hoặc nháp ADMIN/CLIENT). Gửi verifyResult + testCases đầy đủ index. Không gửi full golden source.',
+  })
+  @Post('analyze-golden-verify-failures')
+  async analyzeGoldenVerifyFailures(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: AnalyzeGoldenVerifyFailuresDto,
+  ) {
+    return this.aiTestcaseService.analyzeGoldenVerifyFailures(dto, user);
   }
 
   @ApiOperation({

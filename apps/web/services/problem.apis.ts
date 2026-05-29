@@ -83,7 +83,6 @@ export interface CreateAdminProblemDto {
   timeLimitMs?: number;
   memoryLimitMb?: number;
   isPublished?: boolean;
-  visibility?: 'PRIVATE' | 'PUBLIC' | 'CONTEST_ONLY';
   supportedLanguages?: string[];
   maxTestCases?: number;
   testCases?: Array<{
@@ -107,12 +106,49 @@ export interface GenerateTestCasesDraftDto {
   supplementaryText?: string;
   provider?: 'openai' | 'google';
   model?: string;
+  preferCompactOutput?: boolean;
+  preferFullIoOutput?: boolean;
   revision?: {
     promptVersionUsed?: string;
     previousOutputSummary?: string;
     userFeedback?: string;
     validatorIssues?: string[];
   };
+}
+
+export interface GenerateProblemStatementDto {
+  topic: string;
+  difficulty?: string;
+  locale?: 'vi' | 'en';
+  supplementaryText?: string;
+  existingTitle?: string;
+  existingStatement?: string;
+  provider?: 'openai' | 'google';
+  model?: string;
+  revision?: {
+    userFeedback?: string;
+    previousOutputSummary?: string;
+  };
+}
+
+export interface GeneratedProblemStatementParsed {
+  title: string;
+  description: string;
+  statementMd: string;
+  ioSpec: string;
+  suggestedDifficulty?: 'EASY' | 'MEDIUM' | 'HARD';
+  suggestedTimeLimitMs?: number;
+  suggestedMemoryLimitMb?: number;
+  notes?: string;
+}
+
+export interface GenerateProblemStatementResult {
+  provider: 'openai' | 'google';
+  model: string;
+  promptVersion: string;
+  raw: string;
+  parsed: GeneratedProblemStatementParsed | null;
+  parseError?: string;
 }
 
 export interface GenerateTestCasesDraftResult {
@@ -128,10 +164,18 @@ export interface GenerateTestCasesDraftResult {
       weight?: number;
       explanation?: string;
     }>;
+    suggestedTimeLimitMs?: number;
+    suggestedMemoryLimitMb?: number;
     notes?: string;
     revisionNotes?: string;
   } | null;
   parseError?: string;
+  statementCharCount?: number;
+  generationMode?: 'direct' | 'summarized';
+  truncationSuspected?: boolean;
+  maxTokensUsed?: number;
+  longStatementWarning?: boolean;
+  placeholderWarnings?: string[];
 }
 
 export interface UpdateProblemDto {
@@ -162,6 +206,33 @@ export type PaginatedProblems = {
   page: number;
   limit: number;
 };
+
+export interface CalibrateProblemLimitsResult {
+  problemId: string;
+  goldenLanguage: string;
+  memoryEnforced: boolean;
+  cases: Array<{
+    testCaseId: string;
+    orderIndex: number;
+    runtimeMs: number;
+    memoryMb: number;
+    verdict: string;
+  }>;
+  suggestedTimeLimitMs: number;
+  suggestedMemoryLimitMb: number;
+  currentTimeLimitMs: number;
+  currentMemoryLimitMb: number;
+}
+
+export interface ProblemBankProgress {
+  total: number;
+  solved: number;
+  byDifficulty: {
+    EASY: number;
+    MEDIUM: number;
+    HARD: number;
+  };
+}
 
 /** GET /problems — danh sách public / theo lớp. */
 export interface ProblemsListQuery {
@@ -203,6 +274,11 @@ export const problemsApi = {
     return apiFetch(`/problems${queryString ? `?${queryString}` : ''}`, options);
   },
 
+  /** Progress toàn problem bank (không theo filter danh sách). */
+  async getBankProgress(options?: RequestInit): Promise<ProblemBankProgress> {
+    return apiFetch('/problems/bank/progress', options);
+  },
+
   async findAllAdmin(
     query?: AdminProblemsListQuery,
     options?: RequestInit,
@@ -217,8 +293,15 @@ export const problemsApi = {
     return apiFetch(`/problems/admin/all${queryString ? `?${queryString}` : ''}`, options);
   },
 
-  async findById(id: string, options?: RequestInit): Promise<Problem> {
-    return apiFetch(`/problems/${id}`, options);
+  async findById(
+    id: string,
+    query?: { contestId?: string },
+    options?: RequestInit,
+  ): Promise<Problem> {
+    const params = new URLSearchParams();
+    if (query?.contestId) params.set('contestId', query.contestId);
+    const qs = params.toString();
+    return apiFetch(`/problems/${encodeURIComponent(id)}${qs ? `?${qs}` : ''}`, options);
   },
 
   async create(dto: CreateProblemDto, options?: RequestInit): Promise<Problem> {
@@ -245,6 +328,29 @@ export const problemsApi = {
       ...options,
       method: 'POST',
       body: dto,
+    });
+  },
+
+  async generateStatementDraft(
+    dto: GenerateProblemStatementDto,
+    options?: RequestInit,
+  ): Promise<GenerateProblemStatementResult> {
+    return apiFetch('/problems/generate-statement-draft', {
+      ...options,
+      method: 'POST',
+      body: dto,
+    });
+  },
+
+  async calibrateLimits(
+    id: string,
+    body?: { measureTimeLimitMs?: number },
+    options?: RequestInit,
+  ): Promise<CalibrateProblemLimitsResult> {
+    return apiFetch(`/problems/${encodeURIComponent(id)}/calibrate-limits`, {
+      ...options,
+      method: 'POST',
+      body: body ?? {},
     });
   },
 

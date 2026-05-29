@@ -8,7 +8,12 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SubmissionStatus } from '@prisma/client';
-import { EnvKeys } from '../common';
+import {
+  buildAiLlmPlans,
+  EnvKeys,
+  resolveAiDefaultModel,
+  resolveAiDefaultProvider,
+} from '../common';
 import type { RequestUser } from '../common/interfaces/request-user.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProblemsService } from '../problems/problems.service';
@@ -119,7 +124,9 @@ export class AiHintService {
 
     await this.rateLimit.assertWithinLimit(user.userId, problemId);
 
-    const problem = await this.problemsService.findById(problemId, req);
+    const problem = await this.problemsService.findById(problemId, req, {
+      contestId: submission.contestId ?? undefined,
+    });
     const hiddenIds = new Set(
       (problem.testCases ?? []).filter((tc) => tc.isHidden).map((tc) => tc.id),
     );
@@ -158,24 +165,50 @@ export class AiHintService {
       publicCaseFeedback,
     });
 
-    const provider = this.getDefaultProvider();
-    const model = this.getDefaultModel(provider);
+    const provider = resolveAiDefaultProvider(this.config);
+    const model = resolveAiDefaultModel(this.config, provider);
+    const plans = buildAiLlmPlans(this.config, { provider, model });
     const temperature = Number(this.config.get<string>(EnvKeys.AI_TEMPERATURE) ?? 0.2);
     const maxTokens = this.resolveHintMaxTokens();
 
-    const raw = await this.generateWithRetry(provider, model, messages, temperature, maxTokens, 2);
+    const planFailures: string[] = [];
+    let raw = '';
+    let usedProvider = provider;
+    let usedModel = model;
+    for (const plan of plans) {
+      try {
+        raw = await this.generateWithRetry(
+          plan.provider,
+          plan.model,
+          messages,
+          temperature,
+          maxTokens,
+          2,
+        );
+        usedProvider = plan.provider;
+        usedModel = plan.model;
+        break;
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        planFailures.push(`${plan.provider}/${plan.model}: ${msg}`);
+      }
+    }
+    if (!raw.trim()) {
+      const detail = planFailures.length ? planFailures.join(' | ') : 'no attempts recorded';
+      throw new ServiceUnavailableException(`All AI providers failed. ${detail}`);
+    }
     const hints = this.parseHintOutput(raw);
     const sanitized = sanitizeAiHintOutput(hints, publicExpectedOutputs);
 
     this.logger.log(
-      `AI hint userId=${user.userId} problemId=${problemId} submissionId=${submission.id} provider=${provider}`,
+      `AI hint userId=${user.userId} problemId=${problemId} submissionId=${submission.id} provider=${usedProvider} model=${usedModel}`,
     );
 
     return {
       submissionId: submission.id,
       hints: sanitized,
-      provider,
-      model,
+      provider: usedProvider,
+      model: usedModel,
     };
   }
 
@@ -313,20 +346,6 @@ export class AiHintService {
       }
     }
     return null;
-  }
-
-  private getDefaultProvider(): 'openai' | 'google' {
-    const configured = (this.config.get<string>(EnvKeys.AI_DEFAULT_PROVIDER) ?? 'openai').toLowerCase();
-    return configured === 'google' ? 'google' : 'openai';
-  }
-
-  private getDefaultModel(provider: 'openai' | 'google'): string {
-    if (provider === 'google') {
-      return (
-        this.config.get<string>(EnvKeys.AI_DEFAULT_MODEL_GOOGLE) ?? 'gemini-2.5-flash'
-      );
-    }
-    return this.config.get<string>(EnvKeys.AI_DEFAULT_MODEL_OPENAI) ?? 'gpt-4.1-mini';
   }
 
   private async generateWithRetry(

@@ -50,7 +50,6 @@ export class BullMqEventsService implements OnModuleInit, OnModuleDestroy {
           score: true,
           runtimeMs: true,
           memoryMb: true,
-          logs: true,
           contestId: true,
           testsPassed: true,
           testsTotal: true,
@@ -98,6 +97,7 @@ export class BullMqEventsService implements OnModuleInit, OnModuleDestroy {
 
       const payload = {
         submissionId: jobId,
+        userId: submission.userId,
         status: submission.status,
         score: submission.score ?? null,
         runtimeMs: submission.runtimeMs ?? null,
@@ -115,9 +115,16 @@ export class BullMqEventsService implements OnModuleInit, OnModuleDestroy {
       // Emit to private room for the submitter
       this.realtime.emitToUser(submission.userId, 'submission:finished', payload);
 
-      // Emit to ALL if it's a contest submission (for leaderboards)
+      // Contest: broadcast tối thiểu cho leaderboard (không gửi caseResults/logs sang mọi client)
       if (submission.contestId) {
-        this.realtime.emitToAll('submission:finished', payload);
+        this.realtime.emitToAll('submission:finished', {
+          submissionId: jobId,
+          userId: submission.userId,
+          contestId: submission.contestId,
+          status: submission.status,
+          score: submission.score ?? null,
+          isDryRun: submission.isDryRun ?? false,
+        });
       }
     });
 
@@ -177,6 +184,7 @@ export class BullMqEventsService implements OnModuleInit, OnModuleDestroy {
 
       const payload = {
         submissionId: jobId,
+        userId: submission.userId,
         status: submission.status,
         error: submission.error ?? failedReason ?? 'Unknown error',
         contestId: submission.contestId ?? null,
@@ -190,7 +198,14 @@ export class BullMqEventsService implements OnModuleInit, OnModuleDestroy {
       this.realtime.emitToUser(submission.userId, 'submission:failed', payload);
 
       if (submission.contestId) {
-        this.realtime.emitToAll('submission:failed', payload);
+        this.realtime.emitToAll('submission:failed', {
+          submissionId: jobId,
+          userId: submission.userId,
+          contestId: submission.contestId,
+          status: submission.status,
+          error: payload.error,
+          isDryRun: submission.isDryRun ?? false,
+        });
       }
     });
 

@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chấm bài thuật toán — code-judge docs</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #58a6ff;
+      --ok: #3fb950;
+      --partial: #d29922;
+      --missing: #f85149;
+      --border: #30363d;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "Cascadia Code", "Consolas", monospace;
+      --sidebar-w: 280px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      min-height: 100vh;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative !important; height: auto !important; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 1.25rem 1rem;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+    }
+    .sidebar h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin: 0 0 0.75rem;
+    }
+    .sidebar h3 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin: 1rem 0 0.5rem;
+    }
+    .sidebar nav a {
+      display: block;
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    .sidebar nav a:hover { background: var(--surface2); color: var(--text); text-decoration: none; }
+    .sidebar nav a.active { background: var(--surface2); color: var(--accent); font-weight: 600; }
+    main { max-width: 920px; padding: 2rem 2.5rem 4rem; }
+    header.doc-header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    header.doc-header h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      line-height: 1.3;
+    }
+    header.doc-header .lead { color: var(--muted); margin: 0; }
+    section { margin-bottom: 2.5rem; scroll-margin-top: 1rem; }
+    h2 {
+      font-size: 1.35rem;
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.75rem; }
+    h4 { font-size: 1rem; margin: 1.25rem 0 0.5rem; color: var(--muted); }
+    p { margin: 0 0 1rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.88rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--surface2); font-weight: 600; }
+    tr:nth-child(even) td { background: #1a233280; }
+    pre, code { font-family: var(--mono); font-size: 0.85rem; }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    code {
+      background: var(--surface2);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+    }
+    pre code { background: transparent; padding: 0; }
+    blockquote {
+      border-left: 4px solid var(--accent);
+      padding-left: 1rem;
+      margin: 1rem 0;
+      color: var(--muted);
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-ok { background: #3fb95033; color: var(--ok); }
+    .badge-partial { background: #d2992233; color: var(--partial); }
+    .badge-missing { background: #f8514933; color: var(--missing); }
+    .layer-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 0.75rem 0;
+    }
+    .layer-card h4 { margin-top: 0; color: var(--text); }
+    .mermaid-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+      overflow-x: auto;
+    }
+    .checklist { list-style: none; padding-left: 0; }
+    .checklist li::before { content: "☐ "; color: var(--muted); }
+  </style>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "loose" });
+  </script>
+</head>
+<body>
+  <div class="layout">
+    <div class="sidebar">
+      <h2>Documentation</h2>
+      <nav>
+        <a href="CHAM-BAI-THUAT-TOAN.html" class="active">CHẤM BÀI THUẬT TOÁN</a>
+        <a href="AI-TESTCASE-GENERATION.html">AI TESTCASE GENERATION</a>
+        <a href="AI-HINT-ASSISTANT.html">AI HINT ASSISTANT</a>
+        <a href="AWS-LAMBDA-INTEGRATION.html">AWS LAMBDA INTEGRATION</a>
+        <a href="plans/PROJECT-TESTCASE-IMPLEMENTATION-OVERVIEW.html">PROJECT TESTCASE OVERVIEW</a>
+        <a href="BUILD-LEVEL-PLAN.html">BUILD LEVEL PLAN</a>
+        <a href="USER-STORIES-TASKLIST.html">USER STORIES TASKLIST</a>
+      </nav>
+      <h3>Mục lục</h3>
+      <nav>
+        <a href="#tong-quan">Tổng quan</a>
+        <a href="#ba-lop">Ba lớp đánh giá</a>
+        <a href="#tu-dong">Chấm tự động</a>
+        <a href="#ast-policy">AST &amp; Tree-sitter</a>
+        <a href="#ban-tu-dong">Bán tự động &amp; thủ công</a>
+        <a href="#hack-test">Đúng test, sai đề</a>
+        <a href="#mo-hinh-diem">Mô hình điểm</a>
+        <a href="#code-judge">Ánh xạ code-judge</a>
+        <a href="#phu-luc">Phụ lục</a>
+      </nav>
+    </div>
+    <main>
+      <header class="doc-header">
+        <h1>Chấm bài thuật toán — vượt qua kiểm tra I/O</h1>
+        <p class="lead">
+          Tài liệu cho giảng viên và đội kỹ thuật: các cách chấm bài lập trình thuật toán,
+          từ so khớp đầu vào/đầu ra đến đánh giá sinh viên có giải <strong>đúng bài toán trong đề</strong> hay không.
+        </p>
+      </header>
+
+      <section id="tong-quan">
+        <h2>1. Tổng quan</h2>
+        <p>
+          Hệ thống chấm trực tuyến (Online Judge, OJ) phổ biến nhất dựa trên <strong>black-box testing</strong>:
+          chạy chương trình sinh viên với tập test, so <code>stdout</code> với đáp án mong đợi.
+          Cách này công bằng, có thể mở rộng, nhưng <strong>không đủ</strong> khi mục tiêu giáo dục là:
+        </p>
+        <ul>
+          <li>Sinh viên chọn đúng <em>ý tưởng thuật toán</em> (DP, đồ thị, tham lam…).</li>
+          <li>Độ phức tạp đáp ứng ràng buộc đề (ví dụ O(n log n), không brute O(2<sup>n</sup>).</li>
+          <li>Code phản ánh <em>đúng bài toán</em> (tổng, modulo, đếm đường đi…) chứ không “ăn may” trùng output trên vài test.</li>
+          <li>Tránh gian lận: hardcode, copy, giải sai bài nhưng lọt public test.</li>
+        </ul>
+        <blockquote>
+          <strong>Kết luận then chốt:</strong> Không có phương pháp tự động nào chứng minh 100% rằng sinh viên “hiểu đề”.
+          Cần <strong>kết hợp</strong> nhiều lớp: test mạnh, checker/oracle, giới hạn tài nguyên, rubric thủ công, và (khi cần) phỏng vấn.
+        </blockquote>
+        <p><strong>Đối tượng đọc:</strong></p>
+        <ul>
+          <li><strong>Giảng viên</strong> — chọn chiến lược chấm, thiết kế đề, rubric, tỷ lệ điểm auto/thủ công.</li>
+          <li><strong>Người xây hệ thống</strong> — triển khai trên <code>code-judge</code> và lộ trình mở rộng.</li>
+        </ul>
+      </section>
+
+      <section id="ba-lop">
+        <h2>2. Khung tư duy: ba lớp đánh giá</h2>
+        <div class="mermaid-wrap">
+          <pre class="mermaid">
+flowchart TB
+  subgraph layer1 [Lop1_HanhVi]
+    IO[Test_IO_blackbox]
+    Perf[Time_Memory]
+  end
+  subgraph layer2 [Lop2_DungDan]
+    Checker[Checker_custom]
+    Oracle[Golden_solution]
+    Property[Property_based]
+  end
+  subgraph layer3 [Lop3_DungDe]
+    Rubric[Rubric_thu_cong]
+    ReqTrace[Traceability_FR]
+    AIReview[LLM_co_giam_sat]
+    Static[Static_analysis]
+    TreeSitter[AST_Tree_sitter_policy]
+  end
+  layer1 --> layer2 --> layer3
+  TreeSitter --> Static
+          </pre>
+        </div>
+
+        <div class="layer-card">
+          <h4>Lớp 1 — Đúng/sai hành vi (behavioral correctness)</h4>
+          <p>
+            Output khớp trên từng test, không TLE/MLE/RE, đúng định dạng I/O.
+            Đây là nền tảng của mọi OJ; trong <code>code-judge</code> worker so sánh sau chuẩn hóa output.
+          </p>
+          <p><span class="badge badge-partial">Chứng minh đúng đề?</span> Chỉ khi tập test <em>đủ mạnh</em> và đề không mơ hồ; thường chỉ chứng minh “đúng trên tập đã cho”.</p>
+        </div>
+
+        <div class="layer-card">
+          <h4>Lớp 2 — Đúng bản chất thuật toán (semantic / relational correctness)</h4>
+          <p>
+            Không chỉ so chuỗi output mà xác minh <strong>quan hệ input → output</strong> theo đặc tả:
+            checker tùy chỉnh, lời giải mẫu (oracle), property-based test, stress với brute force trên n nhỏ.
+          </p>
+          <p><span class="badge badge-ok">Chứng minh đúng đề?</span> Mạnh hơn lớp 1; vẫn có thể bị hardcode nếu test quá ít hoặc checker yếu.</p>
+        </div>
+
+        <div class="layer-card">
+          <h4>Lớp 3 — Đúng yêu cầu mô tả / đúng đề (requirement alignment)</h4>
+          <p>
+            Đánh giá sinh viên có làm đúng <em>những gì đề yêu cầu</em>: thuật toán bắt buộc, giải thích độ phức tạp,
+            cấu trúc code, không hack. Cần rubric, traceability (FR-*), <strong>AST policy (Tree-sitter)</strong> cho rule cấm/bắt buộc,
+            chấm thủ công hoặc AI có người giám sát.
+          </p>
+          <p><span class="badge badge-ok">Chứng minh đúng đề?</span> Gần mục tiêu giáo dục nhất; tốn công, khó scale 100% tự động.</p>
+        </div>
+      </section>
+
+      <section id="tu-dong">
+        <h2>3. Phương pháp chấm tự động (mở rộng I/O)</h2>
+        <p>Bảng tổng hợp — dùng để chọn phương pháp khi ra đề hoặc thiết kế pipeline OJ.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Phương pháp</th>
+              <th>Chấm được gì</th>
+              <th>Hạn chế</th>
+              <th>Độ tự động</th>
+              <th>Phù hợp</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Black-box I/O</strong></td>
+              <td>Output đúng trên từng test; điểm theo <code>weight</code>; public/hidden</td>
+              <td>Hardcode, sai thuật toán nhưng trùng output trên test hẹp</td>
+              <td>Cao</td>
+              <td>Contest, bài cơ bản có test chất lượng</td>
+            </tr>
+            <tr>
+              <td><strong>Checker / validator</strong></td>
+              <td>So output theo quy tắc (epsilon, permutation, multiset, graph isomorphism đơn giản)</td>
+              <td>Cần viết checker; checker sai → chấm sai hàng loạt</td>
+              <td>Cao (sau khi có checker)</td>
+              <td>ICPC-style, output không duy nhất, số thực</td>
+            </tr>
+            <tr>
+              <td><strong>Golden solution (oracle)</strong></td>
+              <td>Sinh expected từ lời giải mẫu; verify test trước khi publish</td>
+              <td>Golden sai → toàn bộ test sai; không bắt được ý tưởng HS khác đúng</td>
+              <td>Cao</td>
+              <td>Sinh test, QA bộ đề</td>
+            </tr>
+            <tr>
+              <td><strong>Property-based testing</strong></td>
+              <td>Invariant sau mỗi thao tác (sorted, conservation, idempotent…)</td>
+              <td>Cần đặc tả property rõ; random flake nếu không seed</td>
+              <td>Trung bình–cao</td>
+              <td>Cấu trúc dữ liệu, toán rời rạc</td>
+            </tr>
+            <tr>
+              <td><strong>Stress / brute nhỏ</strong></td>
+              <td>So HS với O(n²) hoặc brute trên n ≤ 20</td>
+              <td>Chỉ trên input nhỏ; không thay full hidden lớn</td>
+              <td>Cao (offline)</td>
+              <td>Phát hiện thuật toán sai logic</td>
+            </tr>
+            <tr>
+              <td><strong>Subtask / partial scoring</strong></td>
+              <td>Điểm từng phần (n ≤ 100, n ≤ 10<sup>5</sup>…)</td>
+              <td>HS có thể chỉ làm phần dễ</td>
+              <td>Cao</td>
+              <td>Thi học kỳ, đề nhiều tầng</td>
+            </tr>
+            <tr>
+              <td><strong>Time / memory limit</strong></td>
+              <td>Loại độ phức tạp quá lớn (TLE/MLE)</td>
+              <td>Không chứng minh đúng thuật toán; constant factor</td>
+              <td>Cao</td>
+              <td>Bài có ràng buộc O(n log n)</td>
+            </tr>
+            <tr>
+              <td><strong>Sandbox &amp; ràng buộc API</strong></td>
+              <td>Cấm thư viện, syscall; “đúng khung bài”</td>
+              <td>Không đánh giá logic thuật toán</td>
+              <td>Cao</td>
+              <td>Bài “tự cài” cấu trúc dữ liệu</td>
+            </tr>
+            <tr>
+              <td><strong>Static analysis (regex/heuristic)</strong></td>
+              <td>Phát hiện hardcode, lookup table sơ bộ</td>
+              <td>Dễ false positive; bỏ sót code trong comment/string</td>
+              <td>Trung bình</td>
+              <td>Rule đơn giản, prototype</td>
+            </tr>
+            <tr>
+              <td><strong>AST + Tree-sitter + policy</strong></td>
+              <td>Cấm API/cấu trúc; fingerprint thuật toán; <code>POLICY_VIOLATION</code></td>
+              <td>Mỗi ngôn ngữ cần grammar; không chứng minh logic đúng</td>
+              <td>Cao (sau khi có policy pack)</td>
+              <td>Bài bắt buộc đệ quy, cấm sort, chấm khung giải pháp</td>
+            </tr>
+            <tr>
+              <td><strong>Plagiarism / similarity</strong></td>
+              <td>Phát hiện copy (MOSS, AST hash)</td>
+              <td>Không chấm đúng/sai thuật toán</td>
+              <td>Cao</td>
+              <td>Mọi kỳ thi có giá trị học thuật</td>
+            </tr>
+            <tr>
+              <td><strong>AI sinh test từ đề</strong></td>
+              <td>Test phản ánh statement, biên, edge</td>
+              <td>LLM có thể sai expected; bắt buộc golden verify</td>
+              <td>Cao + QA</td>
+              <td>Ra đề nhanh, bổ sung hidden</td>
+            </tr>
+            <tr>
+              <td><strong>AI review code vs đề</strong></td>
+              <td>Gợi ý rubric: có DP không, độ phức tạp ước lượng</td>
+              <td>Hallucination; không đưa hidden expected vào prompt</td>
+              <td>Thấp–trung (cần người duyệt)</td>
+              <td>Chấm bổ trợ, feedback</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>3.1. Black-box I/O (nền tảng OJ)</h3>
+        <p>
+          Mỗi test case gồm <code>input</code>, <code>expectedOutput</code>, <code>weight</code>, <code>isHidden</code>.
+          Worker chạy từng test (Lambda/Judge0), chuẩn hóa rồi so sánh:
+        </p>
+        <pre><code>function normalizeOutput(out: string): string {
+  if (!out) return '';
+  return out
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .join('\n')
+    .trim();
+}</code></pre>
+        <p><em>Nguồn:</em> <code>apps/worker/src/index.ts</code> — <code>normalizeOutput</code>.</p>
+        <p>
+          <strong>Khi nào chứng minh đúng đề?</strong> Khi bộ test cover đủ không gian input (biên, typical, adversarial)
+          và đề định nghĩa output duy nhất. <strong>Khi nào chỉ đúng output?</strong> Hầu hết trường hợp thực tế nếu hidden yếu.
+        </p>
+
+        <h3>3.2. Checker / validator tùy chỉnh</h3>
+        <p>
+          Thay vì <code>actual === expected</code>, chạy chương trình <strong>checker</strong> nhận
+          <code>(input, output_cho_lam, output_hs)</code> và trả ACCEPT / WRONG.
+          Phổ biến trong ICPC (testlib, custom checker).
+        </p>
+        <ul>
+          <li>So số thực: |a − b| ≤ ε.</li>
+          <li>Nhiều đáp án hợp lệ: so multiset, hoán vị, hoặc “tồn tại labeling”.</li>
+          <li>Output lớn: checker đọc cấu trúc thay vì diff từng byte.</li>
+        </ul>
+        <p>
+          <strong>Đúng đề:</strong> Checker mã hóa đúng định nghĩa toán trong đề.
+          <strong>Chỉ đúng output:</strong> Checker chỉ so format superficial.
+        </p>
+
+        <h3>3.3. Golden solution (oracle)</h3>
+        <p>
+          Lời giải mẫu tin cậy chạy trên cùng input để tạo hoặc xác minh <code>expectedOutput</code>.
+          Trong <code>code-judge</code>: <code>golden-verify-job.ts</code> + AI diagnose khi verify fail
+          (<code>golden-verify-failure-diagnose.prompt.ts</code> — golden được coi đúng cho WRONG_ANSWER, gợi ý sửa expected).
+        </p>
+        <p>
+          <strong>Đúng đề:</strong> Golden đúng và test đại diện đủ lớp input.
+          <strong>Chỉ đúng output:</strong> HS có thể dùng thuật toán khác vẫn đúng — oracle không “chấm ý tưởng”, chỉ chấm hành vi.
+        </p>
+
+        <h3>3.4. Property-based &amp; stress testing</h3>
+        <p>
+          Sinh hàng nghìn input ngẫu nhiên (có seed cố định), kiểm tra:
+        </p>
+        <ul>
+          <li><code>sort(sort(x)) === sort(x)</code></li>
+          <li>Tổng trước/sau thao tác không đổi</li>
+          <li>Kết quả HS === brute khi n ≤ N<sub>max</sub></li>
+        </ul>
+        <p>
+          Phát hiện lỗi logic mà vài test tay không thấy. <strong>Đúng đề</strong> nếu property được trích từ đề bài chính xác.
+        </p>
+
+        <h3>3.5. Giới hạn thời gian / bộ nhớ</h3>
+        <p>
+          Ràng buộc <code>timeLimitMs</code>, <code>memoryLimitMb</code> trên <code>Problem</code> loại bỏ brute không chịu được input lớn.
+          Không đảm bảo HS dùng đúng thuật toán mong muốn (có thể O(n²) lọt nếu limit rộng).
+        </p>
+        <h4>Calibrate từ golden (code-judge)</h4>
+        <ul>
+          <li>Admin: <code>POST /problems/:id/calibrate-limits</code> — worker chạy golden trên mọi testcase qua Judge0, trả <code>suggestedTimeLimitMs</code> / <code>suggestedMemoryLimitMb</code> (hệ số an toàn <code>LIMIT_TIME_SAFETY</code>, <code>LIMIT_MEM_SAFETY</code>).</li>
+          <li>Worker áp dụng <strong>hệ số ngôn ngữ</strong> khi chấm (Python/Java ×2 mặc định) so với limit trên đề.</li>
+          <li>Contest: <code>ContestProblem.timeLimitMsOverride</code> / <code>memoryLimitMbOverride</code> được worker đọc khi <code>submission.contestId</code> có.</li>
+          <li>Verdict: TLE (Judge0 status 5), MLE (mô tả/message memory) → <code>TimeLimitExceeded</code> / <code>MemoryLimitExceeded</code>.</li>
+        </ul>
+        <h4>Memory và cgroup (Judge0)</h4>
+        <p>
+          Ubuntu 24 + <code>JUDGE0_USE_CGROUP=false</code> + <code>isolate_stub</code>: <strong>time</strong> enforce được; <strong>memory</strong> chủ yếu hiển thị trên đề.
+          Muốn MLE thật: chuyển host sang cgroup v1 + isolate thật — xem <a href="JUDGE0-CGROUP-V1-MIGRATION.md">JUDGE0-CGROUP-V1-MIGRATION.md</a>.
+        </p>
+
+        <h3>3.6. Static analysis &amp; anti-hardcode (regex / heuristic)</h3>
+        <p>Heuristic trên chuỗi source (không parse cú pháp):</p>
+        <ul>
+          <li>Chuỗi <code>if (n == 5)</code> lặp với nhiều hằng — nghi hardcode theo test.</li>
+          <li>Mảng ánh xạ kích thước = số test public.</li>
+          <li>Tìm tên hàm cấm bằng regex — dễ nhầm comment/string.</li>
+        </ul>
+        <p>
+          Phù hợp prototype nhanh. Với rule cấm API hoặc bắt buộc cấu trúc, nên dùng
+          <a href="#ast-policy">mục 3.8 AST + Tree-sitter</a> để giảm false positive.
+        </p>
+
+        <h3 id="ast-policy">3.8. AST, Tree-sitter và policy engine</h3>
+        <p>
+          Hướng <strong>nâng cấp static analysis</strong>: parse mã nguồn thành cây cú pháp bằng
+          <a href="https://tree-sitter.github.io/tree-sitter/" target="_blank" rel="noopener">Tree-sitter</a>,
+          sau đó chạy <strong>policy rules</strong> (query hoặc visitor) để chặn phần không được phép
+          và (tuỳ chọn) rút <strong>dấu hiệu cấu trúc thuật toán</strong> — không thay black-box I/O.
+        </p>
+
+        <div class="mermaid-wrap">
+          <pre class="mermaid">
+flowchart LR
+  src[Source_code] --> parse[Tree_sitter_parse]
+  parse --> tree[CST_syntax_tree]
+  tree --> policy[Policy_engine]
+  policy -->|vi_pham| pv[POLICY_VIOLATION]
+  policy -->|pass| fp[Structural_fingerprint]
+  fp --> io[Blackbox_IO_judge]
+  io --> score[Diem_tong]
+          </pre>
+        </div>
+
+        <h4>Vai trò trong ba lớp đánh giá</h4>
+        <ul>
+          <li><strong>Lớp 3 (chính):</strong> enforce “đúng khung bài” — cấm <code>sort</code>, bắt đệ quy, cấm <code>numpy</code>…</li>
+          <li><strong>Lớp 2 (phụ):</strong> fingerprint cấu trúc (có vòng lồng, có đệ quy) — gợi ý DP/graph cho GV, không thay test.</li>
+          <li><strong>Lớp 1:</strong> Không thay thế so output; policy thường chạy <em>trước</em> Lambda để fail nhanh, tiết kiệm tài nguyên.</li>
+        </ul>
+
+        <blockquote>
+          <strong>Lưu ý:</strong> AST/CST chứng minh <em>cú pháp và policy</em>, không chứng minh sinh viên “hiểu đề”
+          hay logic toán đúng. Hai bài khác thuật toán có thể cùng fingerprint; vẫn bắt buộc hidden test + rubric khi cần.
+        </blockquote>
+
+        <h4>Tree-sitter vs regex trên source</h4>
+        <table>
+          <thead>
+            <tr><th>Tiêu chí</th><th>Regex / text</th><th>Tree-sitter + policy</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Phát hiện gọi hàm thật</td><td>Dễ dính comment, string</td><td>Chỉ match node <code>call_expression</code></td></tr>
+            <tr><td>Đa ngôn ngữ</td><td>Mỗi ngôn một bộ regex</td><td>Một engine, nhiều grammar (C++, Java, Python…)</td></tr>
+            <tr><td>Đếm vòng / độ sâu lồng</td><td>Khó, dễ sai</td><td>Visitor trên cây</td></tr>
+            <tr><td>Chi phí</td><td>Rất thấp</td><td>Parse thêm (thường &lt; vài ms / file nhỏ)</td></tr>
+            <tr><td>Bảo trì</td><td>Rời rạc</td><td>Policy pack theo đề, versioned</td></tr>
+          </tbody>
+        </table>
+
+        <h4>Policy rule — ví dụ loại rule</h4>
+        <table>
+          <thead>
+            <tr><th>Loại</th><th>Ví dụ đề</th><th>Cách kiểm tra trên cây</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>forbid_call</code></td><td>Không dùng <code>sort</code> / <code>Collections.sort</code></td><td>Query/capture tên hàm trong <code>call_expression</code></td></tr>
+            <tr><td><code>require_structure</code></td><td>Phải có đệ quy hoặc vòng lặp</td><td>Đếm <code>for</code>/<code>while</code> hoặc self-call</td></tr>
+            <tr><td><code>forbid_import</code></td><td>Chỉ stdio</td><td>Liệt kê <code>import</code> / <code>#include</code></td></tr>
+            <tr><td><code>limit_nesting</code></td><td>Tối đa 3 vòng lồng</td><td>Đo độ sâu nested loops trên CST</td></tr>
+            <tr><td><code>anti_hardcode</code></td><td>Không if-so sánh literal hàng loạt</td><td>Đếm <code>if</code> với literal trong điều kiện</td></tr>
+            <tr><td><code>require_pattern</code></td><td>Gợi ý DP 1D (không bắt buộc điểm)</td><td>Truy cập mảng 2 chiều + vòng ngoài — heuristic</td></tr>
+          </tbody>
+        </table>
+
+        <p>Ví dụ ý tưởng <strong>Tree-sitter query</strong> (Python — minh họa, không phụ thuộc repo):</p>
+        <pre><code>; Cấm gọi sorted() — chỉ match call thật, không match text trong comment
+(call
+  function: (identifier) @fn
+  (#eq? @fn "sorted"))</code></pre>
+
+        <h4>Cấu trúc thuật toán: không dùng AST thô</h4>
+        <p>
+          AST/CST gốc quá chi tiết (tên biến <code>a</code> vs <code>b</code>, vị trí dòng).
+          Để so “giống DP / giống golden”, chuẩn hóa thành <strong>structural fingerprint</strong>:
+        </p>
+        <ul>
+          <li>Đổi identifier → <code>VAR</code>, literal → <code>NUM</code></li>
+          <li>Vector đặc trưng: <code>[has_recursion, max_loop_depth, forbidden_call_count, …]</code></li>
+          <li>So với template từ lời giải mẫu hoặc ngưỡng từng đề (policy pack)</li>
+        </ul>
+        <p>
+          <strong>Khi nào chứng minh đúng đề?</strong> Khi policy pack được viết bám FR-* trong đề
+          (ví dụ FR-3: cấm sort) và GV chấp nhận “đúng khung” là đủ cho phần điểm rubric.
+          <strong>Khi nào chỉ đúng khung?</strong> Hầu hết trường hợp — logic vẫn cần I/O test.
+        </p>
+
+        <h4>Kết quả chấm trên OJ</h4>
+        <p>
+          Nên tách trạng thái <code>POLICY_VIOLATION</code> (hoặc <code>RuleViolation</code>) khỏi <code>Wrong Answer</code>,
+          kèm danh sách rule id đã vi phạm để sinh viên sửa đúng hướng (“Bài cấm dùng sort có sẵn”).
+          Có thể: <strong>0 điểm auto</strong> khi vi phạm bắt buộc, hoặc vẫn chạy I/O nhưng trừ rubric.
+        </p>
+
+        <h4>Rủi ro và cách giảm</h4>
+        <ul>
+          <li><strong>False positive:</strong> match đúng loại node (call vs identifier trong biểu thức).</li>
+          <li><strong>Đa ngôn ngữ:</strong> mỗi <code>languageId</code> một grammar + file query <code>.scm</code>.</li>
+          <li><strong>Obfuscation:</strong> code cố tình rối; policy mạnh nhất ở rule cấm rõ, không “đoán ý đồ”.</li>
+          <li><strong>C/C++ macro:</strong> có thể cần parse sau preprocessor hoặc chỉ hỗ trợ subset không macro.</li>
+          <li><strong>Bảo trì:</strong> <code>Problem.policyPackId</code> + version, đổi policy không làm hỏng bài cũ.</li>
+        </ul>
+
+        <h4>Khi nào nên / không nên dùng</h4>
+        <table>
+          <thead>
+            <tr><th>Nên dùng</th><th>Không nên chỉ dựa vào AST</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Đề ghi rõ “cấm sort”, “bắt đệ quy”, “không numpy”</td>
+              <td>Chứng minh output đúng trên mọi input</td>
+            </tr>
+            <tr>
+              <td>Chấm khung + chống hack cấu trúc trước khi chạy test nặng</td>
+              <td>Thay hidden test hoặc oral</td>
+            </tr>
+            <tr>
+              <td>Gợi ý GV / log cho AI review (không auto điểm cuối)</td>
+              <td>Bài mở, nhiều lời giải hợp lệ khác cấu trúc</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>3.7. AI sinh test &amp; review</h3>
+        <p>
+          Pipeline <code>ai-testcase.prompt.ts</code>: LLM trả JSON test case bám statement, IO format, biên.
+          Bắt buộc: <strong>golden verify</strong> trước khi publish; không tin LLM một mình.
+        </p>
+        <p>
+          AI review code vs đề: dùng rubric + statement; <strong>không</strong> đưa expected hidden vào prompt
+          (tham chiếu <a href="AI-HINT-ASSISTANT.html">AI-HINT-ASSISTANT</a>). Kết quả là gợi ý cho GV, không chấm điểm cuối tự động.
+        </p>
+      </section>
+
+      <section id="ban-tu-dong">
+        <h2>4. Bán tự động và chấm thủ công (nội dung / đúng đề)</h2>
+
+        <h3>4.1. Rubric có trọng số</h3>
+        <p>Ví dụ rubric môn Thuật toán:</p>
+        <table>
+          <thead>
+            <tr><th>Tiêu chí</th><th>Trọng số</th><th>Mô tả</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Correctness (auto)</td><td>50–70%</td><td>Test I/O + hidden</td></tr>
+            <tr><td>Algorithm choice</td><td>15–25%</td><td>Đúng họ thuật toán (DP, graph…)</td></tr>
+            <tr><td>Complexity analysis</td><td>10–15%</td><td>Chứng minh O(·), không chỉ “chạy nhanh”</td></tr>
+            <tr><td>Code quality</td><td>5–10%</td><td>Đặt tên, tách hàm, edge case</td></tr>
+            <tr><td>Documentation</td><td>0–10%</td><td>Comment invariant, báo cáo ngắn</td></tr>
+          </tbody>
+        </table>
+        <p>Công thức minh họa: <code>Điểm = 0.65 × Điểm_auto + 0.35 × Điểm_rubric</code>.</p>
+
+        <h3>4.2. Requirement traceability (FR-*)</h3>
+        <p>
+          Mô hình PROJECT testcase trong repo: mỗi yêu cầu <code>FR-1</code>, <code>FR-2</code>…
+          map tới test trong <code>testManifest</code> (<code>ai-project-testcase.prompt.ts</code>).
+          Áp dụng tư duy cho bài thuật toán:
+        </p>
+        <ul>
+          <li><code>FR-1</code>: “Giải bằng quy hoạch động một chiều”</li>
+          <li><code>FR-2</code>: “Độ phức tạp O(n log n)” — kiểm tra bằng TLE trên n = 10<sup>6</sup></li>
+          <li><code>FR-3</code>: “Không dùng thư viện sort có sẵn” — policy AST (<a href="#ast-policy">Tree-sitter</a>) + TLE</li>
+        </ul>
+        <p>Giảng viên chấm: test auto cover FR nào; FR còn lại chấm tay hoặc oral.</p>
+
+        <h3>4.3. Peer review &amp; bài nộp kèm meta</h3>
+        <ul>
+          <li>Sinh viên nộp kèm: pseudocode, giải thích độ phức tạp, 1–2 test tự viết.</li>
+          <li>Peer review theo checklist (đọc được, logic khớp code).</li>
+          <li>Milestone: draft (feedback) → final (chấm điểm).</li>
+        </ul>
+
+        <h3>4.4. Phỏng vấn / oral exam</h3>
+        <p>
+          Khi điểm auto cao nhưng nghi ngờ gian lận, hoặc bài “thiết kế thuật toán”:
+          HS giải thích 5 phút ý tưởng, invariant, độ phức tạp. Đây là cách mạnh nhất cho <strong>lớp 3</strong>.
+        </p>
+      </section>
+
+      <section id="hack-test">
+        <h2>5. Phát hiện “đúng test nhưng sai đề”</h2>
+        <p>Các pattern phổ biến trong giảng dạy và contest:</p>
+
+        <table>
+          <thead>
+            <tr><th>Pattern</th><th>Triệu chứng</th><th>Phòng ngừa</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Hardcode theo test</strong></td>
+              <td><code>if (n==10) print("42")</code>; bảng map input→output</td>
+              <td>Hidden đa dạng; static scan; checker</td>
+            </tr>
+            <tr>
+              <td><strong>Brute chỉ đủ test nhỏ</strong></td>
+              <td>AC public, TLE/WA hidden lớn</td>
+              <td>Subtask; time limit chặt; stress</td>
+            </tr>
+            <tr>
+              <td><strong>Sai bài toán, trùng output</strong></td>
+              <td>Tính tổng thay vì tổng modulo; đếm sai nhưng trùng vài case</td>
+              <td>Property test; nhiều seed; checker logic</td>
+            </tr>
+            <tr>
+              <td><strong>Copy / không hiểu</strong></td>
+              <td>Code giống MOSS; không giải thích oral</td>
+              <td>Plagiarism + oral; đổi biến đề</td>
+            </tr>
+            <tr>
+              <td><strong>Lookup từ editorial</strong></td>
+              <td>AC ngay sau publish đáp án</td>
+              <td>Hidden riêng lớp; delay publish test</td>
+            </tr>
+            <tr>
+              <td><strong>Lách policy AST</strong></td>
+              <td>Vòng lặp rỗng, gọi hàm wrapper tên khác</td>
+              <td>Rule <code>forbid_call</code> theo module; vẫn cần I/O mạnh</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Gợi ý khi ra đề (giảng viên)</h3>
+        <ol>
+          <li>Viết <strong>đặc tả output</strong> không mơ hồ (modulo, thứ tự, format dòng).</li>
+          <li>Tối thiểu: public (hướng dẫn) + hidden (chấm điểm) + biên (0, 1, max n).</li>
+          <li>Ưu tiên checker khi nhiều đáp án đúng.</li>
+          <li>Nếu đề cấm API/cấu trúc: viết policy pack (Tree-sitter), không chỉ regex.</li>
+          <li>Yêu cầu phân tích độ phức tạp trong báo cáo (lớp 3).</li>
+          <li>Golden verify mọi test trước khi mở bài cho sinh viên.</li>
+          <li>Policy AST: thử policy trên golden và vài mã “cố ý vi phạm” trước khi publish.</li>
+        </ol>
+      </section>
+
+      <section id="mo-hinh-diem">
+        <h2>6. Mô hình điểm đề xuất</h2>
+
+        <h3>6.1. Ba mẫu công thức</h3>
+        <table>
+          <thead>
+            <tr><th>Mẫu</th><th>Thành phần</th><th>Khi dùng</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Contest thuần</strong></td>
+              <td>100% auto (I/O + TLE/MLE)</td>
+              <td>Olympic, ICPC training, ranking</td>
+            </tr>
+            <tr>
+              <td><strong>Môn học cơ bản</strong></td>
+              <td>60% auto + 40% rubric (ý tưởng, phân tích, code)</td>
+              <td>Thuật toán 1, CTDL</td>
+            </tr>
+            <tr>
+              <td><strong>Nâng cao / đồ án</strong></td>
+              <td>Auto + peer + oral + milestone</td>
+              <td>Đồ án, luận văn nhỏ</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>6.2. Đề loại X → phương pháp Y</h3>
+        <table>
+          <thead>
+            <tr><th>Loại đề</th><th>Nên dùng</th><th>Tránh chỉ dùng</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Implement đúng công thức (GCD, sieve)</td><td>I/O + golden + TLE</td><td>Rubric nặng không cần thiết</td></tr>
+            <tr><td>Chọn đúng thuật toán (DP, graph)</td><td>Hidden lớn + rubric ý tưởng + oral mẫu</td><td>Chỉ 3 public test</td></tr>
+            <tr><td>Output không duy nhất</td><td>Checker</td><td>So string exact</td></tr>
+            <tr><td>Bắt buộc O(n log n)</td><td>Time limit + test n = 10<sup>6</sup></td><td>Chỉ test n = 100</td></tr>
+            <tr><td>Bắt buộc không dùng sort có sẵn</td><td>AST policy (Tree-sitter) + rubric</td><td>Chỉ I/O hoặc regex</td></tr>
+            <tr><td>Chấm khung thuật toán (bắt đệ quy / cấm API)</td><td>Policy pack + I/O + rubric</td><td>Chỉ fingerprint không test</td></tr>
+            <tr><td>Thi có giá trị học thuật</td><td>Plagiarism + hidden riêng</td><td>Chỉ public</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="code-judge">
+        <h2>7. Ánh xạ triển khai trên code-judge</h2>
+        <p>
+          Phần này mô tả <strong>hiện trạng</strong> trong repo và <strong>gợi ý mở rộng</strong> — không thay đổi code trong tài liệu này.
+        </p>
+
+        <table>
+          <thead>
+            <tr><th>Nhu cầu chấm</th><th>Hiện có</th><th>Gợi ý mở rộng</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>I/O + weight + hidden</td>
+              <td><span class="badge badge-ok">Có</span> Worker, <code>TestCase</code> Prisma, Lambda/Judge0</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Chuẩn hóa output</td>
+              <td><span class="badge badge-ok">Có</span> <code>normalizeOutput</code> trong worker</td>
+              <td>Cấu hình per-problem (trim từng dòng, EOF newline)</td>
+            </tr>
+            <tr>
+              <td>Golden verify test</td>
+              <td><span class="badge badge-ok">Có</span> <code>golden-verify-job.ts</code>, AI diagnose</td>
+              <td>Bắt buộc trước publish test</td>
+            </tr>
+            <tr>
+              <td>Sinh test từ đề (AI)</td>
+              <td><span class="badge badge-ok">Có</span> <code>ai-testcase.service</code>, prompt ALG</td>
+              <td>Liên kết <code>requirementIds</code> cho mode ALG</td>
+            </tr>
+            <tr>
+              <td>Chấm theo FR / manifest</td>
+              <td><span class="badge badge-partial">PROJECT</span> <code>testManifest</code> + FR-*</td>
+              <td>Mở rộng schema Problem ALG tương tự PROJECT</td>
+            </tr>
+            <tr>
+              <td>Checker tùy chỉnh</td>
+              <td><span class="badge badge-missing">Chưa</span> So sánh string sau normalize</td>
+              <td><code>checkerSource</code> + ngôn ngữ checker trên worker</td>
+            </tr>
+            <tr>
+              <td>Rubric thủ công</td>
+              <td><span class="badge badge-missing">Ngoài worker</span></td>
+              <td>UI <code>SubmissionReview</code>, điểm từng tiêu chí</td>
+            </tr>
+            <tr>
+              <td>Property / stress generator</td>
+              <td><span class="badge badge-missing">Chưa tích hợp</span></td>
+              <td>Job offline sinh test + golden verify batch</td>
+            </tr>
+            <tr>
+              <td>Plagiarism</td>
+              <td><span class="badge badge-missing">Chưa</span></td>
+              <td>Tích hợp MOSS/JPlag API</td>
+            </tr>
+            <tr>
+              <td>AST policy (Tree-sitter)</td>
+              <td><span class="badge badge-missing">Chưa</span></td>
+              <td>Worker bước <code>policyCheck</code>; <code>Problem.policyPackId</code>; WASM/Node bindings</td>
+            </tr>
+            <tr>
+              <td>Structural fingerprint</td>
+              <td><span class="badge badge-missing">Chưa</span></td>
+              <td>So template golden; log cho GV / AI (không auto điểm cứng)</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Luồng chấm submission (hiện tại và đề xuất có AST)</h3>
+        <p><strong>Hiện tại</strong> — chỉ I/O sau enqueue:</p>
+        <div class="mermaid-wrap">
+          <pre class="mermaid">
+sequenceDiagram
+  participant Web
+  participant API as core_api
+  participant Queue as BullMQ
+  participant Worker
+  participant Judge as Lambda_Judge0
+  Web->>API: POST submission
+  API->>Queue: enqueue
+  Queue->>Worker: processSubmission
+  loop each TestCase
+    Worker->>Judge: run source + input
+    Judge-->>Worker: stdout stderr status
+    Worker->>Worker: normalizeOutput compare
+  end
+  Worker->>API: score status per case
+          </pre>
+        </div>
+        <p><strong>Đề xuất</strong> — policy trước Lambda:</p>
+        <div class="mermaid-wrap">
+          <pre class="mermaid">
+sequenceDiagram
+  participant Worker
+  participant Policy as policy_service_TreeSitter
+  participant Judge as Lambda_Judge0
+  Worker->>Policy: parse plus run policyPack
+  alt policy fail
+    Policy-->>Worker: POLICY_VIOLATION plus ruleIds
+  else policy pass
+    Policy-->>Worker: ok plus optional fingerprint
+    loop each TestCase
+      Worker->>Judge: run source plus input
+      Judge-->>Worker: stdout status
+    end
+  end
+          </pre>
+        </div>
+
+        <h4>Gợi ý schema / API (roadmap)</h4>
+        <pre><code>// Problem (mở rộng)
+policyPackId?: string;      // ví dụ "no-sort-v1", "require-recursion-v1"
+policyMode?: "block" | "warn"; // block = không chạy test
+
+// Kết quả submission
+policyResults?: {
+  passed: boolean;
+  violations: { ruleId: string; message: string; line?: number }[];
+  fingerprint?: string;   // optional, cho GV
+};</code></pre>
+
+        <p><strong>Tham chiếu mã nguồn:</strong></p>
+        <ul>
+          <li><code>apps/worker/src/index.ts</code> — chấm submission, tính điểm theo weight</li>
+          <li><code>apps/worker/src/golden-verify-job.ts</code> — verify test với golden</li>
+          <li><code>apps/core-api/src/ai-testcase/ai-testcase.prompt.ts</code> — sinh test ALG</li>
+          <li><code>apps/core-api/src/ai-testcase/ai-project-testcase.prompt.ts</code> — FR-* + testManifest (PROJECT)</li>
+          <li><code>docs/AI-TESTCASE-GENERATION.html</code> — chi tiết pipeline AI testcase</li>
+          <li><code>docs/AWS-LAMBDA-INTEGRATION.html</code> — Lambda payload và TestCase schema</li>
+        </ul>
+      </section>
+
+      <section id="phu-luc">
+        <h2>8. Phụ lục</h2>
+
+        <h3>8.1. Checklist giảng viên (thiết kế bài + test)</h3>
+        <ul class="checklist">
+          <li>Đặc tả input/output rõ ràng, có ví dụ minh họa</li>
+          <li>Giới hạn n, time, memory khớp thuật toán mong đợi</li>
+          <li>Public test hướng dẫn; hidden đa dạng (biên, max, adversarial)</li>
+          <li>Golden solution + verify toàn bộ test trước publish</li>
+          <li>Cân nhắc checker nếu nhiều đáp án đúng</li>
+          <li>Rubric / FR-* nếu bài yêu cầu ý tưởng hoặc cấm thư viện</li>
+          <li>Policy pack Tree-sitter nếu đề cấm API / bắt buộc cấu trúc (xem <a href="#ast-policy">§3.8</a>)</li>
+          <li>Kế hoạch oral hoặc plagiarism nếu điểm cao có giá trị</li>
+        </ul>
+
+        <h3>8.2. Checklist kỹ thuật (vận hành OJ)</h3>
+        <ul class="checklist">
+          <li>Worker <code>normalizeOutput</code> thống nhất với đề (newline, trim)</li>
+          <li>Hidden test không lộ qua API/UI sinh viên</li>
+          <li>Lambda timeout &gt; time limit bài + buffer</li>
+          <li>Golden verify job chạy khi đổi test hoặc golden</li>
+          <li>AI testcase: không publish khi verify fail</li>
+          <li>Log per-case cho GV (không chỉ Accepted/Wrong)</li>
+          <li>Backup test case và golden trong DB/MinIO</li>
+          <li>Policy pack versioned; grammar Tree-sitter khớp <code>languageId</code> submission</li>
+        </ul>
+
+        <h3>8.3. Tài liệu tham khảo</h3>
+        <ul>
+          <li><a href="https://tree-sitter.github.io/tree-sitter/" target="_blank" rel="noopener">Tree-sitter</a> — parser đa ngôn ngữ, query <code>.scm</code></li>
+          <li>ICPC — testlib / custom checker pattern</li>
+          <li>QuickCheck / Hypothesis — property-based testing</li>
+          <li>Stanford MOSS — similarity detection (có thể kết hợp AST hash)</li>
+          <li>Codeforces / AtCoder — partial scoring, subtasks</li>
+          <li>Trong repo: <a href="plans/PROJECT-TESTCASE-IMPLEMENTATION-OVERVIEW.html">PROJECT-TESTCASE-IMPLEMENTATION-OVERVIEW</a></li>
+        </ul>
+
+        <p style="color: var(--muted); font-size: 0.9rem; margin-top: 2rem;">
+          Tài liệu: <code>code-judge/docs/CHAM-BAI-THUAT-TOAN.html</code> —
+          bổ sung cho pipeline OJ và giảng dạy thuật toán.
+        </p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

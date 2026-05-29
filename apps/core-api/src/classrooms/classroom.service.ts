@@ -4,10 +4,23 @@ import { CreateClassroomDto } from './dto/create-classroom.dto';
 import { UpdateClassroomDto } from './dto/update-classroom.dto';
 import { JoinClassroomDto } from './dto/join-classroom.dto';
 import { generateClassCode } from './utils/generate-class-code';
+import { StorageService } from '../storage/storage.service';
+import type { User } from '@prisma/client';
 
 @Injectable()
 export class ClassroomService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
+
+  private async mapUserAvatar<T extends Pick<User, 'image' | 'imageObjectKey'>>(
+    user: T,
+  ): Promise<Omit<T, 'imageObjectKey'> & { image: string | null }> {
+    const image = await this.storage.resolveAvatarImageUrl(user.imageObjectKey, user.image);
+    const { imageObjectKey: _key, ...rest } = user;
+    return { ...rest, image };
+  }
 
   // CREATE CLASSROOM
   async create(dto: CreateClassroomDto, userId: string) {
@@ -97,7 +110,7 @@ export class ClassroomService {
 
   // GET MY CLASSES
   async getMyClasses(userId: string) {
-    return this.prisma.classEnrollment.findMany({
+    const enrollments = await this.prisma.classEnrollment.findMany({
       where: {
         userId,
         status: 'ACTIVE',
@@ -112,6 +125,7 @@ export class ClassroomService {
             id: true,
             ownerId: true,
             name: true,
+            description: true,
             academicYear: true,
             classCode: true,
             isActive: true,
@@ -121,6 +135,7 @@ export class ClassroomService {
                 id: true,
                 name: true,
                 image: true,
+                imageObjectKey: true,
               },
             },
             assignments: {
@@ -129,10 +144,25 @@ export class ClassroomService {
                 contest: true,
               },
             },
+            _count: {
+              select: {
+                enrollments: true,
+              },
+            },
           },
         },
       },
     });
+
+    return Promise.all(
+      enrollments.map(async (row) => ({
+        ...row,
+        classRoom: {
+          ...row.classRoom,
+          owner: await this.mapUserAvatar(row.classRoom.owner),
+        },
+      })),
+    );
   }
 
   // GET CLASS DETAIL
@@ -149,7 +179,7 @@ export class ClassroomService {
       throw new ForbiddenException('You are not in this class');
     }
 
-    return this.prisma.classRoom.findUnique({
+    const classroom = await this.prisma.classRoom.findUnique({
       where: { id: classRoomId },
       include: {
         owner: true,
@@ -167,6 +197,15 @@ export class ClassroomService {
         },
       },
     });
+
+    if (!classroom) {
+      throw new NotFoundException('Classroom not found');
+    }
+
+    return {
+      ...classroom,
+      owner: await this.mapUserAvatar(classroom.owner),
+    };
   }
 
   async getPeople(classRoomId: string, userId: string) {
@@ -205,10 +244,15 @@ export class ClassroomService {
 
     const students = classroom.enrollments.filter((e) => e.role === 'MEMBER').map((e) => e.user);
 
+    const [mappedTeachers, mappedStudents] = await Promise.all([
+      Promise.all(teachers.map((u) => this.mapUserAvatar(u))),
+      Promise.all(students.map((u) => this.mapUserAvatar(u))),
+    ]);
+
     return {
       ownerId: classroom.ownerId,
-      teachers,
-      students,
+      teachers: mappedTeachers,
+      students: mappedStudents,
     };
   }
 
@@ -361,6 +405,41 @@ export class ClassroomService {
       },
       data: {
         status: 'REMOVED',
+      },
+    });
+  }
+
+  // LEAVE CLASSROOM
+  async leave(classRoomId: string, userId: string) {
+    const classroom = await this.prisma.classRoom.findUnique({
+      where: { id: classRoomId },
+    });
+
+    if (!classroom) {
+      throw new NotFoundException('Class not found');
+    }
+
+    if (classroom.ownerId === userId) {
+      throw new BadRequestException('Instructor cannot leave their own class.');
+    }
+
+    const enrollment = await this.prisma.classEnrollment.findUnique({
+      where: {
+        classRoomId_userId: {
+          classRoomId,
+          userId,
+        },
+      },
+    });
+
+    if (!enrollment || enrollment.status !== 'ACTIVE') {
+      throw new BadRequestException('You are not active in this classroom.');
+    }
+
+    return this.prisma.classEnrollment.update({
+      where: { id: enrollment.id },
+      data: {
+        status: 'LEFT',
       },
     });
   }

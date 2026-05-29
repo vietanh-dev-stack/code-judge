@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -20,8 +20,6 @@ import {
   Beaker,
   Clock,
   Database,
-  Globe,
-  Lock,
   Save,
   Trash2,
   Languages,
@@ -30,19 +28,75 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { CreateProblemDto, problemsApi, UpdateProblemDto } from '@/services/problem.apis';
+import {
+  CalibrateProblemLimitsResult,
+  CreateProblemDto,
+  problemsApi,
+  UpdateProblemDto,
+} from '@/services/problem.apis';
 import type { GenerateTestCasesDraftResult } from '@/services/problem.apis';
+import { ExportReportButton } from '@/components/dashboard/class-detail/export-report-button';
 import { ApiRequestError } from '@/services/api-client';
 import { toast } from 'sonner';
+import { AiGenerateProblemModal } from '@/components/problems/AiGenerateProblemModal';
 import { AiTestCaseAdvancedOptions } from '@/components/problems/AiTestCaseAdvancedOptions';
 import { AiTestCaseDraftSheet } from '@/components/problems/AiTestCaseDraftSheet';
+import { AiTestcaseDraftReopenButton } from '@/components/problems/AiTestcaseDraftReopenButton';
+import {
+  aiTestcaseDraftStorageScope,
+  clearSavedAiTestcaseDraft,
+  saveSavedAiTestcaseDraft,
+  type SavedAiTestcaseDraft,
+} from '@/lib/ai-testcase-draft-storage';
 import { ProblemTagPicker } from '@/components/problems/ProblemTagPicker';
+import {
+  ProblemFormPageShell,
+  ProblemFormTestCasesScroll,
+} from '@/components/problems/ProblemFormPageShell';
+import { ProblemFormTestCaseList } from '@/components/problems/ProblemFormTestCaseList';
 import {
   AiGenOptionsState,
   buildGenerateTestCasesDraftDto,
   defaultAiGenOptions,
+  extractSuggestedLimitsFromAiDraft,
   mapAiDraftToFormTestCases,
+  normalizeAiDraftSheetCases,
+  resolveAiDraftPreviewCases,
+  type AiDraftSheetCase,
 } from '@/components/problems/ai-testcase-draft.shared';
+
+const SUPPORTED_LANGUAGES = [
+  {
+    name: 'PYTHON',
+    bg: 'bg-black',
+    text: 'text-white',
+  },
+  {
+    name: 'JAVASCRIPT',
+    bg: 'bg-yellow-400',
+    text: 'text-black',
+  },
+  {
+    name: 'CPP',
+    bg: 'bg-blue-600',
+    text: 'text-white',
+  },
+  {
+    name: 'JAVA',
+    bg: 'bg-orange-400',
+    text: 'text-white',
+  },
+  {
+    name: 'GO',
+    bg: 'bg-sky-500',
+    text: 'text-white',
+  },
+  {
+    name: 'RUST',
+    bg: 'bg-orange-200',
+    text: 'text-black',
+  },
+] as const;
 
 export default function ClassProblemCreate({ classId }: { classId: string }) {
   const router = useRouter();
@@ -51,6 +105,10 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(!!editId);
+  const [calibrating, setCalibrating] = useState(false);
+  const [calibrateResult, setCalibrateResult] = useState<CalibrateProblemLimitsResult | null>(
+    null,
+  );
 
   const [formData, setFormData] = useState<Omit<CreateProblemDto, 'classRoomId'>>({
     title: '',
@@ -62,7 +120,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
     memoryLimitMb: 256,
     isPublished: true,
     visibility: 'PRIVATE',
-    supportedLanguages: ['PYTHON', 'JAVASCRIPT', 'CPP', 'JAVA'],
+    supportedLanguages: SUPPORTED_LANGUAGES.map((lang) => lang.name),
     maxTestCases: 100,
     testCases: [],
     dueAt: undefined,
@@ -71,10 +129,16 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const [aiProblemModalOpen, setAiProblemModalOpen] = useState(false);
   const [aiSheetOpen, setAiSheetOpen] = useState(false);
   const [aiDraftLoading, setAiDraftLoading] = useState(false);
   const [aiDraftResult, setAiDraftResult] = useState<GenerateTestCasesDraftResult | null>(null);
+  /** Testcase đã chỉnh trong sheet (ưu tiên hơn aiDraftResult.parsed). */
+  const [aiDraftPreviewCases, setAiDraftPreviewCases] = useState<AiDraftSheetCase[] | null>(null);
   const [aiGenOptions, setAiGenOptions] = useState<AiGenOptionsState>(defaultAiGenOptions);
+  const [aiDraftStorageKey, setAiDraftStorageKey] = useState(0);
+
+  const aiDraftScope = aiTestcaseDraftStorageScope(editId);
 
   useEffect(() => {
     if (editId) {
@@ -95,7 +159,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
         memoryLimitMb: data.memoryLimitMb,
         isPublished: data.isPublished,
         visibility: data.visibility,
-        supportedLanguages: data.supportedLanguages ?? ['PYTHON', 'JAVASCRIPT', 'CPP', 'JAVA'],
+        supportedLanguages: data.supportedLanguages ?? SUPPORTED_LANGUAGES.map((lang) => lang.name),
         maxTestCases: data.maxTestCases,
         testCases: (data.testCases ?? []).map(
           ({ id, problemId, orderIndex, createdAt, updatedAt, ...rest }: any) => rest,
@@ -141,14 +205,49 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
       newErrors.testCases = 'At least one test case is required';
     } else {
       formData.testCases.forEach((tc, index) => {
-        if (!tc.input.trim()) newErrors[`testCase_${index}_input`] = 'Input is required';
-        if (!tc.expectedOutput.trim()) newErrors[`testCase_${index}_output`] = 'Output is required';
+        const inputEmpty = !tc.input.trim();
+        const outputEmpty = !tc.expectedOutput.trim();
+        if (tc.isHidden && inputEmpty && outputEmpty) {
+          newErrors[`testCase_${index}_hidden`] =
+            'Hidden test case data was not loaded. Refresh the page or sign in again before saving.';
+          return;
+        }
+        if (inputEmpty) newErrors[`testCase_${index}_input`] = 'Input is required';
+        if (outputEmpty) newErrors[`testCase_${index}_output`] = 'Output is required';
       });
     }
 
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleCalibrateLimits = async () => {
+    if (!editId) {
+      toast.error('Save the problem first before calibrating limits', { position: 'top-center' });
+      return;
+    }
+    setCalibrating(true);
+    setCalibrateResult(null);
+    try {
+      const result = await problemsApi.calibrateLimits(editId);
+      setCalibrateResult(result);
+      toast.success('Measured limits from golden solution', { position: 'top-center' });
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Calibration failed';
+      toast.error(msg, { position: 'top-center' });
+    } finally {
+      setCalibrating(false);
+    }
+  };
+
+  const handleApplyCalibratedLimits = () => {
+    if (!calibrateResult) return;
+    setFormData((prev) => ({
+      ...prev,
+      timeLimitMs: calibrateResult.suggestedTimeLimitMs,
+      memoryLimitMb: calibrateResult.suggestedMemoryLimitMb,
+    }));
+    toast.success('Applied suggested limits to form — save to persist', { position: 'top-center' });
   };
 
   const handleSave = async () => {
@@ -181,22 +280,49 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
       toast.success(editId ? 'Problem updated successfully!' : 'Problem created successfully!', {
         position: 'top-center',
       });
-    } catch (error: any) {
-      if (error?.status !== 400 && error?.status !== 403) {
+    } catch (error: unknown) {
+      if (!(error instanceof ApiRequestError) || (error.status !== 400 && error.status !== 403)) {
         console.error('Failed to save problem:', error);
       }
-      const msg = error?.message || 'Failed to save problem. Please check your inputs.';
+      const msg =
+        error instanceof ApiRequestError
+          ? error.body.message
+          : error instanceof Error
+            ? error.message
+            : 'Failed to save problem. Please check your inputs.';
       toast.error(msg, { position: 'top-center' });
     } finally {
       setLoading(false);
     }
   };
 
+  const previewMappedCases = useMemo(
+    () => resolveAiDraftPreviewCases(aiDraftPreviewCases, aiDraftResult),
+    [aiDraftPreviewCases, aiDraftResult],
+  );
+
+  const persistAiDraftFromSheet = useCallback(
+    (cases: AiDraftSheetCase[]) => {
+      setAiDraftPreviewCases(cases);
+      if (!aiDraftResult) return;
+      const forStorage = normalizeAiDraftSheetCases(cases);
+      const fallback = mapAiDraftToFormTestCases(aiDraftResult.parsed);
+      saveSavedAiTestcaseDraft(aiDraftScope, {
+        savedAt: new Date().toISOString(),
+        problemTitle: formData.title.trim(),
+        draftResult: aiDraftResult,
+        previewCases: forStorage.length > 0 ? forStorage : fallback,
+      });
+      setAiDraftStorageKey((k) => k + 1);
+    },
+    [aiDraftResult, aiDraftScope, formData.title],
+  );
+
   if (initialLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
         <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-gray-500 font-medium">Loading problem data...</p>
+        <p className="text-muted-foreground font-medium">Loading problem data...</p>
       </div>
     );
   }
@@ -222,8 +348,6 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
     });
   };
 
-  const previewMappedCases = aiDraftResult ? mapAiDraftToFormTestCases(aiDraftResult.parsed) : [];
-
   const handleGenerateAiDraft = async () => {
     if (!formData.title.trim()) {
       toast.error('Enter a problem title before running AI.', { position: 'top-center' });
@@ -238,6 +362,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
     const previousDraft = aiDraftResult;
     setAiDraftLoading(true);
     setAiDraftResult(null);
+    setAiDraftPreviewCases(null);
     try {
       const dto = buildGenerateTestCasesDraftDto({
         title: formData.title.trim(),
@@ -254,12 +379,46 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
       const res = await problemsApi.generateTestCasesDraft(dto);
       setAiDraftResult(res);
       setAiSheetOpen(true);
+      const suggestedLimits = extractSuggestedLimitsFromAiDraft(res.parsed);
+      if (
+        suggestedLimits &&
+        formData.timeLimitMs === 1000 &&
+        formData.memoryLimitMb === 256
+      ) {
+        setFormData((prev) => ({
+          ...prev,
+          timeLimitMs: suggestedLimits.timeLimitMs,
+          memoryLimitMb: suggestedLimits.memoryLimitMb,
+        }));
+        toast.info(
+          `Applied AI limits: ${suggestedLimits.timeLimitMs}ms / ${suggestedLimits.memoryLimitMb}MB`,
+          { position: 'top-center' },
+        );
+      }
       const mapped = mapAiDraftToFormTestCases(res.parsed);
+      setAiDraftPreviewCases(mapped);
+      if (mapped.length > 0 || res.raw) {
+        saveSavedAiTestcaseDraft(aiDraftScope, {
+          savedAt: new Date().toISOString(),
+          problemTitle: formData.title.trim(),
+          draftResult: res,
+          previewCases: mapped,
+        });
+        setAiDraftStorageKey((k) => k + 1);
+      }
+      if (res.generationMode === 'summarized') {
+        toast.info('Long statement — summarized on the server before generating test cases.', {
+          position: 'top-center',
+        });
+      }
       if (res.parseError && mapped.length === 0) {
         toast.warning(
-          'AI responded but test cases could not be parsed. See the panel for details.',
+          res.truncationSuspected
+            ? 'AI output was truncated. Try fewer suggested cases or fill ioSpec.'
+            : 'AI responded but test cases could not be parsed. See the panel for details.',
           {
             position: 'top-center',
+            description: res.parseError,
           },
         );
       } else if (mapped.length === 0) {
@@ -277,9 +436,8 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
     }
   };
 
-  const applyAiTestCases = (mode: 'replace' | 'append') => {
-    if (!aiDraftResult) return;
-    const mapped = mapAiDraftToFormTestCases(aiDraftResult.parsed);
+  const applyAiTestCases = (mode: 'replace' | 'append', sheetCases: AiDraftSheetCase[]) => {
+    const mapped = normalizeAiDraftSheetCases(sheetCases);
     if (mapped.length === 0) {
       toast.error('No test cases to apply.', { position: 'top-center' });
       return;
@@ -290,6 +448,9 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
       testCases: mode === 'replace' ? mapped : [...(prev.testCases ?? []), ...mapped],
     }));
     setAiSheetOpen(false);
+    setAiDraftPreviewCases(null);
+    clearSavedAiTestcaseDraft(aiDraftScope);
+    setAiDraftStorageKey((k) => k + 1);
     toast.success(
       mode === 'replace'
         ? `Replaced with ${mapped.length} AI test case(s).`
@@ -298,15 +459,31 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
     );
   };
 
+  const restoreSavedAiDraft = (saved: SavedAiTestcaseDraft) => {
+    setAiDraftResult(saved.draftResult);
+    setAiDraftPreviewCases(saved.previewCases ?? []);
+    setAiSheetOpen(true);
+    if (
+      saved.problemTitle &&
+      formData.title.trim() &&
+      saved.problemTitle !== formData.title.trim()
+    ) {
+      toast.info('Saved draft was for a different title — review before applying.', {
+        position: 'top-center',
+      });
+    }
+  };
+
   return (
-    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <ProblemFormPageShell variant="classroom">
+      <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-4xl font-extrabold tracking-tight text-white">
               {editId ? 'Edit Problem' : 'Create Problem'}
             </h1>
-            <p className="text-muted-foreground text-lg">
+            <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
               {editId
                 ? 'Update the details of your existing problem.'
                 : 'Design a new challenge for your students.'}
@@ -314,18 +491,26 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {editId && (
+            <ExportReportButton
+              kind="problem"
+              classRoomId={classId}
+              problemId={editId}
+              variant="outline"
+            />
+          )}
           <Button
             variant="outline"
             onClick={() => router.back()}
             disabled={loading}
-            className="cursor-pointer"
+            className="cursor-pointer border border-primary text-primary hover:text-primary hover:bg-primary/20"
           >
             Cancel
           </Button>
           <Button
             onClick={handleSave}
             disabled={loading}
-            className="cursor-pointer bg-black hover:bg-gray-800 text-white min-w-[120px]"
+            className="cursor-pointer bg-primary hover:bg-primary/80 text-white min-w-[120px]"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -342,13 +527,22 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column - Main Details */}
         <div className="lg:col-span-2 space-y-8">
-          <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden">
-            <CardHeader className="border-b ">
+          <Card className="border border-border shadow-lg bg-card overflow-clip">
+            <CardHeader className="border-b border-border flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-xl">Basic Information</CardTitle>
+              <Button
+                type="button"
+                size="sm"
+                className="rounded-lg shrink-0 cursor-pointer hover:scale-105 transition-transform"
+                onClick={() => setAiProblemModalOpen(true)}
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                AI generate problem
+              </Button>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-sm font-semibold">
+                <Label htmlFor="title" className="text-sm font-semibold text-muted-foreground">
                   Problem Title
                 </Label>
                 <Input
@@ -359,7 +553,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                     if (errors.title) setErrors({ ...errors, title: '' });
                   }}
                   placeholder="e.g. Find the Maximum Sum Subarray"
-                  className={`text-lg font-medium h-12 rounded-xl border-gray-200 focus:border-black transition-all ${errors.title ? 'border-red-500 bg-red-50' : ''}`}
+                  className={`text-lg font-medium h-12 rounded-xl border-border bg-background focus-visible:ring-primary/40 transition-all ${errors.title ? 'border-destructive bg-destructive/10' : ''}`}
                 />
                 {errors.title && (
                   <p className="text-xs text-red-500 mt-1 font-medium">{errors.title}</p>
@@ -367,7 +561,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-semibold">
+                <Label htmlFor="description" className="text-sm font-semibold text-muted-foreground">
                   Brief Description
                 </Label>
                 <Textarea
@@ -378,7 +572,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                     if (errors.description) setErrors({ ...errors, description: '' });
                   }}
                   placeholder="A short summary of what the problem is about..."
-                  className={`min-h-[80px] rounded-xl border-gray-200 focus:border-black transition-all resize-none ${errors.description ? 'border-red-500 bg-red-50' : ''}`}
+                  className={`min-h-[80px] rounded-xl border-border bg-background focus-visible:ring-primary/40 transition-all resize-none ${errors.description ? 'border-destructive bg-destructive/10' : ''}`}
                 />
                 {errors.description && (
                   <p className="text-xs text-red-500 mt-1 font-medium">{errors.description}</p>
@@ -386,7 +580,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="statementMd" className="text-sm font-semibold">
+                <Label htmlFor="statementMd" className="text-sm font-semibold text-muted-foreground">
                   Full Problem Statement (Markdown)
                 </Label>
                 <Textarea
@@ -397,7 +591,7 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                     if (errors.statementMd) setErrors({ ...errors, statementMd: '' });
                   }}
                   placeholder="Describe the problem, input format, output format, and constraints in detail..."
-                  className={`min-h-[300px] rounded-xl border-gray-200 focus:border-black transition-all font-mono text-sm leading-relaxed ${errors.statementMd ? 'border-red-500 bg-red-50' : ''}`}
+                  className={`min-h-[300px] rounded-xl border-border bg-background focus-visible:ring-primary/40 transition-all font-mono text-sm leading-relaxed ${errors.statementMd ? 'border-destructive bg-destructive/10' : ''}`}
                 />
                 {errors.statementMd && (
                   <p className="text-xs text-red-500 mt-1 font-medium">{errors.statementMd}</p>
@@ -406,19 +600,18 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden">
-            <CardHeader className="border-b flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <Card className="border border-border shadow-lg bg-card overflow-clip">
+            <CardHeader className="border-b border-border flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <CardTitle className="text-xl">Test Cases</CardTitle>
-                <CardDescription>
-                  Add cases manually or use AI to draft from title and statement (always preview
-                  before applying; nothing is saved until you submit).
+                <CardDescription className="text-sm">
+                  Add cases manually or use AI from the title and statement. Review and edit in the
+                  draft panel before applying — nothing is saved until you submit.
                 </CardDescription>
               </div>
               <div className="flex flex-wrap gap-2 shrink-0">
                 <Button
                   type="button"
-                  variant="secondary"
                   size="sm"
                   className="rounded-lg cursor-pointer"
                   disabled={aiDraftLoading || loading}
@@ -432,12 +625,19 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                   )}
                   Suggest with AI
                 </Button>
+                <AiTestcaseDraftReopenButton
+                  scope={aiDraftScope}
+                  locale="en"
+                  disabled={aiDraftLoading || loading}
+                  refreshKey={aiDraftStorageKey}
+                  onRestore={restoreSavedAiDraft}
+                />
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={addTestCase}
-                  className="rounded-lg cursor-pointer"
+                  className="rounded-lg cursor-pointer border-primary text-primary hover:bg-muted hover:text-primary"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Case
@@ -451,191 +651,94 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                 maxTestCasesForProblem={formData.maxTestCases ?? 100}
                 locale="en"
                 idPrefix="class-"
+                problemDescription={formData.description}
+                problemStatementMd={formData.statementMd}
               />
 
-              <div className="space-y-4">
-                {errors.testCases && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-medium flex items-center gap-2">
-                    <Trash2 className="w-4 h-4" /> {errors.testCases}
-                  </div>
-                )}
-                {formData.testCases?.length === 0 ? (
-                  <div
-                    className={`flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-2xl bg-gray-50/50 text-gray-400 ${errors.testCases ? 'border-red-300' : ''}`}
-                  >
-                    <Beaker className="w-12 h-12 mb-3 opacity-20" />
-                    <p className="font-medium">No test cases added yet.</p>
-                    <p className="text-sm">Click "Add Case" to begin defining tests.</p>
-                  </div>
-                ) : (
-                  formData.testCases?.map((tc, index) => (
-                    <div
-                      key={index}
-                      className="group relative border border-gray-100 rounded-2xl p-5 bg-gray-50/30 hover:bg-white hover:shadow-lg hover:border-black/5 transition-all duration-300"
-                    >
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <Label className="text-xs font-bold uppercase tracking-wider text-gray-500">
-                            Input
-                          </Label>
-                          <Textarea
-                            value={tc.input}
-                            onChange={(e) => {
-                              updateTestCase(index, 'input', e.target.value);
-                              if (errors[`testCase_${index}_input`]) {
-                                const next = { ...errors };
-                                delete next[`testCase_${index}_input`];
-                                setErrors(next);
-                              }
-                            }}
-                            placeholder="Input for this case"
-                            className={`min-h-[100px] rounded-xl border-gray-200 focus:border-black bg-white font-mono text-xs ${errors[`testCase_${index}_input`] ? 'border-red-500 bg-red-50' : ''}`}
-                          />
-                          {errors[`testCase_${index}_input`] && (
-                            <p className="text-[10px] text-red-500 font-medium">
-                              {errors[`testCase_${index}_input`]}
-                            </p>
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs font-bold uppercase tracking-wider text-gray-500">
-                            Expected Output
-                          </Label>
-                          <Textarea
-                            value={tc.expectedOutput}
-                            onChange={(e) => {
-                              updateTestCase(index, 'expectedOutput', e.target.value);
-                              if (errors[`testCase_${index}_output`]) {
-                                const next = { ...errors };
-                                delete next[`testCase_${index}_output`];
-                                setErrors(next);
-                              }
-                            }}
-                            placeholder="Expected output"
-                            className={`min-h-[100px] rounded-xl border-gray-200 focus:border-black bg-white font-mono text-xs ${errors[`testCase_${index}_output`] ? 'border-red-500 bg-red-50' : ''}`}
-                          />
-                          {errors[`testCase_${index}_output`] && (
-                            <p className="text-[10px] text-red-500 font-medium">
-                              {errors[`testCase_${index}_output`]}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                        <div className="flex items-center gap-6">
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              id={`hidden-${index}`}
-                              checked={tc.isHidden}
-                              onCheckedChange={(checked) =>
-                                updateTestCase(index, 'isHidden', checked)
-                              }
-                              className="cursor-pointer"
-                            />
-                            <Label
-                              htmlFor={`hidden-${index}`}
-                              className="text-sm font-medium cursor-pointer flex items-center gap-1.5"
-                            >
-                              {tc.isHidden ? (
-                                <Lock className="w-3.5 h-3.5 text-amber-500" />
-                              ) : (
-                                <Globe className="w-3.5 h-3.5 text-blue-500" />
-                              )}
-                              {tc.isHidden ? 'Hidden Case' : 'Public Case'}
-                            </Label>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Label className="text-sm font-medium text-gray-500">Weight:</Label>
-                            <Input
-                              type="number"
-                              value={tc.weight}
-                              onChange={(e) =>
-                                updateTestCase(index, 'weight', Number(e.target.value))
-                              }
-                              className="w-16 h-8 rounded-lg border-gray-200 text-center font-bold"
-                              min="1"
-                            />
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeTestCase(index)}
-                          className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg h-8 px-2 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4 mr-1.5" />
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+              <ProblemFormTestCasesScroll>
+                <ProblemFormTestCaseList
+                  variant="classroom"
+                  locale="en"
+                  testCases={formData.testCases ?? []}
+                  errors={errors}
+                  onUpdate={updateTestCase}
+                  onRemove={removeTestCase}
+                  onClearError={(key) => {
+                    setErrors((prev) => {
+                      if (!prev[key]) return prev;
+                      const next = { ...prev };
+                      delete next[key];
+                      return next;
+                    });
+                  }}
+                />
+              </ProblemFormTestCasesScroll>
             </CardContent>
           </Card>
         </div>
 
         {/* Right Column - Configuration */}
         <div className="space-y-8">
-          <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden sticky top-24">
+          <Card className="border border-border shadow-lg bg-card overflow-clip lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:custom-scrollbar">
             <CardHeader className="border-b">
               <CardTitle className="text-xl">Configuration</CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Difficulty</Label>
-                  <Select
-                    value={formData.difficulty}
-                    onValueChange={(value: any) => setFormData({ ...formData, difficulty: value })}
-                  >
-                    <SelectTrigger className="rounded-xl border-gray-200 h-10">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="EASY">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                          <span>Easy</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="MEDIUM">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                          <span>Medium</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="HARD">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                          <span>Hard</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Mode</Label>
-                  <Select
-                    value={formData.mode}
-                    onValueChange={(value: any) => setFormData({ ...formData, mode: value })}
-                  >
-                    <SelectTrigger className="rounded-xl border-gray-200 h-10">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ALGO">Algorithmic</SelectItem>
-                      <SelectItem value="PROJECT">Project Based</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-muted-foreground">Difficulty</Label>
+                    <Select
+                      value={formData.difficulty}
+                      onValueChange={(value: any) =>
+                        setFormData({ ...formData, difficulty: value })
+                      }
+                    >
+                      <SelectTrigger className="rounded-xl border-border h-10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EASY">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <span>Easy</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="MEDIUM">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                            <span>Medium</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="HARD">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                            <span>Hard</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-muted-foreground">Mode</Label>
+                    <Select
+                      value={formData.mode}
+                      onValueChange={(value: any) => setFormData({ ...formData, mode: value })}
+                    >
+                      <SelectTrigger className="rounded-xl border-border h-10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALGO">Algorithmic</SelectItem>
+                        <SelectItem value="PROJECT">Project Based</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-2">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-gray-500 flex items-center gap-1.5">
+                    <Label className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
                       <Clock className="w-3 h-3" /> TIME LIMIT (ms)
                     </Label>
                     <Input
@@ -644,11 +747,11 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                       onChange={(e) =>
                         setFormData({ ...formData, timeLimitMs: Number(e.target.value) })
                       }
-                      className="rounded-xl border-gray-200 h-10 font-bold"
+                      className="rounded-xl border-border h-10 font-bold"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-gray-500 flex items-center gap-1.5">
+                    <Label className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
                       <Database className="w-3 h-3" /> MEMORY (MB)
                     </Label>
                     <Input
@@ -657,15 +760,62 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                       onChange={(e) =>
                         setFormData({ ...formData, memoryLimitMb: Number(e.target.value) })
                       }
-                      className="rounded-xl border-gray-200 h-10 font-bold"
+                      className="rounded-xl border-border h-10 font-bold"
                     />
                   </div>
                 </div>
 
+                {editId && formData.mode === 'ALGO' && (
+                  <div className="space-y-3 pt-2 border-t border-dashed border-border">
+                    <p className="text-xs text-muted-foreground">
+                      Run the primary golden on all test cases via Judge0 to suggest time/memory
+                      limits.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full rounded-xl border-border"
+                      disabled={calibrating}
+                      onClick={handleCalibrateLimits}
+                    >
+                      <Beaker className="w-4 h-4 mr-2" />
+                      {calibrating ? 'Measuring…' : 'Measure limits (golden)'}
+                    </Button>
+                    {calibrateResult && (
+                      <div className="rounded-xl border border-border bg-slate-800/50 p-3 space-y-2 text-xs text-muted-foreground">
+                        <p>
+                          Golden: <strong>{calibrateResult.goldenLanguage}</strong> — suggested{' '}
+                          <strong>{calibrateResult.suggestedTimeLimitMs}ms</strong> /{' '}
+                          <strong>{calibrateResult.suggestedMemoryLimitMb}MB</strong>
+                        </p>
+                        {!calibrateResult.memoryEnforced && (
+                          <p className="text-amber-400">
+                            Memory limit is informational until VPS uses cgroup v1 + isolate.
+                          </p>
+                        )}
+                        <div className="max-h-28 overflow-y-auto space-y-1 font-mono text-[10px]">
+                          {calibrateResult.cases.map((c) => (
+                            <div key={c.testCaseId}>
+                              #{c.orderIndex + 1}: {c.runtimeMs}ms, {c.memoryMb}MB ({c.verdict})
+                            </div>
+                          ))}
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="w-full"
+                          onClick={handleApplyCalibratedLimits}
+                        >
+                          Apply suggested limits
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
-                  <p className="text-xs text-blue-700">
+                <div className="bg-primary/20 border border-primary/60 rounded-lg p-3 mt-4">
+                  <p className="text-xs text-primary">
                     <strong>ℹ️ Class Problems Are Private:</strong> Problems created in this class
                     are automatically kept private to this class only. They won't appear in the
                     public problem bank.
@@ -674,9 +824,12 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
 
                 <div className="flex items-center justify-between mt-4 border-t pt-4">
                   <div className="space-y-0.5">
-                    <Label className="text-sm font-semibold">For Contest Only</Label>
-                    <p className="text-xs text-gray-500">
-                      Hide this problem from students in the normal assignments list. It will only be accessible within contests.
+                    <Label className="text-sm font-semibold text-muted-foreground">
+                      For Contest Only
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Hide this problem from students in the normal assignments list. It will only
+                      be accessible within contests.
                     </p>
                   </div>
                   <Switch
@@ -701,29 +854,19 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
                 </div>
 
                 <div className="space-y-3 pt-4 border-t">
-                  <Label className="text-sm font-semibold flex items-center gap-2">
-                    <Languages className="w-4 h-4 text-gray-400" /> Supported Languages
+                  <Label className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                    <Languages className="w-4 h-4 text-muted-foreground" /> Supported Languages
                   </Label>
                   <div className="flex flex-wrap gap-1.5">
-                    {['PYTHON', 'JAVASCRIPT', 'CPP', 'JAVA', 'GO', 'RUST'].map((lang) => {
-                      const isSelected = formData.supportedLanguages?.includes(lang);
-                      return (
-                        <Badge
-                          key={lang}
-                          variant={isSelected ? 'default' : 'outline'}
-                          className={`cursor-pointer transition-all hover:scale-105 active:scale-95 ${isSelected ? 'bg-black' : 'text-gray-400'}`}
-                          onClick={() => {
-                            const current = formData.supportedLanguages || [];
-                            const next = isSelected
-                              ? current.filter((l) => l !== lang)
-                              : [...current, lang];
-                            setFormData({ ...formData, supportedLanguages: next });
-                          }}
-                        >
-                          {lang}
-                        </Badge>
-                      );
-                    })}
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <Badge
+                        key={lang.name}
+                        variant="default"
+                        className={`${lang.bg} ${lang.text} rounded-sm py-3`}
+                      >
+                        {lang.name}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -732,16 +875,57 @@ export default function ClassProblemCreate({ classId }: { classId: string }) {
         </div>
       </div>
 
+      <AiGenerateProblemModal
+        open={aiProblemModalOpen}
+        onOpenChange={setAiProblemModalOpen}
+        locale="en"
+        existingTitle={formData.title}
+        existingStatement={formData.statementMd}
+        defaultDifficulty={formData.difficulty}
+        onApply={(payload) => {
+          setFormData((prev) => ({
+            ...prev,
+            title: payload.title,
+            description: payload.description,
+            statementMd: payload.statementMd,
+            ...(payload.difficulty ? { difficulty: payload.difficulty } : {}),
+            ...(payload.timeLimitMs ? { timeLimitMs: payload.timeLimitMs } : {}),
+            ...(payload.memoryLimitMb ? { memoryLimitMb: payload.memoryLimitMb } : {}),
+          }));
+          setAiGenOptions((prev) => ({ ...prev, ioSpec: payload.ioSpec }));
+          setErrors((prev) => {
+            const next = { ...prev };
+            delete next.title;
+            delete next.description;
+            delete next.statementMd;
+            return next;
+          });
+        }}
+      />
+
       <AiTestCaseDraftSheet
         open={aiSheetOpen}
         onOpenChange={setAiSheetOpen}
         draftResult={aiDraftResult}
         previewCases={previewMappedCases}
-        onApplyReplace={() => applyAiTestCases('replace')}
-        onApplyAppend={() => applyAiTestCases('append')}
+        onApplyReplace={(cases) => applyAiTestCases('replace', cases)}
+        onApplyAppend={(cases) => applyAiTestCases('append', cases)}
+        onPersistEditableCases={persistAiDraftFromSheet}
+        onApplySuggestedLimits={(limits) => {
+          setFormData((prev) => ({
+            ...prev,
+            timeLimitMs: limits.timeLimitMs,
+            memoryLimitMb: limits.memoryLimitMb,
+          }));
+          toast.success('Limits applied to form', { position: 'top-center' });
+        }}
         problemId={editId ?? undefined}
+        problemTitle={formData.title}
+        problemStatement={formData.statementMd}
+        ioSpec={aiGenOptions.ioSpec}
         locale="en"
       />
-    </div>
+      </div>
+    </ProblemFormPageShell>
   );
 }

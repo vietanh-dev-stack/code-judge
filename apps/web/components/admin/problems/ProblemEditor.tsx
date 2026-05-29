@@ -27,15 +27,29 @@ import {
   Languages,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { ProblemFormTestCaseList } from '@/components/problems/ProblemFormTestCaseList';
+import { ProblemFormTestCasesScroll } from '@/components/problems/ProblemFormPageShell';
 import { Switch } from '@/components/ui/switch';
-import { CreateProblemDto, problemsApi, UpdateProblemDto } from '@/services/problem.apis';
-import { toast } from 'sonner';
+import {
+  CalibrateProblemLimitsResult,
+  CreateProblemDto,
+  problemsApi,
+  UpdateProblemDto,
+} from '@/services/problem.apis';
+import { adminToast } from '@/lib/admin-toast';
 import { ProblemTagPicker } from '@/components/problems/ProblemTagPicker';
+import { AdminExportReportButton } from '@/components/admin/admin-export-report-button';
+
+const SUPPORTED_LANGUAGES = ['PYTHON', 'JAVASCRIPT', 'CPP', 'JAVA', 'GO', 'RUST'] as const;
 
 export default function AdminProblemEditor({ problemId }: { problemId?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(!!problemId);
+  const [calibrating, setCalibrating] = useState(false);
+  const [calibrateResult, setCalibrateResult] = useState<CalibrateProblemLimitsResult | null>(
+    null,
+  );
 
   const [formData, setFormData] = useState<Partial<CreateProblemDto>>({
     title: '',
@@ -46,8 +60,7 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
     timeLimitMs: 1000,
     memoryLimitMb: 256,
     isPublished: true,
-    visibility: 'PUBLIC',
-    supportedLanguages: ['PYTHON', 'JAVASCRIPT', 'CPP', 'JAVA'],
+    supportedLanguages: Array.from(SUPPORTED_LANGUAGES),
     maxTestCases: 100,
     testCases: [],
     tagIds: [],
@@ -71,8 +84,7 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
         timeLimitMs: data.timeLimitMs,
         memoryLimitMb: data.memoryLimitMb,
         isPublished: data.isPublished,
-        visibility: data.visibility,
-        supportedLanguages: data.supportedLanguages ?? ['PYTHON', 'JAVASCRIPT', 'CPP', 'JAVA'],
+        supportedLanguages: data.supportedLanguages ?? Array.from(SUPPORTED_LANGUAGES),
         maxTestCases: data.maxTestCases,
         testCases: (data.testCases ?? []).map(
           ({ id, problemId, orderIndex, createdAt, updatedAt, ...rest }: any) => rest,
@@ -80,7 +92,7 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
         tagIds: (data.tags ?? []).map((t: any) => t.tag.id),
       });
     } catch (error) {
-      toast.error('Failed to load problem data');
+      adminToast.errorFrom(error, 'Failed to load problem data.');
     } finally {
       setInitialLoading(false);
     }
@@ -113,9 +125,37 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
     });
   };
 
+  const handleCalibrateLimits = async () => {
+    if (!problemId) {
+      adminToast.error('Save the problem first before calibrating limits.');
+      return;
+    }
+    setCalibrating(true);
+    setCalibrateResult(null);
+    try {
+      const result = await problemsApi.calibrateLimits(problemId);
+      setCalibrateResult(result);
+      adminToast.success('Measured limits from golden solution.');
+    } catch (error: unknown) {
+      adminToast.errorFrom(error, 'Calibration failed.');
+    } finally {
+      setCalibrating(false);
+    }
+  };
+
+  const handleApplyCalibratedLimits = () => {
+    if (!calibrateResult) return;
+    setFormData({
+      ...formData,
+      timeLimitMs: calibrateResult.suggestedTimeLimitMs,
+      memoryLimitMb: calibrateResult.suggestedMemoryLimitMb,
+    });
+    adminToast.success('Applied suggested limits to form — save to persist.');
+  };
+
   const handleSave = async () => {
     if (!formData.title) {
-      toast.error('Please enter a title');
+      adminToast.error('Please enter a title.');
       return;
     }
 
@@ -123,14 +163,14 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
     try {
       if (problemId) {
         await problemsApi.update(problemId, formData as UpdateProblemDto);
-        toast.success('Problem updated successfully');
+        adminToast.success('Problem updated successfully.');
       } else {
         await problemsApi.create(formData as CreateProblemDto);
-        toast.success('Problem created successfully');
+        adminToast.success('Problem created successfully.');
       }
       router.push('/admin/problems');
     } catch (error) {
-      toast.error('Failed to save problem');
+      adminToast.errorFrom(error, 'Failed to save problem.');
     } finally {
       setLoading(false);
     }
@@ -139,8 +179,8 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
   if (initialLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-slate-500 font-medium">Loading problem details...</p>
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-muted-foreground font-medium">Loading problem details...</p>
       </div>
     );
   }
@@ -149,23 +189,31 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
     <div className="max-w-6xl mx-auto p-8 space-y-8 animate-in fade-in duration-500 pb-20">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+            className="rounded-full"
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
               {problemId ? 'Edit Problem' : 'New Problem'}
             </h1>
-            <p className="text-slate-500">
-              {problemId ? 'Update your coding challenge details' : 'Create a new challenge for the platform'}
+            <p className="text-muted-foreground">
+              {problemId
+                ? 'Update your coding challenge details'
+                : 'Create a new challenge for the platform'}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {problemId && <AdminExportReportButton kind="problem" problemId={problemId} />}
           <Button
             onClick={handleSave}
             disabled={loading}
-            className="bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 min-w-[140px]"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 min-w-[140px]"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -181,122 +229,88 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          <Card className="border-slate-200 shadow-sm overflow-hidden">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+          <Card className="border-border shadow-md overflow-hidden bg-card">
+            <CardHeader className="bg-muted/10 border-b border-border">
               <CardTitle className="text-lg">Content</CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-sm font-semibold">Title</Label>
+                <Label htmlFor="title" className="text-sm font-semibold">
+                  Title
+                </Label>
                 <Input
                   id="title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   placeholder="Problem name..."
-                  className="h-11 rounded-lg border-slate-200 focus:ring-indigo-500"
+                  className="h-11 rounded-lg border-border focus:ring-primary bg-background"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-semibold">Description</Label>
+                <Label htmlFor="description" className="text-sm font-semibold">
+                  Description
+                </Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Short summary..."
-                  className="min-h-[80px] rounded-lg border-slate-200 focus:ring-indigo-500 resize-none"
+                  className="min-h-[80px] rounded-lg border-border focus:ring-primary bg-background resize-none"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="statementMd" className="text-sm font-semibold">Statement (Markdown)</Label>
+                <Label htmlFor="statementMd" className="text-sm font-semibold">
+                  Statement (Markdown)
+                </Label>
                 <Textarea
                   id="statementMd"
                   value={formData.statementMd}
                   onChange={(e) => setFormData({ ...formData, statementMd: e.target.value })}
                   placeholder="Detailed instructions..."
-                  className="min-h-[300px] rounded-lg border-slate-200 focus:ring-indigo-500 font-mono text-sm"
+                  className="min-h-[300px] rounded-lg border-border focus:ring-primary bg-background font-mono text-sm"
                 />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 shadow-sm overflow-hidden">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100 flex flex-row items-center justify-between">
+          <Card className="border-border shadow-md overflow-hidden bg-card">
+            <CardHeader className="bg-muted/10 border-b border-border flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-lg">Test Cases</CardTitle>
                 <CardDescription>Configure validation tests</CardDescription>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={addTestCase} className="rounded-lg">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addTestCase}
+                className="rounded-lg"
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Add
               </Button>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="space-y-4">
-                {formData.testCases?.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 text-slate-400">
-                    <Beaker className="w-12 h-12 mb-2 opacity-20" />
-                    <p>No test cases defined yet</p>
-                  </div>
-                ) : (
-                  formData.testCases?.map((tc, index) => (
-                    <div key={index} className="border border-slate-100 rounded-xl p-5 bg-slate-50/30 space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-xs font-bold text-slate-400 uppercase">Input</Label>
-                          <Textarea
-                            value={tc.input}
-                            onChange={(e) => updateTestCase(index, 'input', e.target.value)}
-                            className="min-h-[80px] rounded-lg border-slate-200 bg-white font-mono text-xs"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs font-bold text-slate-400 uppercase">Output</Label>
-                          <Textarea
-                            value={tc.expectedOutput}
-                            onChange={(e) => updateTestCase(index, 'expectedOutput', e.target.value)}
-                            className="min-h-[80px] rounded-lg border-slate-200 bg-white font-mono text-xs"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                         <div className="flex items-center gap-6">
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              checked={tc.isHidden}
-                              onCheckedChange={(checked) => updateTestCase(index, 'isHidden', checked)}
-                            />
-                            <Label className="text-sm font-medium">
-                              {tc.isHidden ? 'Hidden' : 'Public'}
-                            </Label>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Label className="text-xs font-bold text-slate-400">Weight</Label>
-                            <Input
-                              type="number"
-                              value={tc.weight}
-                              onChange={(e) => updateTestCase(index, 'weight', Number(e.target.value))}
-                              className="w-16 h-8 rounded-lg text-center font-bold"
-                            />
-                          </div>
-                        </div>
-                        <Button variant="ghost" size="sm" onClick={() => removeTestCase(index)} className="text-rose-500 hover:bg-rose-50">
-                          <Trash2 className="w-4 h-4 mr-1.5" />
-                          Remove
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+              <ProblemFormTestCasesScroll>
+                <ProblemFormTestCaseList
+                  variant="admin"
+                  locale="en"
+                  testCases={formData.testCases ?? []}
+                  errors={{}}
+                  onUpdate={updateTestCase}
+                  onRemove={removeTestCase}
+                  onClearError={() => {}}
+                />
+              </ProblemFormTestCasesScroll>
             </CardContent>
           </Card>
         </div>
 
         <div className="space-y-8">
-          <Card className="border-slate-200 shadow-sm overflow-hidden sticky top-24">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+          <Card className="border-border shadow-md overflow-hidden bg-card sticky top-24">
+            <CardHeader className="bg-muted/10 border-b border-border">
               <CardTitle className="text-lg">Settings</CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
@@ -307,7 +321,7 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                     value={formData.difficulty}
                     onValueChange={(value: any) => setFormData({ ...formData, difficulty: value })}
                   >
-                    <SelectTrigger className="rounded-lg">
+                    <SelectTrigger className="rounded-lg bg-background border-border">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -319,53 +333,98 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-1">
                       <Clock className="w-3 h-3" /> Time (ms)
                     </Label>
                     <Input
                       type="number"
                       value={formData.timeLimitMs}
-                      onChange={(e) => setFormData({ ...formData, timeLimitMs: Number(e.target.value) })}
-                      className="rounded-lg font-bold"
+                      onChange={(e) =>
+                        setFormData({ ...formData, timeLimitMs: Number(e.target.value) })
+                      }
+                      className="rounded-lg font-bold bg-background border-border"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1">
+                    <Label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-1">
                       <Database className="w-3 h-3" /> Mem (MB)
                     </Label>
                     <Input
                       type="number"
                       value={formData.memoryLimitMb}
-                      onChange={(e) => setFormData({ ...formData, memoryLimitMb: Number(e.target.value) })}
-                      className="rounded-lg font-bold"
+                      onChange={(e) =>
+                        setFormData({ ...formData, memoryLimitMb: Number(e.target.value) })
+                      }
+                      className="rounded-lg font-bold bg-background border-border"
                     />
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-sm font-semibold">Publicly Visible</Label>
-                    <p className="text-xs text-slate-500">Enable for everyone</p>
+                {problemId && formData.mode === 'ALGO' && (
+                  <div className="space-y-3 pt-2 border-t border-dashed border-border">
+                    <p className="text-xs text-muted-foreground">
+                      Run the primary golden on all test cases via Judge0 to suggest time/memory
+                      limits.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full rounded-lg"
+                      disabled={calibrating}
+                      onClick={handleCalibrateLimits}
+                    >
+                      <Beaker className="w-4 h-4 mr-2" />
+                      {calibrating ? 'Measuring…' : 'Measure limits (golden)'}
+                    </Button>
+                    {calibrateResult && (
+                      <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2 text-xs">
+                        <p>
+                          Golden: <strong>{calibrateResult.goldenLanguage}</strong> — suggested{' '}
+                          <strong>{calibrateResult.suggestedTimeLimitMs}ms</strong> /{' '}
+                          <strong>{calibrateResult.suggestedMemoryLimitMb}MB</strong>
+                        </p>
+                        {!calibrateResult.memoryEnforced && (
+                          <p className="text-amber-700">
+                            Memory limit is informational until VPS uses cgroup v1 + isolate (see
+                            docs/JUDGE0-CGROUP-V1-MIGRATION.md).
+                          </p>
+                        )}
+                        <div className="max-h-28 overflow-y-auto space-y-1 font-mono text-[10px]">
+                          {calibrateResult.cases.map((c) => (
+                            <div key={c.testCaseId}>
+                              #{c.orderIndex + 1}: {c.runtimeMs}ms, {c.memoryMb}MB ({c.verdict})
+                            </div>
+                          ))}
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="w-full"
+                          onClick={handleApplyCalibratedLimits}
+                        >
+                          Apply suggested limits
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                  <Switch
-                    checked={formData.visibility === 'PUBLIC'}
-                    onCheckedChange={(checked) => setFormData({ ...formData, visibility: checked ? 'PUBLIC' : 'PRIVATE' })}
-                  />
-                </div>
+                )}
 
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                 <div className="pt-4 border-t border-border flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label className="text-sm font-semibold">Published</Label>
-                    <p className="text-xs text-slate-500">Live status</p>
+                    <p className="text-xs text-muted-foreground">Live status</p>
                   </div>
                   <Switch
                     checked={formData.isPublished}
-                    onCheckedChange={(checked) => setFormData({ ...formData, isPublished: checked })}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, isPublished: checked })
+                    }
                   />
                 </div>
 
-                <div className="pt-4 border-t border-slate-100 space-y-3">
+                <div className="pt-4 border-t border-border space-y-3">
                   <ProblemTagPicker
                     value={formData.tagIds || []}
                     onChange={(ids) => setFormData({ ...formData, tagIds: ids })}
@@ -375,28 +434,16 @@ export default function AdminProblemEditor({ problemId }: { problemId?: string }
                   />
                 </div>
 
-                <div className="pt-4 border-t border-slate-100 space-y-3">
+                <div className="pt-4 border-t border-border space-y-3">
                   <Label className="text-sm font-semibold flex items-center gap-2">
-                    <Languages className="w-4 h-4 text-slate-400" /> Languages
+                    <Languages className="w-4 h-4 text-muted-foreground" /> Languages
                   </Label>
                   <div className="flex flex-wrap gap-1.5">
-                    {['PYTHON', 'JAVASCRIPT', 'CPP', 'JAVA', 'GO', 'RUST'].map((lang) => {
-                      const isSelected = formData.supportedLanguages?.includes(lang);
-                      return (
-                        <Badge
-                          key={lang}
-                          variant={isSelected ? 'default' : 'outline'}
-                          className={`cursor-pointer transition-all hover:scale-105 ${isSelected ? 'bg-indigo-600' : 'text-slate-400'}`}
-                          onClick={() => {
-                            const current = formData.supportedLanguages || [];
-                            const next = isSelected ? current.filter(l => l !== lang) : [...current, lang];
-                            setFormData({ ...formData, supportedLanguages: next });
-                          }}
-                        >
-                          {lang}
-                        </Badge>
-                      );
-                    })}
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <Badge key={lang} variant="default" className="bg-black text-white">
+                        {lang}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
               </div>

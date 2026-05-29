@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 
 import { useShallow } from 'zustand/react/shallow';
+import TeachingClassCard from '@/components/dashboard/classroom/teaching-class-card';
 
 export default function ArchivedDashboardPage() {
   const { archived, loading, fetchClassrooms } = useClassroomStore(
@@ -86,13 +87,36 @@ export default function ArchivedDashboardPage() {
     });
   };
 
+  const handleLeave = (id: string) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Leave Class?',
+      description: 'Are you sure you want to leave this class from your list?',
+      variant: 'destructive',
+      loading: false,
+      onConfirm: async () => {
+        setConfirmConfig((p) => ({ ...p, loading: true }));
+        try {
+          // Logic for member to leave
+              toast.info('Leaving class is being processed...');
+          await fetchClassrooms();
+          closeDialog();
+        } catch (error) {
+          console.error(error);
+          toast.error('Failed to leave class');
+          setConfirmConfig((p) => ({ ...p, loading: false }));
+        }
+      },
+    });
+  };
+
   if (loading && archived.length === 0) {
     return <div>Loading archived classrooms...</div>;
   }
 
   if (archived.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] text-gray-500">
+      <div className="flex flex-col items-center justify-center h-[60vh] text-muted-foreground">
         <p className="text-lg font-medium">No archived classrooms.</p>
       </div>
     );
@@ -105,20 +129,14 @@ export default function ArchivedDashboardPage() {
         {archived.map((item) => {
           const bannerColors = getClassroomBannerColor(item.id);
           const isOwner = item.owner.id === user?.id;
-          
+
           return (
-            <ClassCard
+            <TeachingClassCard
               key={item.id}
-              id={item.id}
-              title={item.name}
-              subTitle={item.academicYear ?? ''}
-              teacher={item.owner?.name ?? 'Unknown'}
-              bannerBg={bannerColors}
-              avatar={item.owner?.image}
-              isActive={item.isActive}
-              isOwner={isOwner}
+              classroom={item}
               onArchive={() => handleArchive(item.id)}
               onRestore={() => handleRestore(item.id)}
+              onLeave={() => handleLeave(item.id)}
             />
           );
         })}

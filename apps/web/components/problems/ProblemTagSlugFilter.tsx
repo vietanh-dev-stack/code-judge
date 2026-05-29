@@ -48,7 +48,7 @@ export function ProblemTagSlugFilter({
         console.error(e);
         if (!cancelled) {
           const msg =
-            e instanceof ApiRequestError ? e.body.message : 'Không tải được danh sách tag.';
+            e instanceof ApiRequestError ? e.body.message : 'Could not load tags.';
           toast.error(msg, { position: 'top-center' });
           setTags([]);
         }

@@ -85,7 +85,7 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
   const handleSaveName = async () => {
     const trimmed = editName.trim();
     if (!trimmed) {
-      setNameSaveError('Tên không được để trống');
+      setNameSaveError('Name field cannot be empty');
       setNameSaveStatus('error');
       return;
     }
@@ -103,7 +103,7 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
       setIsEditingName(false);
     } catch (error) {
       setNameSaveStatus('error');
-      setNameSaveError(error instanceof Error ? error.message : 'Không thể lưu tên');
+      setNameSaveError(error instanceof Error ? error.message : 'Failed to save name');
     }
   };
 
@@ -146,21 +146,21 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
     } = {};
 
     if (!values.current.trim()) {
-      errors.currentPassword = 'Vui lòng nhập mật khẩu hiện tại';
+      errors.currentPassword = 'Please enter your current password';
     }
 
     if (!values.next) {
-      errors.newPassword = 'Vui lòng nhập mật khẩu mới';
+      errors.newPassword = 'Please enter a new password';
     } else if (values.next.length < 8) {
-      errors.newPassword = 'Mật khẩu mới phải có ít nhất 8 ký tự';
+      errors.newPassword = 'New password must be at least 8 characters long';
     } else if (values.current && values.next === values.current) {
-      errors.newPassword = 'Mật khẩu mới phải khác mật khẩu hiện tại';
+      errors.newPassword = 'New password must be different from the current password';
     }
 
     if (!values.confirm) {
-      errors.confirmPassword = 'Vui lòng xác nhận mật khẩu mới';
+      errors.confirmPassword = 'Please confirm your new password';
     } else if (values.next && values.confirm !== values.next) {
-      errors.confirmPassword = 'Mật khẩu xác nhận không khớp';
+      errors.confirmPassword = 'Password confirmation does not match the new password';
     }
 
     if (markAllTouched) {
@@ -211,7 +211,7 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
       }, 1200);
     } catch (error) {
       setPasswordStatus('error');
-      setPasswordError(error instanceof Error ? error.message : 'Không thể đổi mật khẩu');
+      setPasswordError(error instanceof Error ? error.message : 'Failed to change password');
     }
   };
 
@@ -229,12 +229,12 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
         headers: { 'Content-Type': file.type || 'application/octet-stream' },
         body: file,
       });
-      if (!uploadResponse.ok) throw new Error('Không thể tải ảnh lên MinIO');
+      if (!uploadResponse.ok) throw new Error('Failed to upload image to MinIO');
       await usersApi.confirmAvatar(uploadData.objectKey);
       setAvatarLoadError(false);
       await refreshUser();
     } catch (error) {
-      setUploadError(error instanceof Error ? error.message : 'Lỗi tải avatar');
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload avatar');
     } finally {
       setIsUploading(false);
       event.target.value = '';
@@ -251,8 +251,8 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="flex flex-col items-center md:items-start md:col-span-1">
           <div className="relative mb-4">
-            <div className="relative h-32 w-32 rounded-full bg-gradient-to-br from-primary/40 via-primary/10 to-transparent p-[3px] shadow-lg shadow-primary/20">
-              <div className="relative h-full w-full overflow-hidden rounded-full border border-border/60 bg-secondary">
+            <div className="relative h-32 w-32 rounded-full bg-gradient-to-br from-primary/40 via-primary/10 to-transparen p-[3px] shadow-lg shadow-primary/20">
+              <div className="relative h-full w-full overflow-hidden rounded-full border border-border/60 ">
                 {!avatarLoadError && user.image ? (
                   <img
                     src={user.image}
@@ -267,7 +267,7 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
                 )}
                 {isUploading && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/45 text-xs font-medium text-white">
-                    Đang tải...
+                    Loading...
                   </div>
                 )}
               </div>
@@ -277,7 +277,7 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
               onClick={() => fileInputRef.current?.click()}
               className="absolute bottom-1 right-0 cursor-pointer rounded-full border border-border/50 bg-card p-2 text-primary shadow-md transition-all hover:scale-105 hover:bg-accent"
               disabled={isUploading}
-              aria-label="Đổi ảnh đại diện"
+              aria-label="Change profile picture"
             >
               <Camera className="w-5 h-5" />
             </button>
@@ -309,21 +309,21 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
                     type="button"
                     onClick={() => void handleSaveName()}
                     disabled={nameSaveStatus === 'saving'}
-                    className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                    className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60 cursor-pointer"
                     aria-label="Lưu tên"
                   >
                     <Check className="h-4 w-4" />
-                    {nameSaveStatus === 'saving' ? 'Đang lưu...' : 'Lưu'}
+                    {nameSaveStatus === 'saving' ? 'Saving...' : 'Save'}
                   </button>
                   <button
                     type="button"
                     onClick={cancelEditingName}
                     disabled={nameSaveStatus === 'saving'}
-                    className="inline-flex items-center gap-1 rounded-lg border border-border bg-secondary px-3 py-1.5 text-sm font-medium hover:bg-accent disabled:opacity-60"
-                    aria-label="Huỷ"
+                    className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-primary hover:bg-muted disabled:opacity-60"
+                    aria-label="Cancel"
                   >
                     <X className="h-4 w-4" />
-                    Huỷ
+                    Cancel
                   </button>
                 </div>
                 {nameSaveStatus === 'error' && nameSaveError && (
@@ -338,8 +338,8 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
                 <button
                   type="button"
                   onClick={startEditingName}
-                  className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  aria-label="Chỉnh sửa tên"
+                  className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-primary cursor-pointer"
+                  aria-label="Edit name"
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
@@ -352,23 +352,23 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
             {user.email}
           </p>
           <p className="text-sm text-muted-foreground mt-1">
-            Tham gia {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+            Joined at {new Date(user.createdAt).toLocaleDateString('vi-VN')}
           </p>
         </div>
 
         <div className="md:col-span-2">
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-secondary rounded-lg p-4 text-center">
+            <div className="bg-primary rounded-lg p-4 text-center">
               <div className="text-2xl font-bold">
                 {statsLoading ? '—' : (stats?.problemsSolved ?? 0)}
               </div>
-              <div className="text-xs text-muted-foreground mt-1">Bài đã giải</div>
+              <div className="text-sm mt-1">Problems Solved</div>
             </div>
-            <div className="bg-secondary rounded-lg p-4 text-center">
+            <div className="bg-primary rounded-lg p-4 text-center">
               <div className="text-2xl font-bold">
                 {statsLoading ? '—' : `${stats?.successRate ?? 0}%`}
               </div>
-              <div className="text-xs text-muted-foreground mt-1">Tỷ lệ giải được</div>
+              <div className="text-sm mt-1">Success Rate</div>
             </div>
           </div>
         </div>
@@ -377,26 +377,26 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
       <button
         type="button"
         onClick={openPasswordModal}
-        className="absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-lg border border-border bg-secondary px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition-all duration-200 hover:border-primary/40 hover:bg-accent hover:text-accent-foreground hover:shadow-md hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+        className="absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-lg cursor-pointer bg-primary px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
       >
         <KeyRound className="h-4 w-4" />
-        Đổi mật khẩu
+        Change Password
       </button>
 
       <Dialog open={passwordModalOpen} onOpenChange={handlePasswordModalChange}>
         <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
           <div className="space-y-5 px-6 pt-6 pb-2">
             <DialogHeader className="text-left">
-              <DialogTitle>Đổi mật khẩu</DialogTitle>
+              <DialogTitle>Change Password</DialogTitle>
               <DialogDescription>
-                Nhập mật khẩu hiện tại và mật khẩu mới. Tài khoản đăng nhập Google không thể đổi
-                mật khẩu tại đây.
+                Enter your current password and new password. Google login accounts cannot change
+                their password here.
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
               <label className="block">
-                <span className="text-sm font-medium">Mật khẩu hiện tại</span>
+                <span className="text-sm font-medium">Current Password</span>
                 <input
                   type="password"
                   value={currentPassword}
@@ -404,9 +404,11 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
                     const value = e.target.value;
                     setCurrentPassword(value);
                     if (passwordTouched.currentPassword || passwordFieldErrors.currentPassword) {
-                      validatePasswordFields(
-                        { current: value, next: newPassword, confirm: confirmPassword },
-                      );
+                      validatePasswordFields({
+                        current: value,
+                        next: newPassword,
+                        confirm: confirmPassword,
+                      });
                     }
                   }}
                   onBlur={() => {
@@ -433,7 +435,7 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
               </label>
 
               <label className="block">
-                <span className="text-sm font-medium">Mật khẩu mới</span>
+                <span className="text-sm font-medium">New Password</span>
                 <input
                   type="password"
                   value={newPassword}
@@ -441,9 +443,11 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
                     const value = e.target.value;
                     setNewPassword(value);
                     if (passwordTouched.newPassword || passwordFieldErrors.newPassword) {
-                      validatePasswordFields(
-                        { current: currentPassword, next: value, confirm: confirmPassword },
-                      );
+                      validatePasswordFields({
+                        current: currentPassword,
+                        next: value,
+                        confirm: confirmPassword,
+                      });
                     }
                   }}
                   onBlur={() => {
@@ -463,14 +467,16 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
                   autoComplete="new-password"
                 />
                 {passwordTouched.newPassword && passwordFieldErrors.newPassword ? (
-                  <p className="mt-1.5 text-xs text-destructive">{passwordFieldErrors.newPassword}</p>
+                  <p className="mt-1.5 text-xs text-destructive">
+                    {passwordFieldErrors.newPassword}
+                  </p>
                 ) : (
-                  <p className="mt-1.5 text-xs text-muted-foreground">Tối thiểu 8 ký tự</p>
+                  <p className="mt-1.5 text-xs text-muted-foreground">Minimum 8 characters</p>
                 )}
               </label>
 
               <label className="block">
-                <span className="text-sm font-medium">Xác nhận mật khẩu mới</span>
+                <span className="text-sm font-medium">Confirm New Password</span>
                 <input
                   type="password"
                   value={confirmPassword}
@@ -478,9 +484,11 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
                     const value = e.target.value;
                     setConfirmPassword(value);
                     if (passwordTouched.confirmPassword || passwordFieldErrors.confirmPassword) {
-                      validatePasswordFields(
-                        { current: currentPassword, next: newPassword, confirm: value },
-                      );
+                      validatePasswordFields({
+                        current: currentPassword,
+                        next: newPassword,
+                        confirm: value,
+                      });
                     }
                   }}
                   onBlur={() => {
@@ -508,7 +516,7 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
 
               {passwordStatus === 'success' && (
                 <p className="text-sm text-green-600 dark:text-green-400">
-                  Đã đổi mật khẩu thành công.
+                  Password changed successfully.
                 </p>
               )}
               {passwordStatus === 'error' && passwordError && (
@@ -517,7 +525,8 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
             </div>
           </div>
 
-          <DialogFooter className="mt-0 gap-3 border-t border-border bg-muted/30 px-6 py-4 sm:justify-end"
+          <DialogFooter
+            className="mt-0 gap-3 border-t border-border bg-muted/30 px-6 py-4 sm:justify-end"
             style={{ marginBottom: '0px' }}
           >
             <Button
@@ -527,7 +536,7 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
               disabled={passwordStatus === 'saving'}
               className="min-w-[88px]"
             >
-              Huỷ
+              Cancel
             </Button>
             <Button
               type="button"
@@ -535,7 +544,7 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
               disabled={passwordStatus === 'saving'}
               className="min-w-[120px]"
             >
-              {passwordStatus === 'saving' ? 'Đang lưu...' : 'Lưu mật khẩu'}
+              {passwordStatus === 'saving' ? 'Saving...' : 'Save Password'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -545,13 +554,13 @@ export function ProfileHeader({ user, stats, statsLoading }: ProfileHeaderProps)
         <div className="mt-8 pt-8 border-t border-border">
           <h3 className="font-semibold mb-3 flex items-center gap-2">
             <Code2 className="w-5 h-5" />
-            Ngôn ngữ lập trình
+            Favorite Languages
           </h3>
           <div className="flex flex-wrap gap-2">
             {stats.languages.map((item) => (
               <span
                 key={item.language}
-                className="bg-secondary text-foreground px-4 py-2 rounded-full text-sm font-medium"
+                className="bg-primary text-foreground px-4 py-2 rounded-full text-sm font-medium"
               >
                 {item.language} ({item.count})
               </span>

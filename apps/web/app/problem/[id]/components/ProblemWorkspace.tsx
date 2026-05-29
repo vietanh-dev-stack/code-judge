@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuthStore } from '@/store/auth-store';
 import { Problem, problemsApi } from '@/services/problem.apis';
-import { submissionsApi, Submission } from '@/services/submission.apis';
+import {
+  submissionsApi,
+  Submission,
+  SUBMISSION_SOURCE_INLINE_MAX_BYTES,
+} from '@/services/submission.apis';
 import { storageApi } from '@/services/storage.apis';
 import { aiHintApi, type RequestHintResult } from '@/services/ai-hint.apis';
 import ProblemDescription from './ProblemDescription';
@@ -79,6 +83,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<SubmissionResult | null>(null);
   const [lastSubmissionId, setLastSubmissionId] = useState<string | null>(null);
+  const lastSubmissionIdRef = useRef<string | null>(null);
   const [hintState, setHintState] = useState<HintUiState>('idle');
   const [hintData, setHintData] = useState<RequestHintResult | null>(null);
   const [hintError, setHintError] = useState<string | null>(null);
@@ -87,6 +92,8 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
   const latestHintRequestRef = useRef<string | null>(null);
   const hintCachedSubmissionRef = useRef<string | null>(null);
   const processedSubmissionsRef = useRef<Set<string>>(new Set());
+  /** Submission đang chờ kết quả (run/submit) — bỏ qua socket của người khác (contest broadcast). */
+  const pendingSubmissionIdRef = useRef<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const { socket } = useSocket();
 
@@ -130,35 +137,26 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
     const fetchProblem = async () => {
       try {
         setLoadingProblem(true);
-        const data = await problemsApi.findById(activeProblemId);
-
-        // Validate classroom enrollment if this problem is assigned to a class
-        if (data.assignments && data.assignments.length > 0 && user?.role !== 'ADMIN') {
-          let hasAccess = false;
-          for (const assignment of data.assignments) {
-            try {
-              await getClassroomDetail(assignment.classRoomId);
-              hasAccess = true;
-              break;
-            } catch (err) {
-              // Not enrolled in this classroom
-            }
-          }
-
-          if (!hasAccess) {
-            toast.error('Unauthorized', {
-              description: 'This problem belongs to a class you are not enrolled in.',
-            });
-            router.push('/dashboard');
-            return;
-          }
-        }
+        const data = await problemsApi.findById(activeProblemId, {
+          contestId: contestId ?? undefined,
+        });
 
         setProblem(data);
         setCode('');
         setResult(null);
       } catch (err: any) {
         console.error('Failed to fetch problem:', err);
+        const status = err?.status;
+        if (status === 404 || status === 401 || status === 403) {
+          toast.error('Problem not available', {
+            description:
+              status === 404
+                ? 'This problem does not exist or you do not have access.'
+                : 'Sign in or enroll in the class to view this problem.',
+          });
+          router.push('/dashboard');
+          return;
+        }
         toast.error('Error loading problem', {
           description: err.message || 'Failed to load problem.',
         });
@@ -168,7 +166,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
     };
 
     fetchProblem();
-  }, [activeProblemId, user, router]);
+  }, [activeProblemId, contestId, router]);
 
   useEffect(() => {
     if (!contestId) {
@@ -303,7 +301,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
   const loadSubmissions = useCallback(async () => {
     if (!user || !problem?.id) return;
     try {
-      const data = await submissionsApi.findAll({ userId: user.id, problemId: problem.id });
+      const data = await submissionsApi.findAll({ problemId: problem.id });
       setSubmissions(data);
     } catch (error) {
       console.error('Failed to load submissions:', error);
@@ -316,13 +314,24 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
 
   useEffect(() => {
     if (socket) {
+      const isPendingSubmissionEvent = (data: { submissionId?: string }) => {
+        const id = data.submissionId;
+        if (!id || !pendingSubmissionIdRef.current) return false;
+        return id === pendingSubmissionIdRef.current;
+      };
+
       const handleFinished = (data: any) => {
+        if (!isPendingSubmissionEvent(data)) return;
+        if (data.submissionId && data.submissionId !== lastSubmissionIdRef.current) {
+          return;
+        }
         if (data.submissionId) {
           if (processedSubmissionsRef.current.has(data.submissionId)) {
             return;
           }
           processedSubmissionsRef.current.add(data.submissionId);
         }
+        pendingSubmissionIdRef.current = null;
         setIsRunning(false);
         setIsSubmitting(false);
         if (data.submissionId) {
@@ -348,24 +357,23 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
           setHintPulse(false);
           setHintState('idle');
           setHintData(null);
-          toast.success(data.isDryRun ? 'Run Code Success!' : 'Accepted!', {
-            description: data.isDryRun
-              ? `Passed all ${data.testsTotal} sample test cases.`
-              : `All ${data.testsTotal} test cases passed.`,
-          });
         } else {
           setHintPulse(true);
-          toast.error(data.status, { description: data.error || 'Some test cases failed.' });
         }
       };
 
       const handleFailed = (data: any) => {
+        if (!isPendingSubmissionEvent(data)) return;
+        if (data.submissionId && data.submissionId !== lastSubmissionIdRef.current) {
+          return;
+        }
         if (data.submissionId) {
           if (processedSubmissionsRef.current.has(data.submissionId)) {
             return;
           }
           processedSubmissionsRef.current.add(data.submissionId);
         }
+        pendingSubmissionIdRef.current = null;
         setIsRunning(false);
         setIsSubmitting(false);
         if (data.submissionId) {
@@ -383,7 +391,6 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
           loadSubmissions();
         }
         setHintPulse(true);
-        toast.error('Error', { description: data.error || 'Judging failed' });
       };
 
       socket.on('submission:finished', handleFinished);
@@ -423,7 +430,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
         hintCachedSubmissionRef.current = submissionId;
       } catch (err: unknown) {
         if (latestHintRequestRef.current !== submissionId) return;
-        const message = err instanceof Error ? err.message : 'Không thể tải gợi ý AI';
+        const message = err instanceof Error ? err.message : 'Could not load AI hint';
         setHintError(message);
         setHintState('error');
       }
@@ -450,7 +457,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
   const handleRequestHint = useCallback(async () => {
     if (contestId) {
       toast.info('Gợi ý AI tắt trong contest', {
-        description: 'Khi thi contest bạn cần tự giải bài, không dùng gợi ý AI.',
+        description: 'AI hints are disabled during contests. Solve the problem on your own.',
       });
       return;
     }
@@ -515,6 +522,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
     }
     setResult(null);
     setLastSubmissionId(null);
+    lastSubmissionIdRef.current = null;
     setHintState('idle');
     setHintData(null);
     setHintError(null);
@@ -522,55 +530,71 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
     setHintPulse(false);
     latestHintRequestRef.current = null;
     hintCachedSubmissionRef.current = null;
+    pendingSubmissionIdRef.current = null;
 
     try {
-      const submissionId = `sub-${Math.random().toString(36).slice(2, 10)}-${Date.now()}`;
       const optionLang = language.toUpperCase();
-      const ext =
-        optionLang === 'PYTHON'
-          ? 'py'
-          : optionLang === 'JAVASCRIPT'
-            ? 'js'
-            : optionLang === 'TYPESCRIPT'
-              ? 'ts'
-              : optionLang === 'JAVA'
-                ? 'java'
-                : optionLang === 'GO'
-                  ? 'go'
-                  : optionLang === 'RUST'
-                    ? 'rs'
-                    : optionLang === 'CPP'
-                      ? 'cpp'
-                      : 'txt';
+      const contestIdOpt = contestId || undefined;
 
-      const presign = await storageApi.presignUpload({
-        resourceKind: 'submission-source',
-        submissionId,
-        fileName: `solution.${ext}`,
-      });
+      let created: { submissionId: string; status: string };
 
-      await fetch(presign.uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'text/plain' },
-        body: code,
-      });
+      if (code.length <= SUBMISSION_SOURCE_INLINE_MAX_BYTES) {
+        created = await submissionsApi.create({
+          problemId: problem.id,
+          contestId: contestIdOpt,
+          mode: problem.mode,
+          language: optionLang,
+          sourceCode: code,
+          isDryRun,
+        });
+      } else {
+        const ext =
+          optionLang === 'PYTHON'
+            ? 'py'
+            : optionLang === 'JAVASCRIPT'
+              ? 'js'
+              : optionLang === 'TYPESCRIPT'
+                ? 'ts'
+                : optionLang === 'JAVA'
+                  ? 'java'
+                  : optionLang === 'GO'
+                    ? 'go'
+                    : optionLang === 'RUST'
+                      ? 'rs'
+                      : optionLang === 'CPP'
+                        ? 'cpp'
+                        : 'txt';
 
-      const created = await submissionsApi.create({
-        userId: user.id,
-        problemId: problem.id,
-        contestId: (contestId || null) as string | undefined,
-        mode: problem.mode,
-        language: optionLang,
-        sourceCodeObjectKey: presign.objectKey,
-        isDryRun,
-      });
+        const reserved = await submissionsApi.reserve({
+          problemId: problem.id,
+          contestId: contestIdOpt,
+          mode: problem.mode,
+          language: optionLang,
+          isDryRun,
+        });
+
+        const presign = await storageApi.presignUpload({
+          resourceKind: 'submission-source',
+          submissionId: reserved.submissionId,
+          fileName: `solution.${ext}`,
+        });
+
+        const putRes = await fetch(presign.uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'text/plain' },
+          body: code,
+        });
+        if (!putRes.ok) {
+          throw new Error(`Upload to storage failed (${putRes.status})`);
+        }
+
+        created = await submissionsApi.finalize(reserved.submissionId, presign.objectKey);
+      }
+
+      pendingSubmissionIdRef.current = created.submissionId;
       setLastSubmissionId(created.submissionId);
+      lastSubmissionIdRef.current = created.submissionId;
 
-      toast.info(isDryRun ? 'Running Code' : 'Submission Received', {
-        description: isDryRun
-          ? 'Running your code against sample test cases...'
-          : 'Your code is being judged...',
-      });
     } catch (error: any) {
       console.warn('Submission failed:', error.message || error);
       toast.error('Submission Error', { description: error.message || 'Failed to submit code.' });
@@ -598,7 +622,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
     <div
       className={cn(
         'h-screen flex flex-col bg-background text-foreground transition-colors duration-300',
-        isDarkMode && 'dark',
+        isDarkMode ? 'dark' : 'light',
       )}
     >
       <div className="flex flex-1 overflow-hidden relative">
@@ -822,6 +846,7 @@ export default function ProblemWorkspace({ initialProblemId, contestId }: Proble
                 isRunning={isRunning || isSubmitting}
                 result={result}
                 problem={problem}
+                isDarkMode={isDarkMode}
               />
             </div>
           </>

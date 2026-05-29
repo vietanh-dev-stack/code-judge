@@ -1,10 +1,12 @@
 // `reflect-metadata` bắt buộc với NestJS decorator / DI.
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import cookieParser from 'cookie-parser'; 
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import morgan from 'morgan';
 import { createWriteStream, mkdirSync } from 'node:fs';
 import path from 'node:path';
@@ -17,8 +19,33 @@ import { TransformResponseInterceptor } from './common/interceptors/transform-re
  * Thứ tự xử lý response: controller trả dữ liệu “thô” → `TransformResponseInterceptor` bọc
  * `{ code, success, message, result }`. Mọi exception → `AllExceptionsFilter` trả cùng dạng envelope.
  */
+function resolveHelmetEnabled(): boolean {
+  const raw = process.env.HELMET_ENABLED?.trim().toLowerCase();
+  if (raw === '1' || raw === 'true' || raw === 'yes') {
+    return true;
+  }
+  if (raw === '0' || raw === 'false' || raw === 'no') {
+    return false;
+  }
+  return process.env.NODE_ENV === 'production';
+}
+
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+  }
+
+  if (resolveHelmetEnabled()) {
+    app.use(
+      helmet({
+        contentSecurityPolicy: false,
+        crossOriginEmbedderPolicy: false,
+      }),
+    );
+  }
+
   const logsDir = path.resolve(process.cwd(), 'logs');
   mkdirSync(logsDir, { recursive: true });
   const day = new Date().toISOString().slice(0, 10);

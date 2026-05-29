@@ -18,6 +18,7 @@ import { GoldenSolutionsModule } from './golden-solutions/golden-solutions.modul
 import { AdminDashboardModule } from './admin-dashboard/admin-dashboard.module';
 import { TagsModule } from './tags/tags.module';
 import { AiHintModule } from './ai-hint/ai-hint.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { AiHintModule } from './ai-hint/ai-hint.module';
     AdminDashboardModule,
     TagsModule,
     AiHintModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}

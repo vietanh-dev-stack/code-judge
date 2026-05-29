@@ -32,8 +32,11 @@ import {
   Trash2,
   Loader2,
   RefreshCw,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { UserProfile } from '@/services/auth.apis';
+import { adminToast } from '@/lib/admin-toast';
 import CreateUserDialog from './create-user-dialog';
 
 export default function UserTable() {
@@ -45,6 +48,11 @@ export default function UserTable() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
+
+  const total = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 1;
+  const rangeStart = total === 0 ? 0 : (page - 1) * limit + 1;
+  const rangeEnd = total === 0 ? 0 : Math.min(page * limit, total);
 
   // Debounce logic cho ô tìm kiếm
   useEffect(() => {
@@ -62,7 +70,7 @@ export default function UserTable() {
       const res = await usersApi.getUsers({ page, limit, search: debouncedSearch });
       setData(res);
     } catch (error) {
-      console.error('Failed to fetch users:', error);
+      adminToast.errorFrom(error, 'Failed to load users.');
     } finally {
       setLoading(false);
     }
@@ -77,9 +85,12 @@ export default function UserTable() {
     const newRole = user.role === Role.ADMIN ? Role.CLIENT : Role.ADMIN;
     try {
       await usersApi.updateUserRole(user.id, { role: newRole });
+      adminToast.success(
+        newRole === Role.ADMIN ? 'User promoted to Admin.' : 'User changed to Client.',
+      );
       fetchUsers();
     } catch (error) {
-      alert('Permission update error!');
+      adminToast.errorFrom(error, 'Failed to update user role.');
     }
   };
 
@@ -88,9 +99,10 @@ export default function UserTable() {
     try {
       // Giả sử UserProfile có trường isActive (nếu chưa có trong type, bạn cần thêm vào auth.apis.ts)
       await usersApi.toggleUserStatus(user.id, { isActive: !user.isActive });
+      adminToast.success(user.isActive ? 'User locked.' : 'User unlocked.');
       fetchUsers();
     } catch (error) {
-      alert('Status update error!');
+      adminToast.errorFrom(error, 'Failed to update user status.');
     }
   };
 
@@ -99,9 +111,10 @@ export default function UserTable() {
     if (!confirm('Are you sure you want to disable this user?')) return;
     try {
       await usersApi.deleteUser(id);
+      adminToast.success('User deleted.');
       fetchUsers();
     } catch (error) {
-      alert('User deletion error!');
+      adminToast.errorFrom(error, 'Failed to delete user.');
     }
   };
 
@@ -210,32 +223,40 @@ export default function UserTable() {
             )}
           </TableBody>
         </Table>
-      </div>
 
-      {/* Pagination Controls */}
-      {data && data.totalPages > 1 && (
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1 || loading}
-          >
-            Previous
-          </Button>
-          <div className="text-sm text-muted-foreground font-medium">
-            Page {page} / {data.totalPages}
+        <div className="flex flex-col gap-3 border-t border-border bg-muted/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">
+            {total === 0
+              ? 'No users'
+              : `Showing ${rangeStart}–${rangeEnd} of ${total} users`}
+            {totalPages > 1 ? (
+              <span className="text-muted-foreground/80"> · Page {page} of {totalPages}</span>
+            ) : null}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1 || loading}
+              className="rounded-lg"
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages || loading || total === 0}
+              className="rounded-lg"
+            >
+              Next
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
-            disabled={page === data.totalPages || loading}
-          >
-            Next
-          </Button>
         </div>
-      )}
+      </div>
     </div>
   );
 }

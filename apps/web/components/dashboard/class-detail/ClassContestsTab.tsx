@@ -44,6 +44,7 @@ import {
 import { format } from 'date-fns';
 import { Contest, contestsApi, CreateContestDto, UpdateContestDto } from '@/services/contest.apis';
 import { Problem, problemsApi } from '@/services/problem.apis';
+import { dateTimeLocalToUtcIso, utcIsoToDateTimeLocal } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
@@ -174,6 +175,8 @@ export default function ClassContestsTab({
       const payload = {
         ...formData,
         classRoomId: classId,
+        startAt: formData.startAt ? dateTimeLocalToUtcIso(formData.startAt) : undefined,
+        endAt: formData.endAt ? dateTimeLocalToUtcIso(formData.endAt) : undefined,
       };
 
       if (editingContestId) {
@@ -202,8 +205,8 @@ export default function ClassContestsTab({
       setFormData({
         title: data.title,
         description: data.description ?? '',
-        startAt: data.startAt.slice(0, 16),
-        endAt: data.endAt.slice(0, 16),
+        startAt: utcIsoToDateTimeLocal(data.startAt),
+        endAt: utcIsoToDateTimeLocal(data.endAt),
         testFeedbackPolicy: data.testFeedbackPolicy,
         maxSubmissionsPerProblem: data.maxSubmissionsPerProblem ?? undefined,
         password: '',
@@ -289,22 +292,29 @@ export default function ClassContestsTab({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'RUNNING':
-        return <Badge className="bg-emerald-500 hover:bg-emerald-600">Running</Badge>;
+        return (
+          <Badge className="rounded border border-emerald-400/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 font-semibold">
+            Running
+          </Badge>
+        );
+
       case 'ENDED':
         return (
-          <Badge variant="secondary" className="bg-red-500 hover:bg-red-500 text-white">
+          <Badge className="rounded border border-rose-400/40 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 font-semibold">
             Ended
           </Badge>
         );
+
       case 'PUBLISHED':
         return (
-          <Badge variant="outline" className="border-blue-200 text-blue-600 bg-blue-50">
+          <Badge className="rounded border border-sky-400/40 bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 font-semibold">
             Published
           </Badge>
         );
+
       default:
         return (
-          <Badge variant="destructive" className="">
+          <Badge className="rounded border border-slate-400/40 bg-slate-500/10 text-slate-300 hover:bg-slate-500/20 font-semibold">
             {status}
           </Badge>
         );
@@ -319,7 +329,7 @@ export default function ClassContestsTab({
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
         <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-gray-500 font-medium">Loading contests...</p>
+        <p className="text-muted-foreground font-medium">Loading contests...</p>
       </div>
     );
   }
@@ -328,8 +338,8 @@ export default function ClassContestsTab({
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Class Contests</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-4xl font-extrabold tracking-tight text-white">Class Contests</h2>
+          <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
             {isOwner
               ? 'Manage and track contests for your students.'
               : 'View contests available for your class.'}
@@ -338,7 +348,7 @@ export default function ClassContestsTab({
         {canManage && (
           <Button
             onClick={handleShowCreate}
-            className="cursor-pointer bg-black hover:bg-gray-800 text-white shadow-lg transition-all hover:scale-105 active:scale-95"
+            className="cursor-pointer bg-primary text-white shadow-lg transition-all hover:scale-105 active:scale-95"
           >
             <Plus className="w-4 h-4 mr-2" />
             New Contest
@@ -346,9 +356,9 @@ export default function ClassContestsTab({
         )}
       </div>
 
-      <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-gray-100 shadow-sm w-full max-w-md">
+      <div className="flex items-center gap-2 bg-card p-1 rounded-xl border border-border shadow-sm w-full max-w-md">
         <div className="pl-3">
-          <Search className="w-4 h-4 text-gray-400" />
+          <Search className="w-4 h-4 text-muted-foreground" />
         </div>
         <Input
           placeholder="Search contests by title or description..."
@@ -359,7 +369,7 @@ export default function ClassContestsTab({
       </div>
 
       {showCreateForm && (
-        <Card className="border-2 border-black/5 shadow-2xl overflow-hidden animate-in slide-in-from-top-4 duration-300">
+        <Card className="border-2 border-black/5 bg-card shadow-2xl overflow-hidden animate-in slide-in-from-top-4 duration-300">
           <CardHeader className="border-b">
             <CardTitle className="text-xl">
               {editingContestId ? 'Edit Contest' : 'Create New Contest'}
@@ -369,7 +379,7 @@ export default function ClassContestsTab({
           <CardContent className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-sm font-semibold">
+                <Label htmlFor="title" className="text-sm font-semibold text-muted-foreground">
                   Title
                 </Label>
                 <Input
@@ -380,14 +390,14 @@ export default function ClassContestsTab({
                     if (errors.title) setErrors({ ...errors, title: '' });
                   }}
                   placeholder="e.g. Midterm Programming Contest"
-                  className={`rounded-lg border-gray-200 focus:border-black transition-colors ${errors.title ? 'border-red-500 bg-red-50' : ''}`}
+                  className={`rounded-lg border-border resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none ${errors.title ? 'border-destructive bg-destructive/10' : ''}`}
                 />
                 {errors.title && (
                   <p className="text-xs text-red-500 mt-1 font-medium">{errors.title}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-semibold">
+                <Label htmlFor="password" className="text-sm font-semibold text-muted-foreground">
                   Access Password (optional)
                 </Label>
                 <Input
@@ -396,13 +406,13 @@ export default function ClassContestsTab({
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder="Leave empty for public access"
-                  className="rounded-lg border-gray-200 focus:border-black transition-colors"
+                  className="rounded-lg border-border resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-sm font-semibold">
+              <Label htmlFor="description" className="text-sm font-semibold text-muted-foreground">
                 Description
               </Label>
               <Textarea
@@ -410,14 +420,17 @@ export default function ClassContestsTab({
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="What is this contest about?"
-                className="min-h-[100px] rounded-lg border-gray-200 focus:border-black transition-colors resize-none"
+                className={`min-h-[100px] rounded-lg border-border resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none ${errors.description ? 'border-destructive bg-destructive/10' : ''}`}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="startAt" className="text-sm font-semibold flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-gray-400" /> Start Time
+                <Label
+                  htmlFor="startAt"
+                  className="text-sm font-semibold text-muted-foreground flex items-center gap-2"
+                >
+                  <Clock className="w-4 h-4 text-muted-foreground" /> Start Time
                 </Label>
                 <Input
                   id="startAt"
@@ -430,15 +443,18 @@ export default function ClassContestsTab({
                     setFormData({ ...formData, startAt: e.target.value });
                     if (errors.startAt) setErrors({ ...errors, startAt: '' });
                   }}
-                  className={`rounded-lg border-gray-200 focus:border-black transition-colors ${errors.startAt ? 'border-red-500 bg-red-50' : ''}`}
+                  className={`rounded-lg border-border resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none ${errors.startAt ? 'border-destructive bg-destructive/10' : ''}`}
                 />
                 {errors.startAt && (
                   <p className="text-xs text-red-500 mt-1 font-medium">{errors.startAt}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="endAt" className="text-sm font-semibold flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-gray-400" /> End Time
+                <Label
+                  htmlFor="endAt"
+                  className="text-sm font-semibold text-muted-foreground flex items-center gap-2"
+                >
+                  <Clock className="w-4 h-4 text-muted-foreground" /> End Time
                 </Label>
                 <Input
                   id="endAt"
@@ -451,7 +467,7 @@ export default function ClassContestsTab({
                     setFormData({ ...formData, endAt: e.target.value });
                     if (errors.endAt) setErrors({ ...errors, endAt: '' });
                   }}
-                  className={`rounded-lg border-gray-200 focus:border-black transition-colors ${errors.endAt ? 'border-red-500 bg-red-50' : ''}`}
+                  className={`rounded-lg border-border resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none ${errors.endAt ? 'border-destructive bg-destructive/10' : ''}`}
                 />
                 {errors.endAt && (
                   <p className="text-xs text-red-500 mt-1 font-medium">{errors.endAt}</p>
@@ -461,7 +477,10 @@ export default function ClassContestsTab({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="testFeedbackPolicy" className="text-sm font-semibold">
+                <Label
+                  htmlFor="testFeedbackPolicy"
+                  className="text-sm font-semibold text-muted-foreground"
+                >
                   Feedback Policy
                 </Label>
                 <Select
@@ -470,7 +489,7 @@ export default function ClassContestsTab({
                     setFormData({ ...formData, testFeedbackPolicy: value })
                   }
                 >
-                  <SelectTrigger className="rounded-lg border-gray-200 focus:ring-black">
+                  <SelectTrigger className="rounded-lg border-border focus:ring-black">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -480,7 +499,7 @@ export default function ClassContestsTab({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="maxSubmissions" className="text-sm font-semibold">
+                <Label htmlFor="maxSubmissions" className="text-sm font-semibold text-muted-foreground">
                   Max Submissions per Problem
                 </Label>
                 <Input
@@ -494,14 +513,14 @@ export default function ClassContestsTab({
                     })
                   }
                   placeholder="Unlimited"
-                  className="rounded-lg border-gray-200 focus:border-black transition-colors"
+                  className="rounded-lg border-border focus:border-black transition-colors"
                 />
               </div>
             </div>
 
-            <div className="space-y-4 pt-4 border-t border-gray-100">
+            <div className="space-y-4 pt-4 border-t border-gray-600">
               <div>
-                <Label className="text-base font-bold flex items-center gap-2 text-gray-900">
+                <Label className="text-base font-semibold flex items-center gap-2 text-white">
                   <Trophy className="w-4 h-4 text-amber-500" /> Contest Problems
                 </Label>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -510,7 +529,7 @@ export default function ClassContestsTab({
               </div>
 
               <div
-                className={`border rounded-xl p-6 bg-gray-50/20 space-y-6 ${errors.problems ? 'border-red-300 bg-red-50/20' : 'border-gray-200'}`}
+                className={`border rounded-xl p-6 bg-card space-y-6 ${errors.problems ? 'border-destructive/50 bg-destructive/10' : 'border-gray-600'}`}
               >
                 {errors.problems && (
                   <p className="text-sm text-red-500 font-medium">{errors.problems}</p>
@@ -518,37 +537,35 @@ export default function ClassContestsTab({
 
                 <div className="space-y-4">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       placeholder="Search available problems..."
                       value={problemSearch}
                       onChange={(e) => setProblemSearch(e.target.value)}
-                      className="pl-10 bg-white border-gray-200 focus-visible:ring-black"
+                      className="pl-10 rounded-lg border-border resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
                     />
                   </div>
 
                   {filteredAvailableProblems.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto bg-white rounded-xl">
-                      {filteredAvailableProblems.map((problem) => (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto bg-card rounded-xl">
+                      {filteredAvailableProblems.map((problem, index) => (
                         <div
                           key={problem.id}
-                          className="flex items-center justify-between p-3 border border-gray-300 rounded-xl hover:bg-gray-50/80 group cursor-pointer transition-colors"
+                          className="flex items-center justify-between p-3 border border-primary/70 text-primary hover:text-white rounded-xl hover:bg-primary group cursor-pointer transition-colors"
                           onClick={() => addProblemToContest(problem.id)}
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-700 font-bold text-xs shrink-0">
-                              {problem.difficulty[0]}
+                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-primary font-bold text-xs shrink-0">
+                              {index + 1}
                             </div>
-                            <span className="text-sm font-medium text-gray-700 truncate">
-                              {problem.title}
-                            </span>
+                            <span className="text-sm font-medium truncate">{problem.title}</span>
                           </div>
-                          <Plus className="w-4 h-4 text-gray-400 group-hover:text-black shrink-0" />
+                          <Plus className="w-4 h-4shrink-0" />
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-400 italic">
+                    <p className="text-xs text-muted-foreground italic">
                       {problems.length === 0
                         ? 'No problems available in this classroom. Please create some problems first.'
                         : 'All classroom problems have been added to this contest.'}
@@ -556,13 +573,13 @@ export default function ClassContestsTab({
                   )}
                 </div>
 
-                <div className="space-y-3 pt-6 border-t border-gray-200">
-                  <Label className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                <div className="space-y-3 pt-6 border-t border-border">
+                  <Label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                     Included Problems ({formData.problems?.length || 0})
                   </Label>
                   <div className="space-y-2">
                     {formData.problems?.length === 0 ? (
-                      <div className="text-center py-8 bg-white rounded-xl border border-dashed border-gray-200 text-gray-400 text-sm">
+                      <div className="text-center py-8 bg-card rounded-xl border border-dashed border-border text-muted-foreground text-sm">
                         No problems added yet
                       </div>
                     ) : (
@@ -571,24 +588,24 @@ export default function ClassContestsTab({
                         return (
                           <div
                             key={cp.problemId}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:border-gray-300 transition-colors"
+                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-card border border-border rounded-xl shadow-sm hover:border-primary/70 transition-colors"
                           >
                             <div className="flex items-center gap-3">
-                              <span className="text-xs font-bold text-gray-400 shrink-0">
+                              <span className="text-xs font-bold text-primary shrink-0">
                                 #{idx + 1}
                               </span>
                               <div className="flex flex-col min-w-0">
-                                <span className="font-semibold text-gray-900 truncate">
+                                <span className="font-semibold text-primary truncate">
                                   {problem?.title || 'Unknown Problem'}
                                 </span>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-muted-foreground">
                                   {problem?.difficulty} • {cp.points} points
                                 </span>
                               </div>
                             </div>
                             <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0">
                               <div className="flex items-center gap-2">
-                                <Label className="text-xs font-bold text-gray-400">Points</Label>
+                                <Label className="text-xs font-bold text-muted-foreground">Points</Label>
                                 <Input
                                   type="number"
                                   min={0}
@@ -598,7 +615,7 @@ export default function ClassContestsTab({
                                     next[idx].points = Number(e.target.value);
                                     setFormData({ ...formData, problems: next });
                                   }}
-                                  className="w-20 h-8 rounded-lg text-center border-gray-200 focus-visible:ring-black focus-visible:ring-offset-0 focus:border-black"
+                                  className="w-20 h-8 rounded-lg border-border resize-none transition-colors focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
                                 />
                               </div>
                               <Button
@@ -622,15 +639,17 @@ export default function ClassContestsTab({
 
             <div className="flex justify-end items-center gap-3 pt-4 border-t">
               <Button
-                variant="ghost"
+                size="lg"
+                variant="outline"
                 onClick={handleCancel}
-                className="hover:bg-gray-100 cursor-pointer"
+                className="border border-primary text-primary hover:text-primary cursor-pointer text-[13px]"
               >
                 Cancel
               </Button>
               <Button
+                size="lg"
                 onClick={handleSave}
-                className="bg-black cursor-pointer hover:bg-gray-800 text-white px-8"
+                className="bg-primary text-white cursor-pointer hover:bg-primary/70 px-8 text-[13px]"
               >
                 {editingContestId ? 'Save Changes' : 'Create Contest'}
               </Button>
@@ -639,16 +658,16 @@ export default function ClassContestsTab({
         </Card>
       )}
 
-      <Card className="border-none shadow-xl bg-white/50 backdrop-blur-sm overflow-hidden">
+      <Card className="border-none shadow-xl bg-card backdrop-blur-sm overflow-hidden">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent border-b">
-                <TableHead className="py-4 font-bold text-black">Contest Title</TableHead>
-                <TableHead className="py-4 font-bold text-black">Status</TableHead>
-                <TableHead className="py-4 font-bold text-black">Timeline</TableHead>
-                <TableHead className="py-4 font-bold text-black">Problems</TableHead>
-                <TableHead className="py-4 font-bold text-black text-right pr-12">
+                <TableHead className="py-4 font-bold text-primary">Contest Title</TableHead>
+                <TableHead className="py-4 font-bold text-primary">Status</TableHead>
+                <TableHead className="py-4 font-bold text-primary">Timeline</TableHead>
+                <TableHead className="py-4 font-bold text-primary">Problems</TableHead>
+                <TableHead className="py-4 font-bold text-primary text-right pr-12">
                   Actions
                 </TableHead>
               </TableRow>
@@ -658,7 +677,7 @@ export default function ClassContestsTab({
                 <TableRow>
                   <TableCell colSpan={5} className="h-64 text-center">
                     <div className="flex flex-col items-center justify-center space-y-3 opacity-40">
-                      <Calendar className="w-12 h-12" />
+                      <Calendar className="w-12 h-12 text-primary" />
                       <p className="text-lg font-medium">No contests found</p>
                     </div>
                   </TableCell>
@@ -667,11 +686,11 @@ export default function ClassContestsTab({
                 filteredContests.map((contest) => (
                   <TableRow
                     key={contest.id}
-                    className="group hover:bg-black/[0.02] transition-colors"
+                    className="group hover:bg-transparent transition-colors"
                   >
                     <TableCell className="py-4">
                       <div className="flex flex-col">
-                        <span className="font-semibold text-gray-900 group-hover:text-black transition-colors">
+                        <span className="font-semibold text-primary group-hover:text-muted-foreground transition-colors">
                           {contest.title}
                         </span>
                         <span className="text-xs text-muted-foreground line-clamp-1">
@@ -682,19 +701,19 @@ export default function ClassContestsTab({
                     <TableCell className="py-4">{getStatusBadge(contest.status)}</TableCell>
                     <TableCell className="py-4">
                       <div className="flex flex-col text-xs space-y-1">
-                        <span className="flex items-center gap-1.5 text-gray-600">
+                        <span className="flex items-center gap-1.5 text-gray-300">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                           {format(new Date(contest.startAt), 'MMM d, h:mm a')}
                         </span>
-                        <span className="flex items-center gap-1.5 text-gray-600">
+                        <span className="flex items-center gap-1.5 text-muted-foreground">
                           <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
                           {format(new Date(contest.endAt), 'MMM d, h:mm a')}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell className="py-4">
-                      <div className="flex items-center gap-1.5 font-medium">
-                        <Trophy className="w-3.5 h-3.5 text-amber-500" />
+                      <div className="flex items-center gap-1.5 font-medium text-amber-500">
+                        <Trophy className="w-3.5 h-3.5 " />
                         {contest.problems?.length || 0}
                       </div>
                     </TableCell>
@@ -705,24 +724,24 @@ export default function ClassContestsTab({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="rounded-full hover:bg-black/5"
+                              className="rounded-full text-primary hover:bg-gray-800 cursor-pointer"
                             >
                               <MoreVertical className="w-4 h-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent
                             align="end"
-                            className="w-48 p-1 rounded-xl shadow-xl border-gray-100"
+                            className="w-48 p-1 rounded-xl shadow-xl border-slate-800"
                           >
                             <DropdownMenuItem
                               onClick={() => handleNavigateContest(contest.id)}
-                              className="rounded-lg gap-2 cursor-pointer py-2"
+                              className="rounded-lg gap-2 cursor-pointer py-2 focus:bg-primary mb-1"
                             >
                               <Eye className="w-4 h-4" /> View Details
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleEdit(contest)}
-                              className="rounded-lg gap-2 cursor-pointer py-2"
+                              className="rounded-lg gap-2 cursor-pointer py-2 focus:bg-primary mb-1"
                             >
                               <Edit2 className="w-4 h-4" /> Edit Contest
                             </DropdownMenuItem>

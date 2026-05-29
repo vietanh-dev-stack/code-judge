@@ -10,8 +10,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { UserAvatar } from '@/components/shared/user-avatar';
 import { useAuthStore } from '@/store/auth-store';
-import { LogOut, User, LayoutDashboard } from 'lucide-react';
+import { LogOut, User, LayoutDashboard, Shield } from 'lucide-react';
 import Link from 'next/link';
 
 export function UserNav() {
@@ -26,13 +27,11 @@ export function UserNav() {
           variant="ghost"
           className="relative h-10 w-10 rounded-full bg-muted border border-border p-0 overflow-hidden cursor-pointer"
         >
-          <div className="flex h-full w-full items-center justify-center rounded-full bg-primary/10 text-primary font-semibold uppercase">
-            {user.image ? (
-              <img src={user.image} alt={user.name} className="h-full w-full object-cover" />
-            ) : (
-              user.name.charAt(0)
-            )}
-          </div>
+          <UserAvatar
+            name={user.name}
+            imageUrl={user.image}
+            fallbackClassName="bg-primary/10 text-primary uppercase"
+          />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -50,6 +49,14 @@ export function UserNav() {
               <span>Dashboard</span>
             </Link>
           </DropdownMenuItem>
+          {user.role === 'ADMIN' && (
+            <DropdownMenuItem asChild>
+              <Link href="/admin/dashboard" className="cursor-pointer">
+                <Shield className="mr-2 h-4 w-4" />
+                <span>Admin dashboard</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem asChild>
             <Link href="/dashboard/profile" className="cursor-pointer">
               <User className="mr-2 h-4 w-4" />

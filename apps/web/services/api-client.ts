@@ -4,6 +4,7 @@
  */
 
 import { getPublicCoreUrl } from '@/lib/public-config';
+import { clearLocalAppStorage } from '@/lib/clear-local-storage';
 
 const BASE_URL = getPublicCoreUrl();
 
@@ -80,6 +81,7 @@ export async function apiFetch<T = unknown>(path: string, options: FetchOptions 
   };
 
   let res = await doFetch();
+  let sessionRefreshFailed = false;
 
   if (res.status === 401) {
     // Nếu đang ở client, chúng ta có thể thử refresh
@@ -94,6 +96,8 @@ export async function apiFetch<T = unknown>(path: string, options: FetchOptions 
         options.headers = Object.fromEntries(newHeaders.entries());
       }
       res = await doFetch();
+    } else {
+      sessionRefreshFailed = true;
     }
   }
 
@@ -111,6 +115,23 @@ export async function apiFetch<T = unknown>(path: string, options: FetchOptions 
         window.location.href = '/locked';
       }
       // Return a promise that never resolves to stop execution of the caller
+      return new Promise(() => {});
+    }
+
+    if (
+      typeof window !== 'undefined' &&
+      res.status === 401 &&
+      sessionRefreshFailed &&
+      !window.location.pathname.startsWith('/login')
+    ) {
+      clearLocalAppStorage();
+      const loginUrl = new URL('/login', window.location.origin);
+      loginUrl.searchParams.set('sessionExpired', '1');
+      loginUrl.searchParams.set(
+        'callbackUrl',
+        window.location.pathname + window.location.search,
+      );
+      window.location.replace(loginUrl.toString());
       return new Promise(() => {});
     }
 

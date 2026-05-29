@@ -4,8 +4,19 @@ import { Worker } from 'bullmq';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient, SubmissionStatus } from '@prisma/client';
 import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
+import { processCalibrateLimitsJob } from './calibrate-limits-job';
 import { processGoldenVerifyJob } from './golden-verify-job';
-import { GOLDEN_VERIFY_QUEUE_NAME, JUDGE_SUBMISSIONS_QUEUE_NAME } from './lib/constants';
+import {
+  CALIBRATE_LIMITS_QUEUE_NAME,
+  GOLDEN_VERIFY_QUEUE_NAME,
+  JUDGE_SUBMISSIONS_QUEUE_NAME,
+} from './lib/constants';
+import { resolveEffectiveLimits } from './lib/effective-limits';
+import { getJudge0LanguageId, runJudge0Submission } from './lib/judge0-client';
+import {
+  caseVerdictToSubmissionStatus,
+  resolveCaseVerdict,
+} from './lib/judge0-verdict';
 import { getOptionalEnv, getRequiredEnv } from './lib/env';
 import { createWorkerLogger } from './lib/logger';
 import { sleep } from './lib/sleep';
@@ -15,22 +26,8 @@ import fs from 'fs/promises';
 import path from 'path';
 import { execa } from 'execa';
 import { v4 as uuidv4 } from 'uuid';
-import axios from 'axios';
-import { parseJudge0MemoryMb, parseJudge0RuntimeMs } from './lib/judge0-metrics';
 
 const log = createWorkerLogger('worker');
-
-/** Judge0 trả `memory` theo kilobyte; DB/UI dùng MB (làm tròn lên để tránh 0MB với bài nhẹ). */
-function judge0MemoryKbToMb(memoryKb: number | null | undefined): number {
-  if (memoryKb == null || memoryKb <= 0) return 0;
-  return Math.max(1, Math.ceil(memoryKb / 1024));
-}
-
-/** Judge0 trả `time` theo giây (float). */
-function judge0TimeSecToMs(timeSec: number | null | undefined): number {
-  if (timeSec == null || timeSec < 0) return 0;
-  return Math.round(timeSec * 1000);
-}
 
 // Redis: BullMQ yêu cầu `maxRetriesPerRequest: null` khi dùng làm connection.
 const redisUrl = getOptionalEnv(process.env.REDIS_URL, 'redis://localhost:6379');
@@ -69,6 +66,9 @@ const lambdaClient = needsLambdaClient
 
 const useLambdaForJudge =
   judgeEngine === 'lambda' && Boolean(judgeLambdaFunctionName) && Boolean(lambdaClient);
+/** Python golden-verify: mặc định local trên worker (tránh Lambda timeout/cold start khi dev). */
+const goldenVerifyPreferLocalPython =
+  getOptionalEnv(process.env.GOLDEN_VERIFY_PREFER_LOCAL_PYTHON, 'true').toLowerCase() !== 'false';
 const judge0Url = getOptionalEnv(process.env.JUDGE0_URL, 'http://localhost:2358');
 
 if (judgeEngine === 'lambda' && !useLambdaForJudge) {
@@ -89,30 +89,6 @@ function tryParseJson(value: unknown) {
     return JSON.parse(value);
   } catch {
     return value;
-  }
-}
-
-function getJudge0LanguageId(language: string): number {
-  const normalized = language?.trim().toUpperCase();
-  switch (normalized) {
-    case 'PYTHON':
-      return 71;
-    case 'JAVASCRIPT':
-    case 'JS':
-      return 63;
-    case 'JAVA':
-      return 62;
-    case 'CPP':
-    case 'C++':
-      return 53;
-    case 'GO':
-    case 'GOLANG':
-      return 60;
-    case 'RUST':
-    case 'RS':
-      return 73;
-    default:
-      return 71; // Default to Python
   }
 }
 
@@ -211,6 +187,22 @@ async function processSubmission(job: any) {
     throw new Error(`Problem not found: ${existingSubmission.problemId}`);
   }
 
+  let contestTimeOverride: number | null = null;
+  let contestMemOverride: number | null = null;
+  if (existingSubmission.contestId) {
+    const contestProblem = await prisma.contestProblem.findUnique({
+      where: {
+        contestId_problemId: {
+          contestId: existingSubmission.contestId,
+          problemId: existingSubmission.problemId,
+        },
+      },
+      select: { timeLimitMsOverride: true, memoryLimitMbOverride: true },
+    });
+    contestTimeOverride = contestProblem?.timeLimitMsOverride ?? null;
+    contestMemOverride = contestProblem?.memoryLimitMbOverride ?? null;
+  }
+
   const testCasesToRun = existingSubmission.isDryRun
     ? problem.testCases.filter((tc) => !tc.isHidden)
     : problem.testCases;
@@ -277,7 +269,7 @@ async function processSubmission(job: any) {
     let maxMemory = 0;
     let combinedLogs = '';
     let finalStatus: SubmissionStatus = SubmissionStatus.Accepted;
-    const stopEarly = false;
+    let stopEarly = false;
 
     const languageId = getJudge0LanguageId(existingSubmission.language as string);
     job.updateProgress({ pct: 20, log: `Judging with Judge0 (ID: ${languageId})...` });
@@ -302,71 +294,37 @@ async function processSubmission(job: any) {
       }
 
       try {
-        const encodedCode = Buffer.from(sourceCode).toString('base64');
-        const encodedInput = Buffer.from(testCase.input || '').toString('base64');
-        const encodedExpected = Buffer.from(testCase.expectedOutput || '').toString('base64');
+        const limits = resolveEffectiveLimits({
+          problemTimeLimitMs: problem.timeLimitMs,
+          problemMemoryLimitMb: problem.memoryLimitMb,
+          contestTimeLimitMsOverride: contestTimeOverride,
+          contestMemoryLimitMbOverride: contestMemOverride,
+          language: existingSubmission.language as string,
+        });
 
-        const cpuTimeLimitSec = problem.timeLimitMs / 1000;
-        const wallTimeLimitSec = Math.max(cpuTimeLimitSec + 2, 5);
+        const run = await runJudge0Submission({
+          judge0Url,
+          sourceCode,
+          languageId,
+          stdin: testCase.input || '',
+          expectedOutput: testCase.expectedOutput || '',
+          cpuTimeLimitSec: limits.cpuTimeLimitSec,
+          wallTimeLimitSec: limits.wallTimeLimitSec,
+          memoryLimitKb: limits.memoryLimitKb,
+        });
 
-        // 1. Submit
-        const submitResponse = await axios.post(`${judge0Url}/submissions?base64_encoded=true`, {
-          source_code: encodedCode,
-          language_id: languageId,
-          stdin: encodedInput,
-          expected_output: encodedExpected,
-          cpu_time_limit: cpuTimeLimitSec,
-          wall_time_limit: wallTimeLimitSec,
-          cpu_extra_time: 0.5,
-          memory_limit: problem.memoryLimitMb * 1024,
-        }, { timeout: 10000 });
-
-        const { token } = submitResponse.data;
-
-        // 2. Poll
-        let result: any = null;
-        let pollRetries = 30;
-        while (pollRetries > 0) {
-          const pollResponse = await axios.get(`${judge0Url}/submissions/${token}?base64_encoded=true`, { timeout: 5000 });
-          if (pollResponse.data.status.id > 2) {
-            result = pollResponse.data;
-            break;
-          }
-          await sleep(1000);
-          pollRetries--;
-        }
-
-        if (!result) throw new Error(`Judge0 result timeout (token: ${token})`);
-
-        // 3. Process Result
-        const stdout = result.stdout ? Buffer.from(result.stdout, 'base64').toString('utf-8') : '';
-        const stderr = result.stderr ? Buffer.from(result.stderr, 'base64').toString('utf-8') : '';
-        const compileOut = result.compile_output ? Buffer.from(result.compile_output, 'base64').toString('utf-8') : '';
-        
-        const runtimeMs = parseJudge0RuntimeMs(result, cpuTimeLimitSec);
-        const memoryMb = parseJudge0MemoryMb(result);
+        const stdout = run.stdout;
+        const stderr = run.stderr;
+        const runtimeMs = run.runtimeMs;
+        const memoryMb = run.memoryMb;
         maxTime = Math.max(maxTime, runtimeMs);
         maxMemory = Math.max(maxMemory, memoryMb);
 
         const normalizedActual = normalizeOutput(stdout);
         const normalizedExpected = normalizeOutput(testCase.expectedOutput || '');
         const isMatch = normalizedActual === normalizedExpected;
-
-        let caseStatus: string = 'Wrong';
-        const sId = result.status?.id;
-
-        if (sId === 3) {
-          caseStatus = 'Accepted';
-        } else if (sId === 5) {
-          caseStatus = 'TimeLimitExceeded';
-        } else {
-          caseStatus = 'Wrong';
-        }
-
-        // Ưu tiên kết quả so khớp output nếu không phải bị quá thời gian
-        if (isMatch && caseStatus !== 'TimeLimitExceeded') {
-          caseStatus = 'Accepted';
-        }
+        const caseVerdict = resolveCaseVerdict(run.verdict, isMatch);
+        const caseStatus = caseVerdict;
 
         const passed = caseStatus === 'Accepted';
         if (passed) totalScore += testCase.weight;
@@ -377,15 +335,25 @@ async function processSubmission(job: any) {
           runtimeMs,
           memoryMb,
           output: stdout,
-          error: stderr || null,
+          error: stderr || run.compileOutput || null,
           passed,
           isHidden: testCase.isHidden,
         });
 
-        // Cập nhật trạng thái tổng quát
-        if (caseStatus === 'TimeLimitExceeded') {
-          finalStatus = SubmissionStatus.TimeLimitExceeded;
-          break; // TLE thì vẫn nên dừng để tiết kiệm tài nguyên
+        const submissionCaseStatus = caseVerdictToSubmissionStatus(caseVerdict);
+        if (
+          submissionCaseStatus === 'TimeLimitExceeded' ||
+          submissionCaseStatus === 'MemoryLimitExceeded'
+        ) {
+          finalStatus = submissionCaseStatus as SubmissionStatus;
+          stopEarly = true;
+        } else if (submissionCaseStatus === 'CompilationError') {
+          finalStatus = SubmissionStatus.CompilationError;
+          stopEarly = true;
+        } else if (submissionCaseStatus === 'RuntimeError') {
+          if (finalStatus === SubmissionStatus.Accepted) {
+            finalStatus = SubmissionStatus.RuntimeError;
+          }
         } else if (!passed && finalStatus === SubmissionStatus.Accepted) {
           finalStatus = SubmissionStatus.Wrong;
         }
@@ -476,6 +444,14 @@ async function processSubmission(job: any) {
       let logs = '';
       let hasError = false;
 
+      const lambdaLimits = resolveEffectiveLimits({
+        problemTimeLimitMs: problem.timeLimitMs,
+        problemMemoryLimitMb: problem.memoryLimitMb,
+        contestTimeLimitMsOverride: contestTimeOverride,
+        contestMemoryLimitMbOverride: contestMemOverride,
+        language: existingSubmission.language as string,
+      });
+
       const payloadObj = {
         submissionId,
         userId: existingSubmission.userId,
@@ -484,8 +460,8 @@ async function processSubmission(job: any) {
         language: (existingSubmission.language as string).toLowerCase(),
         code: sourceCode,
         sourceCodeObjectKey: existingSubmission.sourceCodeObjectKey,
-        timeLimit: problem.timeLimitMs,
-        memoryLimitMb: problem.memoryLimitMb,
+        timeLimit: lambdaLimits.timeLimitMs,
+        memoryLimitMb: lambdaLimits.memoryLimitMb,
         bucket: getOptionalEnv(process.env.MINIO_BUCKET, 'codejudge'),
         testCases: testCasesToRun.map((testCase: any) => ({
           id: testCase.id,
@@ -669,7 +645,12 @@ async function main() {
 
   const goldenWorker = new Worker(
     GOLDEN_VERIFY_QUEUE_NAME,
-    (job) => processGoldenVerifyJob(job, { lambdaClient, lambdaFunctionName }),
+    (job) =>
+      processGoldenVerifyJob(job, {
+        lambdaClient,
+        lambdaFunctionName,
+        preferLocalPython: goldenVerifyPreferLocalPython,
+      }),
     {
       connection,
       concurrency: 5,
@@ -684,9 +665,28 @@ async function main() {
     log.error(`golden-verify failed job=${job?.id} err=${err?.message}`);
   });
 
+  const calibrateWorker = new Worker(
+    CALIBRATE_LIMITS_QUEUE_NAME,
+    (job) =>
+      processCalibrateLimitsJob(job, {
+        prisma,
+        judge0Url: judge0Url || 'http://localhost:2358',
+      }),
+    { connection, concurrency: 2 },
+  );
+
+  calibrateWorker.on('completed', (job) => {
+    log.info(`calibrate-limits completed job=${job?.id}`);
+  });
+
+  calibrateWorker.on('failed', (job, err) => {
+    log.error(`calibrate-limits failed job=${job?.id} err=${err?.message}`);
+  });
+
   log.info(
-    `listening queues=${JUDGE_SUBMISSIONS_QUEUE_NAME},${GOLDEN_VERIFY_QUEUE_NAME} redis=${redisUrl} ` +
+    `listening queues=${JUDGE_SUBMISSIONS_QUEUE_NAME},${GOLDEN_VERIFY_QUEUE_NAME},${CALIBRATE_LIMITS_QUEUE_NAME} redis=${redisUrl} ` +
       `submissionJudge=${useLambdaForJudge ? 'lambda' : judge0Url ? 'judge0' : 'stub'} ` +
+      `goldenPython=${goldenVerifyPreferLocalPython ? 'local' : 'lambda-if-configured'} ` +
       `(JUDGE_ENGINE=${judgeEngine})`,
   );
 }

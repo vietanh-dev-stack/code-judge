@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { clearLocalAppStorage } from '@/lib/clear-local-storage';
 import { authApi, type UserProfile } from '@/services/auth.apis';
 
 interface AuthState {
@@ -30,6 +31,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       await authApi.logout();
     } finally {
       set({ user: null, loading: false });
+      clearLocalAppStorage();
       window.location.replace('/login');
     }
   },

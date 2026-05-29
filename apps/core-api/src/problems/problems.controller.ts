@@ -3,6 +3,7 @@ import { Role } from '@prisma/client';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { RequestUser } from '../common/interfaces/request-user.interface';
 import { CurrentUser, Public, Roles } from '../common';
+import { GenerateAiProblemStatementDto } from '../ai-testcase/dto/generate-ai-problem-statement.dto';
 import { GenerateAiTestcaseDto } from '../ai-testcase/dto/generate-ai-testcase.dto';
 import { GenerateAiProjectTestcaseDto } from '../ai-testcase/dto/generate-ai-project-testcase.dto';
 import { AiTestcaseService } from '../ai-testcase/ai-testcase.service';
@@ -10,6 +11,8 @@ import { CreateAdminProblemDto } from './dto/create-admin-problem.dto';
 import { CreateProblemDto } from './dto/create-problem.dto';
 import { UpdateProblemDto } from './dto/update-problem.dto';
 import { AdminProblemsService } from './admin-problems.service';
+import { CalibrateProblemLimitsDto } from './dto/calibrate-problem-limits.dto';
+import { ProblemLimitsService } from './problem-limits.service';
 import { ProblemsService } from './problems.service';
 
 /**
@@ -23,12 +26,17 @@ export class ProblemsController {
     private readonly problemsService: ProblemsService,
     private readonly adminProblemsService: AdminProblemsService,
     private readonly aiTestcaseService: AiTestcaseService,
+    private readonly problemLimitsService: ProblemLimitsService,
   ) {}
 
   @Public()
-  @ApiOperation({ summary: 'Danh sách problem public' })
+  @ApiOperation({
+    summary:
+      'Danh sách problem (kho PUBLIC hoặc theo lớp — classRoomId yêu cầu JWT + enrollment)',
+  })
   @Get()
   async findAll(
+    @Req() req: any,
     @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -38,16 +46,29 @@ export class ProblemsController {
     @Query('tagId') tagId?: string,
     @Query('tagSlug') tagSlug?: string,
   ) {
-    return this.problemsService.findAll({
-      search,
-      page: page ? Number(page) : undefined,
-      limit: limit ? Number(limit) : undefined,
-      classRoomId,
-      difficulty,
-      mode,
-      tagId,
-      tagSlug,
-    });
+    return this.problemsService.findAll(
+      {
+        search,
+        page: page ? Number(page) : undefined,
+        limit: limit ? Number(limit) : undefined,
+        classRoomId,
+        difficulty,
+        mode,
+        tagId,
+        tagSlug,
+      },
+      req,
+    );
+  }
+
+  @ApiBearerAuth('JWT')
+  @ApiOperation({
+    summary:
+      'Tiến độ problem bank của user (toàn bộ bài public, không áp dụng search/difficulty/mode/tag)',
+  })
+  @Get('bank/progress')
+  async getBankProgress(@CurrentUser() user: RequestUser) {
+    return this.problemsService.getBankProgress(user.userId);
   }
 
   @ApiBearerAuth('JWT')
@@ -89,6 +110,15 @@ export class ProblemsController {
   }
 
   @ApiBearerAuth('JWT')
+  @ApiOperation({
+    summary: 'AI sinh đề bài (title, mô tả, statement markdown, ioSpec) từ ý tưởng — chưa lưu DB',
+  })
+  @Post('generate-statement-draft')
+  async generateStatementDraft(@Body() dto: GenerateAiProblemStatementDto) {
+    return this.aiTestcaseService.generateProblemStatement(dto);
+  }
+
+  @ApiBearerAuth('JWT')
   @Roles(Role.ADMIN)
   @ApiOperation({
     summary: 'Sinh bản nháp hidden tests PROJECT (phân tích đề + file test). Chỉ ADMIN.',
@@ -98,11 +128,32 @@ export class ProblemsController {
     return this.aiTestcaseService.generateProjectDraft(dto);
   }
 
+  @ApiBearerAuth('JWT')
+  @ApiOperation({
+    summary:
+      'Đo time/memory limit từ golden solution (Judge0) — gợi ý limit; áp dụng qua PATCH problem',
+  })
+  @Post(':id/calibrate-limits')
+  async calibrateLimits(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestUser,
+    @Body() dto: CalibrateProblemLimitsDto,
+  ) {
+    return this.problemLimitsService.calibrate(id, dto, user);
+  }
+
   @Public()
-  @ApiOperation({ summary: 'Lấy chi tiết problem theo id' })
+  @ApiOperation({
+    summary:
+      'Lấy chi tiết problem theo id (PUBLIC guest OK; lớp/CONTEST_ONLY cần JWT; CONTEST_ONLY cần contestId)',
+  })
   @Get(':id')
-  async findOne(@Param('id') id: string, @Req() req: any) {
-    return this.problemsService.findById(id, req);
+  async findOne(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Query('contestId') contestId?: string,
+  ) {
+    return this.problemsService.findById(id, req, { contestId });
   }
 
   @ApiBearerAuth('JWT')

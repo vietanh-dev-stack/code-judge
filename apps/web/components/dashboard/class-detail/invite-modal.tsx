@@ -35,7 +35,7 @@ export default function InviteModal({ classRoomId }: InviteModalProps) {
       }
 
       try {
-        const res = await searchUsers(email);
+        const res = await searchUsers(email, classRoomId);
         setSuggestions(res);
         setShowSuggest(true);
       } catch (err) {

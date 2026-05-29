@@ -1,18 +1,14 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Inject,
-  Injectable,
-  NotFoundException,
-  ServiceUnavailableException,
-} from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { BadRequestException, Inject, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import type { Queue, QueueEvents } from 'bullmq';
 import { randomUUID } from 'node:crypto';
 import type { RequestUser } from '../common/interfaces/request-user.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { GOLDEN_VERIFY_QUEUE, GOLDEN_VERIFY_QUEUE_EVENTS } from '../queues/tokens';
 import { StorageService } from '../storage/storage.service';
+import {
+  assertCanUseInlineGoldenDraft,
+  assertUserCanManageProblemAiForProblemId,
+} from './ai-testcase-problem-auth.util';
 import { VerifyTestcasesWithGoldenDto } from './dto/verify-testcases-with-golden.dto';
 import { normalizeGoldenVerifyLanguage } from './golden-verify-language.util';
 
@@ -66,9 +62,9 @@ export class AiGoldenVerifyService {
     }
 
     if (inlineGolden) {
-      await this.assertCanUseInlineGolden(user, dto.problemId);
+      await assertCanUseInlineGoldenDraft(user, dto.problemId, this.prisma);
     } else if (dto.problemId) {
-      await this.assertUserCanManageProblemAiForProblemId(dto.problemId, user);
+      await assertUserCanManageProblemAiForProblemId(this.prisma, dto.problemId, user);
     }
 
     let goldenSource: 'inline' | 'database';
@@ -168,8 +164,13 @@ export class AiGoldenVerifyService {
         waitMs,
       )) as GoldenVerifyWorkerPayload;
     } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      const timedOut = /timed out|timeout|stalled/i.test(detail);
+      const hint = timedOut
+        ? 'Job không xong trong thời gian chờ — kiểm tra `npm run dev -w @code-judge/worker`, Redis (REDIS_URL), và Lambda nếu dùng ngôn ngữ không phải Python local.'
+        : 'Đảm bảo worker đang listen queue `golden-verify` cùng Redis với core-api.';
       throw new ServiceUnavailableException(
-        `Worker golden-verify không hoàn tất (đã chạy worker chưa?): ${e instanceof Error ? e.message : String(e)}`,
+        `Worker golden-verify không hoàn tất. ${hint} Chi tiết: ${detail}`,
       );
     }
 
@@ -182,36 +183,4 @@ export class AiGoldenVerifyService {
     };
   }
 
-  private async assertCanUseInlineGolden(user: RequestUser, problemId?: string): Promise<void> {
-    if (user.role === Role.ADMIN) {
-      return;
-    }
-    if (problemId) {
-      await this.assertUserCanManageProblemAiForProblemId(problemId, user);
-      return;
-    }
-    throw new ForbiddenException(
-      'goldenSourceCode: cần tài khoản ADMIN hoặc kèm problemId (chủ đề) để dán mã golden',
-    );
-  }
-
-  private async assertUserCanManageProblemAiForProblemId(
-    problemId: string,
-    user: RequestUser,
-  ): Promise<void> {
-    const problem = await this.prisma.problem.findUnique({
-      where: { id: problemId },
-      select: { id: true, creatorId: true },
-    });
-    if (!problem) {
-      throw new NotFoundException('Problem không tồn tại');
-    }
-    if (user.role === Role.ADMIN) {
-      return;
-    }
-    if (problem.creatorId === null || problem.creatorId === user.userId) {
-      return;
-    }
-    throw new ForbiddenException('Chỉ chủ đề (creator) hoặc admin mới chạy verify trên problem này');
-  }
 }

@@ -121,10 +121,68 @@ chmod +x /root/code-judge/deploy/*.sh
 
 ---
 
+## Redeploy sau conflict migration / đẩy code mới
+
+Repo hiện tại thường chỉ **một** thư mục migration hợp lệ, ví dụ `apps/core-api/prisma/migrations/20260520155227_db_v1/migration.sql`. Trên VPS **không** được giữ thư mục migration cũ/rỗng (gây **P3015**).
+
+### Luồng khuyến nghị
+
+**1. Windows — sync code (không gồm `.env.production`):**
+
+```powershell
+cd C:\Users\ADMIN\Documents\GitHub\code-judge
+.\deploy\sync-to-vps.ps1 -VpsHost VPS_IP -VpsUser root -RemoteDir /root/code-judge
+scp .env.production root@VPS_IP:/root/code-judge/.env.production
+```
+
+**2. VPS — nếu migrate conflict (đổi tên migration, schema đã có):**
+
+```bash
+cd /root/code-judge
+chmod +x deploy/fix-migration-rename-vps.sh
+./deploy/fix-migration-rename-vps.sh
+```
+
+**3. VPS — script redeploy (migrate + build + up):**
+
+```bash
+sed -i 's/\r$//' deploy/redeploy-vps.sh
+chmod +x deploy/redeploy-vps.sh
+RUN_SEED=0 BUILD_WEB_NOCACHE=1 ./deploy/redeploy-vps.sh
+# Sau khi đã chạy fix-migration-rename-vps.sh:
+RUN_SEED=0 BUILD_WEB_NOCACHE=1 SKIP_MIGRATE=1 ./deploy/redeploy-vps.sh
+```
+
+- `RUN_SEED=0` — DB production đã có dữ liệu, không chạy seed lại.
+- `BUILD_WEB_NOCACHE=1` — sau khi đổi `NEXT_PUBLIC_CORE_URL` (tránh Mixed Content `:8080`).
+
+### Nếu migrate báo schema đã tồn tại (đổi tên migration trên Git)
+
+DB có thể đã apply migration cũ (`20260519064259_migrate_v11`) trong khi repo chỉ còn `20260520155227_db_v1`:
+
+```bash
+# Xem lịch sử migration trong DB
+docker compose -f docker-compose.production.yml --env-file .env.production exec -T app-db \
+  psql -U codejudge -d codejudge -c 'SELECT migration_name FROM "_prisma_migrations";'
+```
+
+- **DB test, được xóa:** `docker compose ... down` rồi xóa volume `code-judge-prod_app_postgres_data` (mất dữ liệu) → chạy lại `./deploy/redeploy-vps.sh`.
+- **Giữ DB, schema đã đủ:** chỉ khi chắc schema khớp `schema.prisma`, có thể đánh dấu migration mới đã apply (cần chạy trong container migrate image): `npx prisma migrate resolve --applied 20260520155227_db_v1` — cẩn thận, chỉ dùng khi hiểu rõ drift.
+
+### Cgroup v1 + isolate thật (tuỳ chọn, sau khi stack ổn)
+
+Hướng dẫn chi tiết từng bước (GRUB, compose, smoke test, rollback): **[docs/JUDGE0-CGROUP-V1-MIGRATION.md](../docs/JUDGE0-CGROUP-V1-MIGRATION.md)**.
+
+Tóm tắt: reboot VPS với `systemd.unified_cgroup_hierarchy=0` → `JUDGE0_USE_CGROUP=true` trong `.env.production` → `./deploy/judge0-isolate-up.sh` (hoặc `./deploy/redeploy-vps.sh`).
+
+Xem thêm mục **Judge0: Internal Error, cgroup** bên dưới. Không bắt buộc cho web/login/API.
+
+---
+
 ## Cập nhật phiên bản (vẫn không GitHub)
 
 1. Trên Windows: chạy lại `.\deploy\sync-to-vps.ps1`
-2. Trên VPS: `cd ~/code-judge && ./deploy/production-up.sh`
+2. Trên VPS: `cd ~/code-judge && ./deploy/redeploy-vps.sh` hoặc `./deploy/production-up.sh`
 
 Nếu chỉ đổi `.env.production` (không đổi code):
 
@@ -133,6 +191,30 @@ docker compose -f docker-compose.production.yml --env-file .env.production up -d
 ```
 
 Đổi `NEXT_PUBLIC_CORE_URL` → bắt buộc rebuild web (`production-up.sh` đã có `--build`).
+
+**Chỉ đổi `deploy/nginx/conf.d/code-judge.conf`** (vd. tăng timeout API cho AI):
+
+```bash
+cd /root/code-judge   # hoặc ~/code-judge
+docker compose -f docker-compose.production.yml --env-file .env.production exec nginx nginx -t
+docker compose -f docker-compose.production.yml --env-file .env.production exec nginx nginx -s reload
+```
+
+Cấu hình hiện tại: `proxy_read_timeout 300s` trên `api.*` và cổng `:8080` (tránh **504** khi `generate-test-cases-draft` / AI chậm).
+
+---
+
+## Lỗi `504 Gateway Timeout` khi sinh testcase AI
+
+**Triệu chứng:** `POST .../generate-test-cases-draft` → **504**, trình duyệt `Failed to fetch`.
+
+**Nguyên nhân:** Nginx mặc định chờ upstream ~**60s**; core-api gọi LLM đồng bộ (retry + fallback) có thể lâu hơn.
+
+**Xử lý:**
+
+1. Sync repo (đã có `proxy_*_timeout 300s` trong `deploy/nginx/conf.d/code-judge.conf`) → reload nginx (lệnh ở mục trên).
+2. Trên VPS `.env.production`: `OPENAI_API_KEY` (fallback), `AI_DEFAULT_MODEL_GOOGLE=gemini-2.0-flash` (ít 503 hơn).
+3. `docker compose ... up -d --force-recreate core-api` sau khi sửa env.
 
 ---
 
@@ -185,7 +267,7 @@ docker compose -f docker-compose.production.yml --env-file .env.production up -d
 docker exec cj-prod-judge0-worker ls -la /usr/local/bin/isolate /usr/bin/isolate /usr/bin/sudo
 ```
 
-**Cách B (isolate thật, sandbox mạnh hơn):** Trên VPS host bật cgroup v1 rồi reboot ([Judge0 #543](https://github.com/judge0/judge0/issues/543)):
+**Cách B (isolate thật, sandbox mạnh hơn):** Xem **[docs/JUDGE0-CGROUP-V1-MIGRATION.md](../docs/JUDGE0-CGROUP-V1-MIGRATION.md)**. Tóm tắt — trên VPS host bật cgroup v1 rồi reboot ([Judge0 #543](https://github.com/judge0/judge0/issues/543)):
 
 ```bash
 # /etc/default/grub — thêm vào GRUB_CMDLINE_LINUX_DEFAULT:
@@ -289,6 +371,8 @@ docker exec cj-prod-nginx nginx -s reload
 |------|--------|
 | `ubuntu-24.04-setup.sh` | Cài Docker + UFW (+ swap nếu RAM thấp) |
 | `production-up.sh` | `docker compose up -d --build` |
+| `redeploy-vps.sh` | Migrate + dọn thư mục migration + build/up (sau sync) |
+| `fix-migration-rename-vps.sh` | Sửa conflict migrate_v11 → db_v1 (giữ dữ liệu DB) |
 | `production-down.sh` | Dừng stack |
 | `sync-to-vps.ps1` | Đồng bộ code từ Windows → VPS (tar + scp) |
 | `rsync-exclude.txt` | Danh sách loại trừ cho rsync |

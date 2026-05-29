@@ -81,8 +81,9 @@ services:
   # ─── Judge0 ─────────────────────────────────────────────────────────────
   # Ubuntu 24.04 mặc định dùng cgroup v2 → isolate thật lỗi:
   #   "Cannot write /sys/fs/cgroup/memory/box-*" / Internal Error, stdout null.
-  # Mặc định production: JUDGE0_USE_CGROUP=false + isolate_stub (chấm được, sandbox yếu hơn isolate thật).
-  # Isolate thật: trên VPS host bật cgroup v1 (xem deploy/README.md § Judge0 cgroup) rồi đặt JUDGE0_USE_CGROUP=true và bỏ mount stub.
+  # JUDGE0_USE_CGROUP=false → mount isolate_stub (mặc định an toàn trên Ubuntu 24 cgroup v2).
+  # JUDGE0_USE_CGROUP=true → deploy tự thêm docker-compose.production-judge0-isolate.yml (isolate thật).
+  # Host cần cgroup v1: docs/JUDGE0-CGROUP-V1-MIGRATION.md — ./deploy/judge0-isolate-up.sh
   judge0-db:
     <<: *linux_amd64
     image: postgres:16-alpine
@@ -236,11 +237,18 @@ services:
       MINIO_REGION: ${MINIO_REGION:-us-east-1}
       # Bắt buộc với upload từ trình duyệt: URL host phải truy cập được từ máy user (Docker Desktop: http://localhost:9000). VPS: http://IP_or_domain:9000 — ghi đè trong .env.production
       MINIO_PUBLIC_BASE_URL: ${MINIO_PUBLIC_BASE_URL:-http://localhost:9000}
+      MINIO_ALLOW_PUBLIC_READ: ${MINIO_ALLOW_PUBLIC_READ:-false}
+      AUTH_LOGIN_MAX_ATTEMPTS: ${AUTH_LOGIN_MAX_ATTEMPTS:-10}
+      AUTH_LOGIN_WINDOW_SECONDS: ${AUTH_LOGIN_WINDOW_SECONDS:-900}
+      AUTH_REGISTER_MAX_PER_IP: ${AUTH_REGISTER_MAX_PER_IP:-5}
+      AUTH_REGISTER_WINDOW_SECONDS: ${AUTH_REGISTER_WINDOW_SECONDS:-3600}
+      HELMET_ENABLED: ${HELMET_ENABLED:-true}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       GOOGLE_GENERATIVE_AI_API_KEY: ${GOOGLE_GENERATIVE_AI_API_KEY:-}
       AI_DEFAULT_PROVIDER: ${AI_DEFAULT_PROVIDER:-google}
       AI_DEFAULT_MODEL_OPENAI: ${AI_DEFAULT_MODEL_OPENAI:-gpt-4.1-mini}
-      AI_DEFAULT_MODEL_GOOGLE: ${AI_DEFAULT_MODEL_GOOGLE:-gemini-2.5-flash}
+      AI_DEFAULT_MODEL_GOOGLE: ${AI_DEFAULT_MODEL_GOOGLE:-gemini-2.5-flash-lite}
+      AI_FALLBACK_MODELS_GOOGLE: ${AI_FALLBACK_MODELS_GOOGLE:-gemini-3.1-flash-lite,gemini-3-flash,gemini-2.5-flash}
       AI_PROJECT_PROMPT_VERSION: ${AI_PROJECT_PROMPT_VERSION:-ai-project-testcase-v1}
       AI_MAX_TOKENS: ${AI_MAX_TOKENS:-10000}
       AI_FAST_MODE: ${AI_FAST_MODE:-auto}
@@ -296,6 +304,9 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       AWS_LAMBDA_FUNCTION_NAME: ${AWS_LAMBDA_FUNCTION_NAME:-}
       JUDGE_LAMBDA_FUNCTION_NAME: ${JUDGE_LAMBDA_FUNCTION_NAME:-}
+      JUDGE0_MEMORY_ENFORCED: ${JUDGE0_MEMORY_ENFORCED:-false}
+      LIMIT_TIME_SAFETY: ${LIMIT_TIME_SAFETY:-2}
+      LIMIT_MEM_SAFETY: ${LIMIT_MEM_SAFETY:-1.5}
     networks:
       - cj-internal
     depends_on:
@@ -311,6 +322,7 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         NEXT_PUBLIC_CORE_URL: ${NEXT_PUBLIC_CORE_URL:?Set NEXT_PUBLIC_CORE_URL}
+        NEXT_PUBLIC_COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
     container_name: cj-prod-web
     restart: unless-stopped
     logging: *default-logging

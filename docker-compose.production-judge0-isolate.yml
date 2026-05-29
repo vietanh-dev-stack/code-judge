@@ -1,0 +1,29 @@
+# Override: Judge0 isolate thật (không mount isolate_stub; giữ sudo_stub — root trong container không có sudoers).
+# Bật khi host đã cgroup v1: JUDGE0_USE_CGROUP=true trong .env.production
+#   docker compose -f docker-compose.production.yml -f docker-compose.production-judge0-isolate.yml ...
+#
+# Xem docs/JUDGE0-CGROUP-V1-MIGRATION.md
+
+services:
+  judge0-server:
+    # cgroupns: host — cần Docker Compose plugin mới; VPS cũ bỏ dòng này (cgroup v1 host đủ sau GRUB)
+    environment:
+      JUDGE0_USE_CGROUP: "true"
+    volumes: !reset
+      - judge0_box:/box
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - ./scripts/sudo_stub.sh:/usr/bin/sudo:ro
+
+  judge0-worker:
+    environment:
+      JUDGE0_USE_CGROUP: "true"
+    volumes: !reset
+      - judge0_box:/box
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - ./scripts/sudo_stub.sh:/usr/bin/sudo:ro
+
+  worker:
+    environment:
+      JUDGE0_MEMORY_ENFORCED: ${JUDGE0_MEMORY_ENFORCED:-true}
+      LIMIT_TIME_SAFETY: ${LIMIT_TIME_SAFETY:-2}
+      LIMIT_MEM_SAFETY: ${LIMIT_MEM_SAFETY:-1.5}

@@ -20,9 +20,14 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { BullMqModule } from '../queues/bullmq.module';
+import { UsersModule } from '../users/users.module';
+import { AuthRateLimitService } from './auth-rate-limit.service';
 
 @Module({
   imports: [
+    UsersModule,
+    BullMqModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -48,6 +53,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
   controllers: [AuthController],
   providers: [
     AuthService,
+    AuthRateLimitService,
     JwtStrategy,
     GoogleStrategy,
     { provide: APP_GUARD, useClass: JwtAuthGuard },

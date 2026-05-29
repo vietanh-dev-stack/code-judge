@@ -5,6 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { authApi, ApiRequestError } from '@/services/auth.apis';
 import { useAuthStore } from '@/store/auth-store';
+import {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_POLICY_MESSAGE_EN,
+  validatePasswordPolicyClient,
+} from '@/lib/password-policy';
 
 const BG_IMAGE =
   'https://w0.peakpx.com/wallpaper/925/598/HD-wallpaper-technology-programming-code-python-programming-language.jpg';
@@ -24,7 +29,13 @@ export default function RegisterPage() {
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp');
+      setError('Passwords do not match');
+      return;
+    }
+
+    const policyError = validatePasswordPolicyClient(password);
+    if (policyError) {
+      setError(policyError);
       return;
     }
 
@@ -36,12 +47,16 @@ export default function RegisterPage() {
       // Đợi lấy thông tin user xong
       await refreshUser();
 
-      // Lấy state mới nhất từ Zustand
       const user = useAuthStore.getState().user;
+      if (!user) {
+        setError(
+          'Account was created but the session could not be loaded. Try logging in, or check that the API URL and cookies (CORS) are configured correctly.',
+        );
+        return;
+      }
 
-      // Bẻ lái dựa theo Role
-      if (user?.role === 'ADMIN') {
-        router.push('/admin/users');
+      if (user.role === 'ADMIN') {
+        router.push('/admin/dashboard');
       } else {
         router.push('/dashboard');
       }
@@ -49,7 +64,7 @@ export default function RegisterPage() {
       if (err instanceof ApiRequestError) {
         setError(err.body.message);
       } else {
-        setError('Đã có lỗi xảy ra. Vui lòng thử lại.');
+        setError('Something went wrong. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -62,12 +77,12 @@ export default function RegisterPage() {
       <div className="relative flex w-full flex-col justify-center px-8 py-20 lg:w-1/2 lg:px-20 xl:px-28">
         {/* Brand */}
         <div className="absolute left-8 top-8 flex items-center gap-2.5 lg:left-20 xl:left-28">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white">
             <svg
               className="h-5 w-5 text-white"
               fill="none"
               viewBox="0 0 24 24"
-              strokeWidth={1.5}
+              strokeWidth={2}
               stroke="currentColor"
             >
               <path
@@ -77,15 +92,15 @@ export default function RegisterPage() {
               />
             </svg>
           </div>
-          <Link href="/" className="text-lg font-semibold tracking-tight text-slate-900">
+          <Link href="/" className="text-lg font-semibold tracking-tight text-white">
             Code Judge
           </Link>
         </div>
 
         <div className="mx-auto w-full max-w-sm">
           {/* Heading */}
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Create an account</h1>
-          <p className="mt-1.5 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold tracking-tight text-primary">Create an account</h1>
+          <p className="mt-1.5 text-sm text-slate-300">
             Enter your information below to create your account
           </p>
 
@@ -101,7 +116,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="register-name"
-                className="mb-1.5 block text-sm font-medium text-slate-700"
+                className="mb-1.5 block text-sm font-medium text-primary"
               >
                 Full name
               </label>
@@ -112,7 +127,7 @@ export default function RegisterPage() {
                 minLength={2}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="John Doe"
+                placeholder="Code Judge"
                 className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none transition-colors focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
               />
             </div>
@@ -120,7 +135,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="register-email"
-                className="mb-1.5 block text-sm font-medium text-slate-700"
+                className="mb-1.5 block text-sm font-medium text-primary"
               >
                 Email
               </label>
@@ -130,7 +145,7 @@ export default function RegisterPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="m@example.com"
+                placeholder="code-judge@example.com"
                 className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none transition-colors focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
               />
             </div>
@@ -138,7 +153,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="register-password"
-                className="mb-1.5 block text-sm font-medium text-slate-700"
+                className="mb-1.5 block text-sm font-medium text-primary"
               >
                 Password
               </label>
@@ -146,18 +161,19 @@ export default function RegisterPage() {
                 id="register-password"
                 type="password"
                 required
-                minLength={6}
+                minLength={PASSWORD_MIN_LENGTH}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 6 characters"
+                placeholder="Enter your password"
                 className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none transition-colors focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
               />
+              <p className="mt-1 text-xs text-slate-400">{PASSWORD_POLICY_MESSAGE_EN}</p>
             </div>
 
             <div>
               <label
                 htmlFor="register-confirm"
-                className="mb-1.5 block text-sm font-medium text-slate-700"
+                className="mb-1.5 block text-sm font-medium text-primary"
               >
                 Confirm password
               </label>
@@ -165,7 +181,7 @@ export default function RegisterPage() {
                 id="register-confirm"
                 type="password"
                 required
-                minLength={6}
+                minLength={PASSWORD_MIN_LENGTH}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Re-enter your password"
@@ -176,7 +192,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="cursor-pointer flex w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 active:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+              className="cursor-pointer flex w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary/80 active:bg-primary-active disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? (
                 <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -239,7 +255,7 @@ export default function RegisterPage() {
             Already have an account?{' '}
             <Link
               href="/login"
-              className="font-medium text-slate-900 underline-offset-4 hover:underline"
+              className="font-medium text-primary underline-offset-4 hover:underline"
             >
               Login
             </Link>

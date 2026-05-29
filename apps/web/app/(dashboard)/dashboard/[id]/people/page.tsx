@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
-import InviteModal from '@/components/dashboard/class-detail/invite-modal';
 import PersonItem from '@/components/dashboard/class-detail/person-item';
 import { useClassDetail } from '@/components/dashboard/class-detail/class-detail-context';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
@@ -65,11 +64,11 @@ export default function PeoplePage() {
     <div className="max-w-3xl mx-auto space-y-10 mt-8 px-4">
       {/* Teachers */}
       <section>
-        <div className="border-b pb-2 mb-2">
-          <h2 className="text-3xl text-[#1967d2]">Teachers</h2>
+        <div className="border-b border-border pb-3 mb-4">
+          <h2 className="text-2xl font-extrabold text-primary flex items-center gap-2">Teachers</h2>
         </div>
 
-        <div className="divide-y">
+        <div className="divide-y divide-border/60">
           {data.teachers.map((t: any) => (
             <PersonItem key={t.id} name={t.name} avatarUrl={t.image} />
           ))}
@@ -78,17 +77,17 @@ export default function PeoplePage() {
 
       {/* Students */}
       <section>
-        <div className="flex justify-between border-b pb-2 mb-2">
-          <h2 className="text-3xl text-[#1967d2]">Students</h2>
+        <div className="flex justify-between items-center border-b border-border pb-3 mb-4">
+          <h2 className="text-2xl font-extrabold text-primary flex items-center gap-2">Students</h2>
 
           <div className="flex gap-4 items-center">
-            <span className="text-sm text-[#1967d2]">{data.students.length} students</span>
-
-            {canManage && <InviteModal classRoomId={classRoomId} />}
+            <span className="text-xs text-primary border-primary font-semibold bg-primary/20 px-3 py-1 rounded-full border">
+              {data.students.length} student{data.students.length > 1 ? 's' : ''}
+            </span>
           </div>
         </div>
 
-        <div className="divide-y">
+        <div className="divide-y divide-border/60">
           {data.students.map((s: any) => (
             <PersonItem
               key={s.id}

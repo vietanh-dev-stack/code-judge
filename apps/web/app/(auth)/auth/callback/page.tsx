@@ -28,7 +28,12 @@ export default function AuthCallbackPage() {
         // Load current user
         await useAuthStore.getState().refreshUser();
 
-        router.replace('/dashboard');
+        const user = useAuthStore.getState().user;
+        if (user?.role === 'ADMIN') {
+          router.replace('/admin/dashboard');
+        } else {
+          router.replace('/dashboard');
+        }
       } catch {
         router.replace('/login');
       }

@@ -1,8 +1,21 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ProblemMode, Prisma, Role } from '@prisma/client';
-import { EnvKeys } from '../common';
+import {
+  buildAiLlmPlans,
+  EnvKeys,
+  resolveAiDefaultModel,
+  resolveAiDefaultProvider,
+  type AiLlmPlan,
+} from '../common';
 import type { RequestUser } from '../common/interfaces/request-user.interface';
+import { ProblemStorageAccessService } from '../storage/problem-storage-access.service';
 import { buildAiGeneratedTestcaseObjectKeys } from '../storage/storage-key.builder';
 import { StorageService } from '../storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -12,16 +25,50 @@ import {
   GeneratedTestcaseOutput,
 } from './ai-testcase.prompt';
 import {
+  enrichProblemStatementWithSuggestedLimits,
+  enrichTestcaseDraftWithSuggestedLimits,
+} from './ai-suggested-limits.util';
+import {
+  buildTestgenBriefMessages,
+  testgenBriefSchema,
+  type TestgenBrief,
+} from './ai-testcase-brief.prompt';
+import {
+  FAST_MODE_AUTO_MAX_CASES,
+  FAST_MODE_AUTO_MAX_STATEMENT,
+  LONG_STATEMENT_THRESHOLD,
+} from './ai-testcase-generation.constants';
+import {
+  buildPlaceholderWarningMessage,
+  findPlaceholderCaseIndexes,
+  problemNeedsFullIo,
+} from './ai-testcase-io-quality.util';
+import {
   AI_PROJECT_PROMPT_VERSION_DEFAULT,
   buildAiProjectTestcaseMessages,
   generatedProjectTestcaseSchema,
   GeneratedProjectTestcaseOutput,
 } from './ai-project-testcase.prompt';
+import { GenerateAiProblemStatementDto } from './dto/generate-ai-problem-statement.dto';
 import { GenerateAiTestcaseDto } from './dto/generate-ai-testcase.dto';
+import {
+  AI_PROBLEM_STATEMENT_PROMPT_VERSION,
+  buildAiProblemStatementMessages,
+  generatedProblemStatementSchema,
+  type GeneratedProblemStatementOutput,
+} from './ai-problem-statement.prompt';
 import { GenerateAiProjectTestcaseDto } from './dto/generate-ai-project-testcase.dto';
 import { GenerateAndSaveAiTestcaseDto } from './dto/generate-and-save-ai-testcase.dto';
 import { QuickGenerateAiTestcaseDto } from './dto/quick-generate-ai-testcase.dto';
+import { AnalyzeGoldenVerifyFailuresDto } from './dto/analyze-golden-verify-failures.dto';
 import { ExplainProjectTestFileDto } from './dto/explain-project-test-file.dto';
+import { assertCanAnalyzeGoldenVerifyFailures } from './ai-testcase-problem-auth.util';
+import {
+  buildGoldenVerifyFailureDiagnoseMessages,
+  goldenVerifyFailureDiagnosisSchema,
+  type GoldenVerifyFailureDiagnosis,
+} from './golden-verify-failure-diagnose.prompt';
+import { reconcileGoldenVerifyFailureDiagnosis } from './golden-verify-diagnosis-reconcile.util';
 import { TestGenerateProjectSampleDto } from './dto/test-generate-project-sample.dto';
 import {
   validateGeneratedProjectTestcase,
@@ -51,12 +98,35 @@ export type ExplainProjectTestFileResult = {
   explanation?: string;
 };
 
-interface GenerateDraftResult {
+export type AnalyzeGoldenVerifyFailuresResult = {
+  provider: 'openai' | 'google';
+  model: string;
+  structured: GoldenVerifyFailureDiagnosis | null;
+  parseError?: string;
+  rawPreview?: string;
+};
+
+export interface GenerateDraftResult {
   provider: 'openai' | 'google';
   model: string;
   promptVersion: string;
   raw: string;
   parsed: GeneratedTestcaseOutput | null;
+  parseError?: string;
+  statementCharCount?: number;
+  generationMode?: 'direct' | 'summarized';
+  truncationSuspected?: boolean;
+  maxTokensUsed?: number;
+  longStatementWarning?: boolean;
+  placeholderWarnings?: string[];
+}
+
+export interface GenerateProblemStatementResult {
+  provider: 'openai' | 'google';
+  model: string;
+  promptVersion: string;
+  raw: string;
+  parsed: GeneratedProblemStatementOutput | null;
   parseError?: string;
 }
 
@@ -88,7 +158,69 @@ export class AiTestcaseService {
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly problemStorageAccess: ProblemStorageAccessService,
   ) {}
+
+  async generateProblemStatement(
+    input: GenerateAiProblemStatementDto,
+  ): Promise<GenerateProblemStatementResult> {
+    const topic = input.topic?.trim() ?? '';
+    if (!topic) {
+      throw new BadRequestException('topic không được trống');
+    }
+
+    const primaryProvider = input.provider ?? resolveAiDefaultProvider(this.config);
+    const primaryModel = input.model ?? resolveAiDefaultModel(this.config, primaryProvider);
+    const maxTokens = Math.min(
+      Math.max(Number(this.config.get<string>(EnvKeys.AI_MAX_TOKENS) ?? 4096), 4096),
+      16384,
+    );
+    const temperature = Number(this.config.get<string>(EnvKeys.AI_TEMPERATURE) ?? 0.3);
+
+    const messages = buildAiProblemStatementMessages({ ...input, topic });
+    const plans = buildAiLlmPlans(this.config, {
+      provider: primaryProvider,
+      model: primaryModel,
+    });
+
+    let text: string;
+    let usedProvider: 'openai' | 'google';
+    let usedModel: string;
+    try {
+      const run = await this.runLlmPlans(plans, messages, temperature, maxTokens, 2);
+      text = run.text;
+      usedProvider = run.provider;
+      usedModel = run.model;
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new ServiceUnavailableException(detail);
+    }
+
+    let parsed: GeneratedProblemStatementOutput | null = null;
+    let parseError: string | undefined;
+    try {
+      parsed = this.parseProblemStatementOutput(text);
+      if (parsed) {
+        const limits = enrichProblemStatementWithSuggestedLimits(parsed);
+        parsed = {
+          ...parsed,
+          suggestedTimeLimitMs: limits.suggestedTimeLimitMs,
+          suggestedMemoryLimitMb: limits.suggestedMemoryLimitMb,
+        };
+      }
+    } catch (error) {
+      parseError = error instanceof Error ? error.message : 'Unknown parse error';
+    }
+
+    return {
+      provider: usedProvider,
+      model: usedModel,
+      promptVersion: AI_PROBLEM_STATEMENT_PROMPT_VERSION,
+      raw: text,
+      parsed,
+      parseError,
+    };
+  }
 
   async quickGenerate(input: QuickGenerateAiTestcaseDto): Promise<GenerateDraftResult> {
     return this.generateDraft({
@@ -105,123 +237,286 @@ export class AiTestcaseService {
   }
 
   async generateDraft(input: GenerateAiTestcaseDto): Promise<GenerateDraftResult> {
-    // Fast mode trades output richness for lower latency.
-    // It disables fallback provider and lowers creativity to reduce malformed JSON risk.
-    const fastMode = this.isFastModeEnabled();
-    const primaryProvider = input.provider ?? this.getDefaultProvider();
-    const primaryModel = input.model ?? this.getDefaultModel(primaryProvider);
-    const promptVersion = this.config.get<string>(EnvKeys.AI_PROMPT_VERSION) ?? 'ai-testcase-v1';
+    const statementCharCount = input.statement.length;
+    const longStatement = statementCharCount > LONG_STATEMENT_THRESHOLD;
     const requestedCases = Math.min(Math.max(input.maxTestCases ?? 10, 1), 25);
-    const configuredMaxTokens = Number(this.config.get<string>(EnvKeys.AI_MAX_TOKENS) ?? 4096);
-    /** Floor scales with testcase count so Gemini/OpenAI JSON is not cut mid-object. */
-    const tokenFloor = 1100 + requestedCases * 320;
-    const outputCap = fastMode ? 8192 : 16384;
-    const maxTokens = Math.min(Math.max(configuredMaxTokens, tokenFloor), outputCap);
+    const fastMode = this.resolveFastModeEnabled(statementCharCount, requestedCases);
+    const needsFullIo =
+      input.preferFullIoOutput === true ||
+      problemNeedsFullIo(input.statement, input.ioSpec);
+    const compactOutput = input.preferCompactOutput === true && !needsFullIo;
+
+    const primaryProvider = input.provider ?? resolveAiDefaultProvider(this.config);
+    const primaryModel = input.model ?? resolveAiDefaultModel(this.config, primaryProvider);
+    const promptVersion = this.config.get<string>(EnvKeys.AI_PROMPT_VERSION) ?? 'ai-testcase-v1';
+
+    let generationMode: 'direct' | 'summarized' = 'direct';
+    let testgenBrief: TestgenBrief | undefined;
+
+    if (longStatement) {
+      testgenBrief = await this.extractTestgenBrief(input, primaryProvider, primaryModel);
+      generationMode = testgenBrief ? 'summarized' : 'direct';
+    }
+
+    const messageOptions = {
+      testgenBrief,
+      statementExcerpt: longStatement ? input.statement.slice(0, 600) : undefined,
+      omitExplanations: compactOutput || requestedCases > 6,
+      compactOutput,
+      requireFullIo: needsFullIo,
+    };
+
+    const dtoForMessages =
+      longStatement && !testgenBrief
+        ? {
+            ...input,
+            statement: `${input.statement.slice(0, 12_000)}\n\n[... đề đã rút gọn — phần còn lại bỏ qua để sinh testcase ...]`,
+          }
+        : input;
+
+    const messages = buildAiTestcaseMessages(dtoForMessages, promptVersion, messageOptions);
+    const outputCap = this.resolveOutputCap(fastMode, longStatement, needsFullIo);
+    const maxTokens = this.computeTestcaseMaxTokens(
+      input.statement.length,
+      requestedCases,
+      outputCap,
+    );
     const configuredTemperature = Number(this.config.get<string>(EnvKeys.AI_TEMPERATURE) ?? 0.2);
     const temperature = fastMode ? 0 : configuredTemperature;
 
-    const messages = buildAiTestcaseMessages(input, promptVersion);
-    const effectiveMessages = fastMode ? this.buildFastModeMessages(messages) : messages;
-    const fallbackProvider: 'openai' | 'google' = primaryProvider === 'google' ? 'openai' : 'google';
-    const fallbackModel = this.getDefaultModel(fallbackProvider);
+    const genResult = await this.runTestcaseLlmGeneration({
+      messages,
+      fastMode,
+      primaryProvider,
+      primaryModel,
+      temperature,
+      maxTokens,
+      outputCap,
+    });
 
-    const plans: Array<{ provider: 'openai' | 'google'; model: string }> = fastMode
-      ? [{ provider: primaryProvider, model: primaryModel }]
-      : [
-          { provider: primaryProvider, model: primaryModel },
-          { provider: fallbackProvider, model: fallbackModel },
-        ];
+    const maxCases = input.maxTestCases ?? 10;
+    let parseOutcome = await this.parseTestcaseOutputWithRetries({
+      text: genResult.text,
+      usedProvider: genResult.provider,
+      usedModel: genResult.model,
+      messages,
+      maxCases,
+      outputCap,
+      initialMaxTokens: maxTokens,
+      requireFullIo: needsFullIo,
+    });
 
-    // Try provider/model plans in order (primary -> fallback).
-    // Track per-plan failures: HTTP errors throw, but 200 + empty body does not — treat empty as failure
-    // so we can fall back and so the final error lists every attempt (not only the last catch).
-    let text = '';
-    let usedProvider = primaryProvider;
-    let usedModel = primaryModel;
-    const planFailures: string[] = [];
-
-    for (const plan of plans) {
-      try {
-        const chunk = await this.generateWithRetry(
-          plan.provider,
-          plan.model,
-          effectiveMessages,
-          temperature,
-          maxTokens,
-          fastMode ? 1 : 3,
-        );
-        if (!chunk.trim()) {
-          planFailures.push(`${plan.provider}/${plan.model}: empty model response`);
-          continue;
-        }
-        text = chunk;
-        usedProvider = plan.provider;
-        usedModel = plan.model;
-        break;
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        planFailures.push(`${plan.provider}/${plan.model}: ${msg}`);
-      }
-    }
-
-    if (!text.trim()) {
-      const detail = planFailures.length ? planFailures.join(' | ') : 'no attempts recorded';
-      throw new Error(`All AI providers failed. ${detail}`);
-    }
-
-    let parsed: GeneratedTestcaseOutput | null = null;
-    let parseError: string | undefined;
-    try {
-      parsed = this.parseOutput(text);
-      if (parsed.testCases.length > (input.maxTestCases ?? 10)) {
-        throw new Error('AI output exceeds maxTestCases');
-      }
-    } catch (error) {
-      // If output looks truncated (usually maxOutputTokens), retry with a higher
-      // token budget and compact JSON instructions — even in AI_FAST_MODE.
-      if (this.isLikelyTruncatedOutput(text)) {
-        const compactMessages = this.buildCompactRetryMessages(messages);
-        const retryBudget = Math.min(outputCap, Math.max(maxTokens * 2, 5000));
-        try {
-          const retryText = await this.generateWithRetry(
-            usedProvider,
-            usedModel,
-            compactMessages,
-            0,
-            retryBudget,
-            1,
-          );
-          text = retryText;
-          parsed = this.parseOutput(retryText);
-          if (parsed.testCases.length > (input.maxTestCases ?? 10)) {
-            throw new Error('AI output exceeds maxTestCases');
+    let placeholderWarnings: string[] = [];
+    if (parseOutcome.parsed) {
+      const placeholderIndexes = findPlaceholderCaseIndexes(parseOutcome.parsed.testCases);
+      if (placeholderIndexes.length > 0) {
+        placeholderWarnings = [buildPlaceholderWarningMessage(placeholderIndexes)];
+        if (needsFullIo) {
+          const retryOutcome = await this.retryDraftForFullIo({
+            messages,
+            usedProvider: genResult.provider,
+            usedModel: genResult.model,
+            maxCases,
+            outputCap,
+            maxTokens,
+          });
+          if (retryOutcome) {
+            const retryBad = retryOutcome.parsed
+              ? findPlaceholderCaseIndexes(retryOutcome.parsed.testCases)
+              : placeholderIndexes;
+            if (retryBad.length < placeholderIndexes.length) {
+              parseOutcome = retryOutcome;
+              placeholderWarnings =
+                retryBad.length > 0
+                  ? [buildPlaceholderWarningMessage(retryBad)]
+                  : [];
+            }
           }
-          parseError = undefined;
-        } catch (retryError) {
-          parseError = retryError instanceof Error ? retryError.message : 'Unknown parse error';
         }
-      } else {
-        parseError = error instanceof Error ? error.message : 'Unknown parse error';
       }
     }
+
+    const enrichedParsed = parseOutcome.parsed
+      ? enrichTestcaseDraftWithSuggestedLimits(input, parseOutcome.parsed)
+      : null;
 
     return {
-      provider: usedProvider,
-      model: usedModel,
+      provider: genResult.provider,
+      model: genResult.model,
       promptVersion,
-      raw: text,
-      parsed,
-      parseError,
+      raw: parseOutcome.text,
+      parsed: enrichedParsed,
+      parseError: parseOutcome.parseError,
+      statementCharCount,
+      generationMode,
+      truncationSuspected: parseOutcome.truncationSuspected,
+      maxTokensUsed: parseOutcome.maxTokensUsed,
+      longStatementWarning: longStatement,
+      placeholderWarnings: placeholderWarnings.length ? placeholderWarnings : undefined,
     };
   }
 
+  private async extractTestgenBrief(
+    input: GenerateAiTestcaseDto,
+    provider: 'openai' | 'google',
+    model: string,
+  ): Promise<TestgenBrief | undefined> {
+    const briefMessages = buildTestgenBriefMessages({
+      title: input.title,
+      statement: input.statement,
+      ioSpec: input.ioSpec,
+    });
+    const briefTokens = Math.min(4096, 1200 + Math.floor(input.statement.length / 20));
+    const plans = buildAiLlmPlans(this.config, { provider, model });
+    try {
+      const { text: raw } = await this.runLlmPlans(plans, briefMessages, 0.15, briefTokens, 2);
+      const json = JSON.parse(this.extractFirstJsonObject(raw) ?? raw) as unknown;
+      return testgenBriefSchema.parse(json);
+    } catch {
+      return undefined;
+    }
+  }
+
+  private computeTestcaseMaxTokens(
+    statementLength: number,
+    requestedCases: number,
+    outputCap: number,
+  ): number {
+    const configuredMaxTokens = Number(this.config.get<string>(EnvKeys.AI_MAX_TOKENS) ?? 4096);
+    const tokenFloor = 1100 + requestedCases * 320;
+    const inputBonus = Math.min(Math.floor(statementLength / 8), 6000);
+    return Math.min(Math.max(configuredMaxTokens, tokenFloor + inputBonus), outputCap);
+  }
+
+  private resolveOutputCap(
+    fastMode: boolean,
+    longStatement: boolean,
+    needsFullIo = false,
+  ): number {
+    if (fastMode) return needsFullIo ? 12288 : 8192;
+    if (needsFullIo) return 32768;
+    if (longStatement) return 24576;
+    return 16384;
+  }
+
+  private async runTestcaseLlmGeneration(params: {
+    messages: Array<{ role: 'system' | 'user'; content: string }>;
+    fastMode: boolean;
+    primaryProvider: 'openai' | 'google';
+    primaryModel: string;
+    temperature: number;
+    maxTokens: number;
+    outputCap: number;
+  }): Promise<{ text: string; provider: 'openai' | 'google'; model: string }> {
+    const effectiveMessages = params.fastMode
+      ? this.buildFastModeMessages(params.messages)
+      : params.messages;
+    const plans = buildAiLlmPlans(this.config, {
+      provider: params.primaryProvider,
+      model: params.primaryModel,
+      sameProviderOnly: params.fastMode,
+    });
+
+    return this.runLlmPlans(
+      plans,
+      effectiveMessages,
+      params.temperature,
+      params.maxTokens,
+      params.fastMode ? 1 : 3,
+    );
+  }
+
+  private async parseTestcaseOutputWithRetries(params: {
+    text: string;
+    usedProvider: 'openai' | 'google';
+    usedModel: string;
+    messages: Array<{ role: 'system' | 'user'; content: string }>;
+    maxCases: number;
+    outputCap: number;
+    initialMaxTokens: number;
+    requireFullIo?: boolean;
+  }): Promise<{
+    text: string;
+    parsed: GeneratedTestcaseOutput | null;
+    parseError?: string;
+    truncationSuspected: boolean;
+    maxTokensUsed: number;
+  }> {
+    let text = params.text;
+    let maxTokensUsed = params.initialMaxTokens;
+    let truncationSuspected = this.isLikelyTruncatedOutput(text);
+
+    const tryParse = (): GeneratedTestcaseOutput => {
+      const parsed = this.parseOutput(text);
+      if (parsed.testCases.length > params.maxCases) {
+        throw new Error('AI output exceeds maxTestCases');
+      }
+      return parsed;
+    };
+
+    try {
+      return {
+        text,
+        parsed: tryParse(),
+        truncationSuspected: false,
+        maxTokensUsed,
+      };
+    } catch (firstError) {
+      if (!this.isLikelyTruncatedOutput(text)) {
+        return {
+          text,
+          parsed: null,
+          parseError: firstError instanceof Error ? firstError.message : 'Unknown parse error',
+          truncationSuspected: false,
+          maxTokensUsed,
+        };
+      }
+
+      truncationSuspected = true;
+      const compactMessages = params.requireFullIo
+        ? this.buildFullIoRetryMessages(params.messages)
+        : this.buildCompactRetryMessages(params.messages);
+      const retryBudget = Math.min(
+        params.outputCap,
+        Math.max(maxTokensUsed * 2, params.requireFullIo ? 12000 : 6000),
+      );
+      maxTokensUsed = retryBudget;
+      try {
+        const retryText = await this.generateWithRetry(
+          params.usedProvider,
+          params.usedModel,
+          compactMessages,
+          0,
+          retryBudget,
+          1,
+        );
+        text = retryText;
+        return {
+          text,
+          parsed: tryParse(),
+          truncationSuspected: false,
+          maxTokensUsed,
+        };
+      } catch (retryError) {
+        return {
+          text,
+          parsed: null,
+          parseError: retryError instanceof Error ? retryError.message : 'Unknown parse error',
+          truncationSuspected,
+          maxTokensUsed,
+        };
+      }
+    }
+  }
+
   async generateProjectDraft(input: GenerateAiProjectTestcaseDto): Promise<GenerateProjectDraftResult> {
-    const fastMode = this.isFastModeEnabled();
-    const primaryProvider = input.provider ?? this.getDefaultProvider();
-    const primaryModel = input.model ?? this.getDefaultModel(primaryProvider);
+    const statementLen = input.statement?.length ?? 0;
+    const maxTests = Math.min(Math.max(input.maxTestCases ?? 12, 1), 25);
+    const fastMode = this.resolveFastModeEnabled(statementLen, maxTests);
+    const primaryProvider = input.provider ?? resolveAiDefaultProvider(this.config);
+    const primaryModel = input.model ?? resolveAiDefaultModel(this.config, primaryProvider);
     const promptVersion =
       this.config.get<string>(EnvKeys.AI_PROJECT_PROMPT_VERSION) ?? AI_PROJECT_PROMPT_VERSION_DEFAULT;
-    const maxTests = Math.min(Math.max(input.maxTestCases ?? 12, 1), 25);
     const configuredMaxTokens = Number(this.config.get<string>(EnvKeys.AI_MAX_TOKENS) ?? 4096);
     const tokenFloor = 2400 + maxTests * 450;
     const outputCap = fastMode ? 16384 : 32768;
@@ -231,49 +526,24 @@ export class AiTestcaseService {
 
     const messages = buildAiProjectTestcaseMessages(input, promptVersion);
     const effectiveMessages = fastMode ? this.buildFastModeProjectMessages(messages) : messages;
-    const fallbackProvider: 'openai' | 'google' = primaryProvider === 'google' ? 'openai' : 'google';
-    const fallbackModel = this.getDefaultModel(fallbackProvider);
+    const plans = buildAiLlmPlans(this.config, {
+      provider: primaryProvider,
+      model: primaryModel,
+      sameProviderOnly: fastMode,
+    });
 
-    const plans: Array<{ provider: 'openai' | 'google'; model: string }> = fastMode
-      ? [{ provider: primaryProvider, model: primaryModel }]
-      : [
-          { provider: primaryProvider, model: primaryModel },
-          { provider: fallbackProvider, model: fallbackModel },
-        ];
-
-    let text = '';
-    let usedProvider = primaryProvider;
-    let usedModel = primaryModel;
-    const planFailures: string[] = [];
-
-    for (const plan of plans) {
-      try {
-        const chunk = await this.generateWithRetry(
-          plan.provider,
-          plan.model,
-          effectiveMessages,
-          temperature,
-          maxTokens,
-          fastMode ? 1 : 3,
-        );
-        if (!chunk.trim()) {
-          planFailures.push(`${plan.provider}/${plan.model}: empty model response`);
-          continue;
-        }
-        text = chunk;
-        usedProvider = plan.provider;
-        usedModel = plan.model;
-        break;
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        planFailures.push(`${plan.provider}/${plan.model}: ${msg}`);
-      }
-    }
-
-    if (!text.trim()) {
-      const detail = planFailures.length ? planFailures.join(' | ') : 'no attempts recorded';
-      throw new Error(`All AI providers failed. ${detail}`);
-    }
+    const {
+      text: initialText,
+      provider: usedProvider,
+      model: usedModel,
+    } = await this.runLlmPlans(
+      plans,
+      effectiveMessages,
+      temperature,
+      maxTokens,
+      fastMode ? 1 : 3,
+    );
+    let text = initialText;
 
     let parsed: GeneratedProjectTestcaseOutput | null = null;
     let parseError: string | undefined;
@@ -417,8 +687,13 @@ export class AiTestcaseService {
           sample: key,
           label: def.label,
           ok: false,
-          provider: input.provider ?? this.getDefaultProvider(),
-          model: input.model ?? this.getDefaultModel(input.provider ?? this.getDefaultProvider()),
+          provider: input.provider ?? resolveAiDefaultProvider(this.config),
+          model:
+            input.model ??
+            resolveAiDefaultModel(
+              this.config,
+              input.provider ?? resolveAiDefaultProvider(this.config),
+            ),
           promptVersion:
             this.config.get<string>(EnvKeys.AI_PROJECT_PROMPT_VERSION) ??
             AI_PROJECT_PROMPT_VERSION_DEFAULT,
@@ -433,9 +708,111 @@ export class AiTestcaseService {
     };
   }
 
+  async analyzeGoldenVerifyFailures(
+    dto: AnalyzeGoldenVerifyFailuresDto,
+    user: RequestUser,
+  ): Promise<AnalyzeGoldenVerifyFailuresResult> {
+    await assertCanAnalyzeGoldenVerifyFailures(user, dto.problemId, this.prisma);
+
+    const failed = dto.verifyResult.results.filter((r) => !r.passed);
+    if (failed.length === 0) {
+      throw new BadRequestException('verifyResult không có test case FAIL — không cần phân tích');
+    }
+    if (dto.verifyResult.summary.failed < 1) {
+      throw new BadRequestException('summary.failed phải >= 1');
+    }
+
+    let title = dto.title?.trim() ?? '';
+    let statement = dto.statement?.trim() ?? '';
+    const ioSpec = dto.ioSpec?.trim() ?? '';
+
+    if (dto.problemId) {
+      const problem = await this.prisma.problem.findUnique({
+        where: { id: dto.problemId },
+        select: { title: true, statementMd: true, description: true },
+      });
+      if (!problem) {
+        throw new NotFoundException('Problem không tồn tại');
+      }
+      title = problem.title;
+      statement = problem.statementMd?.trim() || problem.description?.trim() || statement;
+    }
+
+    const failedCases = failed.map((r) => {
+      const tc = dto.testCases[r.index];
+      return {
+        index: r.index,
+        input: tc?.input ?? '',
+        expectedOutput: tc?.expectedOutput ?? r.expectedOutput,
+        actualOutput: r.actualOutput,
+        stderr: r.stderr,
+        verdict: r.verdict,
+      };
+    });
+
+    const primaryProvider = dto.provider ?? resolveAiDefaultProvider(this.config);
+    const primaryModel = dto.model ?? resolveAiDefaultModel(this.config, primaryProvider);
+    const plans = buildAiLlmPlans(this.config, {
+      provider: primaryProvider,
+      model: primaryModel,
+    });
+
+    const messages = buildGoldenVerifyFailureDiagnoseMessages({
+      title: title || undefined,
+      statement: statement || undefined,
+      ioSpec: ioSpec || undefined,
+      language: dto.language,
+      failedCases,
+    });
+
+    if (dto.goldenSnippet?.trim()) {
+      const snippet = dto.goldenSnippet.trim().slice(0, 800);
+      messages[1] = {
+        role: 'user',
+        content: `${messages[1].content}\n<golden_snippet_optional>\n${snippet}\n</golden_snippet_optional>`,
+      };
+    }
+
+    let text: string;
+    let provider = primaryProvider;
+    let model = primaryModel;
+    try {
+      const run = await this.runLlmPlans(plans, messages, 0.2, 4096, 2);
+      text = run.text;
+      provider = run.provider;
+      model = run.model;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes('API_KEY') || msg.includes('not set')) {
+        throw new ServiceUnavailableException(msg);
+      }
+      throw e;
+    }
+
+    try {
+      const json = JSON.parse(this.extractFirstJsonObject(text) ?? text) as unknown;
+      const parsed = goldenVerifyFailureDiagnosisSchema.parse(json);
+      const structured = reconcileGoldenVerifyFailureDiagnosis(parsed, failedCases);
+      return { provider, model, structured };
+    } catch (error) {
+      const parseError = error instanceof Error ? error.message : 'Unknown parse error';
+      return {
+        provider,
+        model,
+        structured: null,
+        parseError,
+        rawPreview: text.slice(0, 2000),
+      };
+    }
+  }
+
   async explainProjectTestFile(dto: ExplainProjectTestFileDto): Promise<ExplainProjectTestFileResult> {
-    const provider = dto.provider ?? this.getDefaultProvider();
-    const model = dto.model ?? this.getDefaultModel(provider);
+    const primaryProvider = dto.provider ?? resolveAiDefaultProvider(this.config);
+    const primaryModel = dto.model ?? resolveAiDefaultModel(this.config, primaryProvider);
+    const plans = buildAiLlmPlans(this.config, {
+      provider: primaryProvider,
+      model: primaryModel,
+    });
     const totalLines = Math.max(1, dto.fileContent.split('\n').length);
 
     const messages = buildExplainProjectTestFileMessages({
@@ -445,7 +822,11 @@ export class AiTestcaseService {
       relatedTestsJson: dto.relatedTestsJson,
     });
 
-    const text = await this.generateWithRetry(provider, model, messages, 0.2, 4096, 2);
+    const {
+      text,
+      provider,
+      model,
+    } = await this.runLlmPlans(plans, messages, 0.2, 4096, 2);
 
     try {
       const json = JSON.parse(this.extractFirstJsonObject(text) ?? text) as unknown;
@@ -761,19 +1142,21 @@ export class AiTestcaseService {
       },
     });
 
-    return {
-      problemId,
-      documents: jobs.map((job) => ({
+    const documents = await Promise.all(
+      jobs.map(async (job) => ({
         jobId: job.id,
         uploadedAt: job.createdAt,
         objectKey: job.inputDocObjectKey,
         fileName: job.inputDocFileName,
         contentType: job.inputDocContentType,
         sizeBytes: job.inputDocSizeBytes,
-        viewUrl:
-          job.inputDocUrl ??
-          (job.inputDocObjectKey ? this.storage.getObjectUrl(job.inputDocObjectKey) : null),
+        viewUrl: await this.storage.resolveDisplayUrl(job.inputDocObjectKey, job.inputDocUrl),
       })),
+    );
+
+    return {
+      problemId,
+      documents,
     };
   }
 
@@ -796,30 +1179,14 @@ export class AiTestcaseService {
       throw new NotFoundException('AI generation job not found');
     }
 
-    const problem = await this.prisma.problem.findUnique({
-      where: { id: job.problemId },
-      select: { creatorId: true },
-    });
-    if (!problem) {
-      throw new NotFoundException('Problem not found');
-    }
-
-    const allowed =
-      user.role === Role.ADMIN ||
-      job.createdById === user.userId ||
-      problem.creatorId === user.userId;
-    if (!allowed) {
-      throw new ForbiddenException('Không có quyền tải tài liệu job này');
-    }
+    await this.problemStorageAccess.assertAiJobSharedRead(jobId, user);
 
     if (!job.inputDocObjectKey) {
       throw new NotFoundException('No input document has been attached to this job');
     }
 
-    const downloadUrl = await this.storage.createPresignedDownloadUrl(
-      job.inputDocObjectKey,
-      expiresInSeconds ?? 900,
-    );
+    const ttl = expiresInSeconds ?? 900;
+    const downloadUrl = await this.storage.createPresignedDownloadUrl(job.inputDocObjectKey, ttl);
 
     return {
       jobId: job.id,
@@ -827,9 +1194,9 @@ export class AiTestcaseService {
       fileName: job.inputDocFileName,
       contentType: job.inputDocContentType,
       sizeBytes: job.inputDocSizeBytes,
-      viewUrl: job.inputDocUrl ?? this.storage.getObjectUrl(job.inputDocObjectKey),
+      viewUrl: downloadUrl,
       downloadUrl,
-      expiresInSeconds: expiresInSeconds ?? 900,
+      expiresInSeconds: ttl,
     };
   }
 
@@ -839,6 +1206,40 @@ export class AiTestcaseService {
     throw new ForbiddenException(
       'Chỉ chủ đề (creator) hoặc admin mới có thể chạy AI generate-and-save trên problem này',
     );
+  }
+
+  private async runLlmPlans(
+    plans: AiLlmPlan[],
+    messages: Array<{ role: 'system' | 'user'; content: string }>,
+    temperature: number,
+    maxTokens: number,
+    maxAttemptsPerPlan: number,
+  ): Promise<{ text: string; provider: 'openai' | 'google'; model: string }> {
+    const planFailures: string[] = [];
+
+    for (const plan of plans) {
+      try {
+        const chunk = await this.generateWithRetry(
+          plan.provider,
+          plan.model,
+          messages,
+          temperature,
+          maxTokens,
+          maxAttemptsPerPlan,
+        );
+        if (!chunk.trim()) {
+          planFailures.push(`${plan.provider}/${plan.model}: empty model response`);
+          continue;
+        }
+        return { text: chunk, provider: plan.provider, model: plan.model };
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        planFailures.push(`${plan.provider}/${plan.model}: ${msg}`);
+      }
+    }
+
+    const detail = planFailures.length ? planFailures.join(' | ') : 'no attempts recorded';
+    throw new Error(`All AI providers failed. ${detail}`);
   }
 
   private async generateWithRetry(
@@ -956,6 +1357,27 @@ export class AiTestcaseService {
 
     throw new Error(
       `Failed to parse PROJECT AI output as JSON. Last error: ${
+        lastError instanceof Error ? lastError.message : 'unknown parse error'
+      }`,
+    );
+  }
+
+  private parseProblemStatementOutput(raw: string): GeneratedProblemStatementOutput {
+    const normalized = raw.trim().replace(/^\uFEFF/, '');
+    const candidates = this.collectJsonCandidates(normalized);
+
+    let lastError: unknown;
+    for (const candidate of candidates) {
+      try {
+        const json = JSON.parse(candidate) as unknown;
+        return generatedProblemStatementSchema.parse(json);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw new Error(
+      `Failed to parse AI problem statement JSON. Last error: ${
         lastError instanceof Error ? lastError.message : 'unknown parse error'
       }`,
     );
@@ -1096,23 +1518,13 @@ export class AiTestcaseService {
     return null;
   }
 
-  private getDefaultProvider(): 'openai' | 'google' {
-    const configured = (this.config.get<string>(EnvKeys.AI_DEFAULT_PROVIDER) ?? 'openai').toLowerCase();
-    return configured === 'google' ? 'google' : 'openai';
-  }
-
-  private getDefaultModel(provider: 'openai' | 'google'): string {
-    if (provider === 'google') {
-      return this.config.get<string>(EnvKeys.AI_DEFAULT_MODEL_GOOGLE) ?? 'gemini-2.5-flash';
-    }
-    return this.config.get<string>(EnvKeys.AI_DEFAULT_MODEL_OPENAI) ?? 'gpt-4.1-mini';
-  }
-
   private isRetryableError(error: unknown): boolean {
     if (!(error instanceof Error)) {
       return false;
     }
-    return /(429|500|502|503|504|UNAVAILABLE|timeout|temporar)/i.test(error.message);
+    return /(429|500|502|503|504|UNAVAILABLE|RESOURCE_EXHAUSTED|quota|rate.?limit|timeout|temporar)/i.test(
+      error.message,
+    );
   }
 
   private async delay(ms: number): Promise<void> {
@@ -1123,12 +1535,64 @@ export class AiTestcaseService {
     messages: Array<{ role: 'system' | 'user'; content: string }>,
   ): Array<{ role: 'system' | 'user'; content: string }> {
     const compactInstruction =
-      '\nReturn valid compact JSON only (no markdown, no code fence, no explanation). Keep output concise.';
+      '\nReturn valid compact JSON only (no markdown, no code fence). Omit explanation fields; keep complete input and expectedOutput.';
     return messages.map((message, index) =>
       index === 0
         ? { ...message, content: `${message.content}${compactInstruction}` }
         : message,
     );
+  }
+
+  private buildFullIoRetryMessages(
+    messages: Array<{ role: 'system' | 'user'; content: string }>,
+  ): Array<{ role: 'system' | 'user'; content: string }> {
+    const fullIoInstruction =
+      '\nReturn valid JSON only. Every input and expectedOutput must be COMPLETE runnable data (all lines of grids/matrices). Forbidden: "...", "…", or labels like "100x100 grid". Use smaller dimensions if needed, but print every cell value.';
+    return messages.map((message, index) =>
+      index === 0
+        ? { ...message, content: `${message.content}${fullIoInstruction}` }
+        : message,
+    );
+  }
+
+  private async retryDraftForFullIo(params: {
+    messages: Array<{ role: 'system' | 'user'; content: string }>;
+    usedProvider: 'openai' | 'google';
+    usedModel: string;
+    maxCases: number;
+    outputCap: number;
+    maxTokens: number;
+  }): Promise<{
+    text: string;
+    parsed: GeneratedTestcaseOutput | null;
+    parseError?: string;
+    truncationSuspected: boolean;
+    maxTokensUsed: number;
+  } | null> {
+    const fullMessages = this.buildFullIoRetryMessages(params.messages);
+    const retryBudget = Math.min(params.outputCap, Math.max(params.maxTokens * 2, 14000));
+    try {
+      const retryText = await this.generateWithRetry(
+        params.usedProvider,
+        params.usedModel,
+        fullMessages,
+        0,
+        retryBudget,
+        1,
+      );
+      return this.parseTestcaseOutputWithRetries({
+        text: retryText,
+        usedProvider: params.usedProvider,
+        usedModel: params.usedModel,
+        messages: fullMessages,
+        maxCases: params.maxCases,
+        outputCap: params.outputCap,
+        initialMaxTokens: retryBudget,
+        requireFullIo: true,
+      });
+    } catch {
+      return null;
+    }
   }
 
   private buildFastModeMessages(
@@ -1188,8 +1652,16 @@ export class AiTestcaseService {
     return inString || brace > 0 || bracket > 0;
   }
 
-  private isFastModeEnabled(): boolean {
+  private resolveFastModeEnabled(statementLength: number, maxTestCases: number): boolean {
     const raw = (this.config.get<string>(EnvKeys.AI_FAST_MODE) ?? '').toLowerCase().trim();
-    return ['1', 'true', 'yes', 'on'].includes(raw);
+    if (['1', 'true', 'yes', 'on'].includes(raw)) {
+      return true;
+    }
+    if (raw === 'auto') {
+      return (
+        statementLength < FAST_MODE_AUTO_MAX_STATEMENT && maxTestCases <= FAST_MODE_AUTO_MAX_CASES
+      );
+    }
+    return false;
   }
 }

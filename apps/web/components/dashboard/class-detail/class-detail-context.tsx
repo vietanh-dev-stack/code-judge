@@ -9,6 +9,8 @@ export type ClassDetailContextValue = {
   isOwner: boolean;
   /** Owner may manage class only when it is not archived */
   canManage: boolean;
+  /** ADMIN hoặc chủ lớp — được xuất báo cáo số liệu */
+  canExportReports: boolean;
 };
 
 const ClassDetailContext = createContext<ClassDetailContextValue | null>(null);

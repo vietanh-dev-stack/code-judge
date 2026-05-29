@@ -26,6 +26,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     
     // Khởi tạo socket connection
     const socketInstance = io(apiUrl, {
+      withCredentials: true,
       query: user ? { userId: user.id } : {},
       reconnectionAttempts: 5,
     });

@@ -85,4 +85,10 @@ export class ClassroomController {
   ) {
     return this.service.removeMember(id, userId, user.userId);
   }
+
+  // LEAVE CLASSROOM
+  @Post(':id/leave')
+  leave(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.service.leave(id, user.userId);
+  }
 }

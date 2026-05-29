@@ -312,6 +312,8 @@ export async function processGoldenVerifyJob(
   deps: {
     lambdaClient: LambdaClient | null;
     lambdaFunctionName: string | undefined;
+    /** Python: chạy `python` trên worker thay vì Lambda (dev Windows thường ổn định hơn). */
+    preferLocalPython?: boolean;
   },
 ): Promise<GoldenVerifyWorkerResult> {
   const { goldenSourceCode, language, testCases, timeLimitMs } = job.data;
@@ -332,7 +334,10 @@ export async function processGoldenVerifyJob(
     throw new Error(e instanceof Error ? e.message : 'golden-verify: language invalid');
   }
 
-  const useLambda = Boolean(deps.lambdaClient && deps.lambdaFunctionName);
+  const preferLocalPython = deps.preferLocalPython !== false;
+  const useLambda =
+    Boolean(deps.lambdaClient && deps.lambdaFunctionName) &&
+    !(lang === 'python' && preferLocalPython);
 
   if (useLambda) {
     log.info(`golden-verify job=${job.id} path=lambda lang=${lang} cases=${testCases.length}`);

@@ -15,7 +15,9 @@ COPY apps/web ./apps/web
 RUN mkdir -p /app/apps/web/public
 
 ARG NEXT_PUBLIC_CORE_URL=http://localhost:3000
+ARG NEXT_PUBLIC_COOKIE_DOMAIN=
 ENV NEXT_PUBLIC_CORE_URL=${NEXT_PUBLIC_CORE_URL}
+ENV NEXT_PUBLIC_COOKIE_DOMAIN=${NEXT_PUBLIC_COOKIE_DOMAIN}
 
 RUN npm run build -w @code-judge/web
 
