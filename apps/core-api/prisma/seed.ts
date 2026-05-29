@@ -12,7 +12,7 @@
  */
 import 'dotenv/config';
 import * as bcrypt from 'bcryptjs';
-import { Difficulty, PrismaClient, ProblemMode, ProblemVisibility, SubmissionStatus, SubmissionContext, ContestStatus, ClassRole, ClassEnrollmentStatus } from '@prisma/client';
+import { Difficulty, PrismaClient, ProblemMode, ProblemVisibility, SubmissionStatus, SubmissionContext, ContestStatus, ClassRole, ClassEnrollmentStatus, Prisma } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -191,7 +191,7 @@ async function wipeSeedArtifacts(): Promise<void> {
 }
 
 async function seedUsers() {
-  const users = [
+  const users: Prisma.UserCreateManyInput[] = [
     { id: SEED_IDS.admin, name: 'System Admin', email: 'seed-admin@codejudge.io', role: 'ADMIN', emailVerified: true, isActive: true, passwordHash },
     { id: SEED_IDS.instructor, name: 'Dr. Algorithm', email: 'seed-instructor@codejudge.io', role: 'CLIENT', emailVerified: true, isActive: true, passwordHash },
     { id: SEED_IDS.student1, name: 'Alice Smith', email: 'seed-student1@codejudge.io', role: 'CLIENT', emailVerified: true, isActive: true, passwordHash },
