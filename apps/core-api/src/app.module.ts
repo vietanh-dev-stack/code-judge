@@ -19,6 +19,7 @@ import { AdminDashboardModule } from './admin-dashboard/admin-dashboard.module';
 import { TagsModule } from './tags/tags.module';
 import { AiHintModule } from './ai-hint/ai-hint.module';
 import { ReportsModule } from './reports/reports.module';
+import { ClientErrorsModule } from './client-errors/client-errors.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { ReportsModule } from './reports/reports.module';
     TagsModule,
     AiHintModule,
     ReportsModule,
+    ClientErrorsModule,
   ],
 })
 export class AppModule {}
