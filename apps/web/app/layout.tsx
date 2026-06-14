@@ -6,6 +6,7 @@ import { Metadata } from 'next';
 import { AuthProvider } from '@/providers/auth-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { SocketProvider } from '@/providers/socket-provider';
+import { ErrorBoundaryProvider } from '@/providers/error-boundary-provider';
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -23,10 +24,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={cn('font-sans bg-background scroll-smooth', geist.variable)}>
       <body className="font-sans antialiased bg-background text-foreground">
-        <AuthProvider>
-          <SocketProvider>{children}</SocketProvider>
-        </AuthProvider>
-        <Toaster />
+        <ErrorBoundaryProvider>
+          <AuthProvider>
+            <SocketProvider>{children}</SocketProvider>
+          </AuthProvider>
+          <Toaster />
+        </ErrorBoundaryProvider>
       </body>
     </html>
   );
